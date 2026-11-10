@@ -72,6 +72,7 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
+    /* Botón de reglas ajustado al tamaño exacto de los demás botones de acción */
     .rules-header-btn {
       background: none;
       border: none;
@@ -79,16 +80,17 @@
       cursor: pointer;
       display: flex;
       align-items: center;
-      transition: transform 0.2s ease;
+      transition: transform 0.2s ease, filter 0.2s ease;
     }
     .rules-header-btn:hover {
       transform: scale(1.08);
+      filter: brightness(1.1);
     }
     .rules-header-btn img {
-      height: 52px; /* Botón de reglas más grande */
-      width: auto;
+      width: 85px !important;
+      height: auto !important;
       object-fit: contain;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
     }
 
     .download-app-btn {
@@ -196,7 +198,7 @@
     .btn-news-container {
       position: relative;
       display: inline-block;
-      margin-top: 18px; /* Arreglado para separar el badge de Check Here y que no se encime */
+      margin-top: 18px;
     }
 
     .unread-news-indicator {
@@ -653,7 +655,7 @@
     @media (max-width: 768px) {
       header { padding: 8px 12px; }
       .version-tag { font-size: 0.8rem; padding: 4px 8px; }
-      .rules-header-btn img { height: 42px; }
+      .rules-header-btn img { width: 68px !important; }
       .download-app-btn img { height: 36px; }
       .main-container { padding-top: 65px; padding-bottom: 110px; gap: 10px; }
       .fish-logo-img { max-width: 250px; }
@@ -675,19 +677,9 @@
 </head>
 <body>
 
-  <!-- Elemento de audio con el enlace RAW de GitHub -->
-  <audio id="bg-music" src="https://raw.githubusercontent.com/AwaKristal/the-fishing-game/main/musica.mp3" loop preload="auto"></audio>
-
-  <!-- Botón de control de música -->
-  <div style="position: fixed; top: 65px; left: 15px; z-index: 99;">
-    <button onclick="toggleMusic()" class="modal-action-btn" style="background: #3498db; padding: 6px 12px; font-size: 0.8rem; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-      🎵 <span id="music-btn-text">Play Music</span>
-    </button>
-  </div>
-
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.2 BETA</div>
+      <div class="version-tag">v.1.0.0.1</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
@@ -1509,29 +1501,6 @@
     let captureProgress = 30;
     let pendingCaughtFish = null;
     let usedBaitThisCast = false;
-
-    let isMusicPlaying = false;
-
-    function toggleMusic() {
-      const music = document.getElementById('bg-music');
-      const btnText = document.getElementById('music-btn-text');
-      
-      if (isMusicPlaying) {
-        music.pause();
-        isMusicPlaying = false;
-        btnText.innerText = "Play Music";
-        showToast("Music paused 🔇");
-      } else {
-        music.play().then(() => {
-          isMusicPlaying = true;
-          btnText.innerText = "Pause Music";
-          showToast("Music playing 🎶");
-        }).catch(error => {
-          console.error("Error playing audio:", error);
-          showToast("Could not play audio.");
-        });
-      }
-    }
 
     const ALLOWED_FISH_TYPES = [
       { name: "Sardine", value: 5, rarity: "Common", desc: "A small, silvery fish that moves in large schools.", img: "https://i.postimg.cc/c1BSbKfF/sardine.png" },
