@@ -12,15 +12,7 @@
     {
       "src": "https://i.postimg.cc/rsFhhvFP/icon.png",
       "type": "image/png",
-      "sizes": "64x64",
-      "isSquare": true,
-      "isPng": true,
-      "isWebp": false,
-      "isJpg": false,
-      "width": 64,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "sizes": "192x192"
     }
   ],
   "id": "/the-fishing-game-beta/",
