@@ -52,13 +52,13 @@
       align-items: center;
       padding: 12px 20px;
       z-index: 10;
-      gap: 10px;
+      gap: 12px;
     }
 
     .header-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .version-tag {
@@ -85,7 +85,7 @@
       transform: scale(1.08);
     }
     .rules-header-btn img {
-      height: 34px;
+      height: 52px; /* Botón de reglas más grande */
       width: auto;
       object-fit: contain;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
@@ -196,20 +196,21 @@
     .btn-news-container {
       position: relative;
       display: inline-block;
+      margin-top: 18px; /* Arreglado para separar el badge de Check Here y que no se encime */
     }
 
     .unread-news-indicator {
       display: none;
       position: absolute;
-      top: -45px;
-      right: 5px;
+      top: -42px;
+      right: 25px;
       pointer-events: none;
       z-index: 101;
       animation: bounceCheck 1.2s infinite ease-in-out;
     }
 
     .unread-news-indicator img {
-      width: 90px;
+      width: 85px;
       height: auto;
       filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
     }
@@ -652,7 +653,7 @@
     @media (max-width: 768px) {
       header { padding: 8px 12px; }
       .version-tag { font-size: 0.8rem; padding: 4px 8px; }
-      .rules-header-btn img { height: 28px; }
+      .rules-header-btn img { height: 42px; }
       .download-app-btn img { height: 36px; }
       .main-container { padding-top: 65px; padding-bottom: 110px; gap: 10px; }
       .fish-logo-img { max-width: 250px; }
@@ -661,7 +662,7 @@
       .btn-news-img { width: 75px !important; }
       .btn-index-img { width: 68px !important; }
       .btn-market-img { width: 68px !important; }
-      .unread-news-indicator { top: -38px; right: 0px; }
+      .unread-news-indicator { top: -38px; right: 15px; }
       .unread-news-indicator img { width: 70px; }
       .admin-trigger-btn { right: 10px; bottom: 80px; width: 38px; height: 38px; }
       .corner-bottom-left { bottom: 10px; left: 10px; }
@@ -673,6 +674,16 @@
   </style>
 </head>
 <body>
+
+  <!-- Elemento de audio con el enlace RAW de GitHub -->
+  <audio id="bg-music" src="https://raw.githubusercontent.com/AwaKristal/the-fishing-game/main/musica.mp3" loop preload="auto"></audio>
+
+  <!-- Botón de control de música -->
+  <div style="position: fixed; top: 65px; left: 15px; z-index: 99;">
+    <button onclick="toggleMusic()" class="modal-action-btn" style="background: #3498db; padding: 6px 12px; font-size: 0.8rem; border-radius: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+      🎵 <span id="music-btn-text">Play Music</span>
+    </button>
+  </div>
 
   <header>
     <div class="header-left">
@@ -1395,7 +1406,7 @@
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>🐟 Add Fish to User</h3>
       <div class="form-group">
-        <label>Fish Name (e.g. Sardine, Betta Fish, Swordfish, Whale Shark)</label>
+        <label>Fish Name (e.g. Sardine, Betta Fish, Swordfish, Whale Shark, Goldfish Snack)</label>
         <input type="text" id="adminAddFishName" placeholder="Fish name...">
       </div>
       <button type="button" class="modal-action-btn" style="background:#27ae60; margin-bottom: 15px;" onclick="adminAddFishToUser()">Add Fish</button>
@@ -1422,7 +1433,7 @@
       </div>
       <div class="form-group">
         <label>Bonus Fish Reward (Optional - exact fish name)</label>
-        <input type="text" id="adminPromoFish" placeholder="e.g. Legacy Fish or leave blank">
+        <input type="text" id="adminPromoFish" placeholder="e.g. Goldfish Snack or leave blank">
       </div>
       <button type="button" class="modal-action-btn" style="background:#2980b9; margin-bottom: 10px;" onclick="adminCreateCode()">Create Code</button>
       
@@ -1499,13 +1510,36 @@
     let pendingCaughtFish = null;
     let usedBaitThisCast = false;
 
+    let isMusicPlaying = false;
+
+    function toggleMusic() {
+      const music = document.getElementById('bg-music');
+      const btnText = document.getElementById('music-btn-text');
+      
+      if (isMusicPlaying) {
+        music.pause();
+        isMusicPlaying = false;
+        btnText.innerText = "Play Music";
+        showToast("Music paused 🔇");
+      } else {
+        music.play().then(() => {
+          isMusicPlaying = true;
+          btnText.innerText = "Pause Music";
+          showToast("Music playing 🎶");
+        }).catch(error => {
+          console.error("Error playing audio:", error);
+          showToast("Could not play audio.");
+        });
+      }
+    }
+
     const ALLOWED_FISH_TYPES = [
       { name: "Sardine", value: 5, rarity: "Common", desc: "A small, silvery fish that moves in large schools.", img: "https://i.postimg.cc/c1BSbKfF/sardine.png" },
       { name: "Opah", value: 10, rarity: "Common", desc: "A large, colorful deep-water fish known for its distinct round body.", img: "https://i.postimg.cc/sxhg04JM/opah.png" },
       { name: "Clownfish", value: 8, rarity: "Common", desc: "A small, vibrant orange fish with white stripes.", img: "https://i.postimg.cc/ry3jHGkf/clownfish.png" },
       { name: "Guppy", value: 4, rarity: "Common", desc: "A tiny, active freshwater fish featuring a colorful tail fin.", img: "https://i.postimg.cc/VkcRfY5g/guppy.png" },
       { name: "Tilapia", value: 9, rarity: "Common", desc: "A sturdy cichlid fish found in warm regions.", img: "https://i.postimg.cc/zXTCP9pD/tilapia.png" },
-      { name: "Goldfish", value: 6, rarity: "Common", desc: "A classic golden freshwater companion.", img: "https://i.postimg.cc/nLSBDZV3/goldfish.png" },
+      { name: "Goldfish", value: 6, rarity: "Common", desc: "A classic golden freshwater companion.", img: "https://i.postimg.cc/VkD2cTRZ/goldfish2.png" },
       { name: "Cod", value: 7, rarity: "Common", desc: "A standard ocean fish found in cold northern waters.", img: "https://i.postimg.cc/rp8x6Fgw/cod.png" },
       { name: "Maroon Clownfish", value: 24, rarity: "Rare", desc: "A striking clownfish variant with deep maroon hues and bright white bars.", img: "https://i.postimg.cc/3rFTcy29/maroon-clownfish.png" },
       { name: "Carp", value: 20, rarity: "Rare", desc: "A large freshwater fish celebrated for its strength.", img: "https://i.postimg.cc/N0gmhfb0/carp.png" },
@@ -1525,7 +1559,8 @@
       { name: "Megamouth Shark", value: 700, rarity: "Mythic", desc: "An elusive deep-water giant with glowing lips.", img: "https://i.postimg.cc/WbXHFmwx/megamouth-shark.png" },
       { name: "Basking Shark", value: 1200, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
       { name: "Oarfish", value: 2000, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
-      { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A legendary collector species from ancient waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" }
+      { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A legendary collector species from ancient waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
+      { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish obtainable only via special codes.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
 
     function onloadCallback() {
@@ -1804,10 +1839,12 @@
       select.innerHTML = '';
 
       if (isLimitedMode) {
-        const option = document.createElement('option');
-        option.value = "Legacy";
-        option.innerText = "Legacy";
-        select.appendChild(option);
+        ['Legacy', 'Secret'].forEach(rarity => {
+          const opt = document.createElement('option');
+          opt.value = rarity;
+          opt.innerText = rarity;
+          select.appendChild(opt);
+        });
       } else {
         ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic', 'Divine'].forEach(rarity => {
           const opt = document.createElement('option');
@@ -1869,6 +1906,7 @@
       else if (fish.rarity === "Mythic") badge.style.background = "#e74c3c";
       else if (fish.rarity === "Divine") badge.style.background = "#f1c40f";
       else if (fish.rarity === "Legacy") badge.style.background = "#8e44ad";
+      else if (fish.rarity === "Secret") badge.style.background = "#d35400";
       else badge.style.background = "#27ae60";
 
       document.getElementById('index-counter').innerText = `${currentIndexFish + 1} / ${filteredFishes.length}`;
@@ -4169,6 +4207,8 @@
         showToast("Error publishing news: " + err.message);
       }
     }
+
+    listenToNews();
 
     auth.onAuthStateChanged(async user => {
       const adminBtn = document.getElementById('adminBtn');
