@@ -1,0 +1,4295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>The Fishing Game</title>
+  <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
+
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Firebase v10.8.0 Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- Google reCAPTCHA v2 API -->
+  <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
+
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --panel-bg: #ffffff;
+      --panel-card-bg: #eef2f7;
+      --accent-color: #1e3a8a;
+      --text-color: #1f2937;
+      --text-muted: #6b7280;
+      --btn-hover: #e94560;
+      --modal-bg: rgba(15, 23, 42, 0.65);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      z-index: 10;
+      gap: 10px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .version-tag {
+      font-size: 0.9rem;
+      font-weight: bold;
+      background: #ffffff;
+      color: #1e3a8a;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .rules-header-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: transform 0.2s ease;
+    }
+    .rules-header-btn:hover {
+      transform: scale(1.08);
+    }
+    .rules-header-btn img {
+      height: 34px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+    }
+
+    .download-app-btn {
+      position: fixed;
+      top: 12px;
+      right: 15px;
+      z-index: 100;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: inline-block;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .download-app-btn:hover {
+      transform: scale(1.05);
+      filter: brightness(1.1);
+    }
+    .download-app-btn img {
+      height: 42px;
+      width: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,0.2));
+    }
+
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+      width: 100%;
+      min-height: 100vh;
+      padding: 70px 15px 100px 15px;
+      gap: 15px;
+    }
+
+    .title-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .fish-logo-img {
+      max-width: 440px;
+      width: 85%;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+    }
+
+    .center-menu {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .img-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.2s ease, filter 0.2s ease;
+      position: relative;
+    }
+
+    .img-btn:hover {
+      transform: scale(1.08);
+      filter: brightness(1.1);
+    }
+
+    .img-btn img {
+      width: 120px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    }
+
+    .corner-bottom-left {
+      position: fixed;
+      bottom: 15px;
+      left: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      z-index: 99;
+    }
+
+    .corner-bottom-right {
+      position: fixed;
+      bottom: 15px;
+      right: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      z-index: 99;
+    }
+
+    .btn-news-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .unread-news-indicator {
+      display: none;
+      position: absolute;
+      top: -45px;
+      right: 5px;
+      pointer-events: none;
+      z-index: 101;
+      animation: bounceCheck 1.2s infinite ease-in-out;
+    }
+
+    .unread-news-indicator img {
+      width: 90px;
+      height: auto;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    }
+
+    @keyframes bounceCheck {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .btn-news-img {
+      width: 95px !important;
+      height: auto !important;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    }
+
+    .btn-index-img {
+      width: 85px !important;
+      height: auto !important;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    }
+
+    .btn-market-img {
+      width: 85px !important;
+      height: auto !important;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    }
+
+    .user-profile-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      background: #ffffff;
+      padding: 5px 12px 5px 5px;
+      border-radius: 30px;
+      border: 2px solid #1e3a8a;
+      max-width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .user-profile-badge img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    #game-screen {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background-image: url('https://i.postimg.cc/3N1KpnjJ/map2.png');
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-color: #ffffff;
+      z-index: 100;
+    }
+
+    .backpack-on-map {
+      position: absolute;
+      bottom: 140px;
+      right: 25px;
+      width: 55px;
+      height: auto;
+      cursor: pointer;
+      z-index: 105;
+      transition: transform 0.2s ease, filter 0.2s ease;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+    }
+    .backpack-on-map:hover {
+      transform: scale(1.15);
+      filter: brightness(1.2) drop-shadow(0 6px 12px rgba(0,0,0,0.8));
+    }
+
+    .game-hud {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      gap: 12px;
+      z-index: 105;
+    }
+
+    .hud-box {
+      background: rgba(255, 255, 255, 0.9);
+      color: #1e3a8a;
+      border: 2px solid #1e3a8a;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .exit-game-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #e74c3c;
+      color: white;
+      border: 2px solid #fff;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 105;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .cast-line-btn {
+      position: absolute;
+      bottom: 75px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2ecc71;
+      color: white;
+      border: 2px solid #fff;
+      padding: 12px 28px;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 105;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+      white-space: nowrap;
+    }
+    .cast-line-btn:hover { background: #27ae60; }
+
+    #fishing-minigame-overlay {
+      display: none;
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 110;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .minigame-container {
+      background: rgba(255, 255, 255, 0.95);
+      border: 3px solid #3498db;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 280px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      color: #1f2937;
+    }
+
+    .minigame-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #1e3a8a;
+      margin-bottom: 12px;
+    }
+
+    .track-bar {
+      position: relative;
+      width: 45px;
+      height: 260px;
+      background: #e2e8f0;
+      border: 3px solid #1f2937;
+      border-radius: 22px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+
+    .green-zone {
+      position: absolute;
+      width: 100%;
+      height: 65px;
+      background: rgba(46, 204, 113, 0.85);
+      border-top: 2px solid #27ae60;
+      border-bottom: 2px solid #27ae60;
+      top: 100px;
+      left: 0;
+      transition: top 0.05s linear;
+    }
+
+    .catch-bar {
+      position: absolute;
+      width: 100%;
+      height: 22px;
+      background: #1f2937;
+      border: 2px solid #f1c40f;
+      border-radius: 6px;
+      bottom: 0px;
+      left: 0;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 12px;
+      background: #cbd5e1;
+      border-radius: 6px;
+      border: 1px solid #94a3b8;
+      overflow: hidden;
+    }
+    .progress-fill {
+      width: 20%;
+      height: 100%;
+      background: #2ecc71;
+      transition: width 0.1s linear, background 0.2s;
+    }
+
+    .minigame-hint {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: var(--modal-bg);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      overflow-y: auto;
+    }
+
+    .modal-card {
+      background: var(--panel-bg);
+      border: 2px solid #cbd5e1;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 620px;
+      padding: 20px;
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      max-height: 90vh;
+      overflow-y: auto;
+      color: var(--text-color);
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 1.4rem;
+      cursor: pointer;
+      z-index: 10;
+    }
+    .modal-close:hover { color: #1e3a8a; }
+
+    .form-group {
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-group input, .form-group textarea, .form-group select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #1e293b;
+      width: 100%;
+    }
+
+    .tab-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .tab-btn.active {
+      background: #1e3a8a;
+      color: #ffffff;
+      border-color: #1e3a8a;
+    }
+
+    .modal-action-btn {
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      text-align: center;
+      transition: background 0.2s;
+    }
+
+    .modal-action-btn:hover { background: #1e40af; }
+    .modal-action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .news-card {
+      background: #f8fafc;
+      border-radius: 8px;
+      padding: 12px;
+      border-left: 4px solid #1e3a8a;
+      margin-top: 10px;
+      position: relative;
+    }
+    .news-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      gap: 10px;
+    }
+    .news-controls button {
+      width: auto;
+      padding: 6px 12px;
+    }
+    .news-counter {
+      font-weight: bold;
+      color: #1e3a8a;
+    }
+
+    .admin-trigger-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 120px;
+      width: 45px;
+      height: 45px;
+      border: none;
+      cursor: pointer;
+      background: none;
+      z-index: 99;
+      display: none;
+      padding: 0;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .admin-trigger-btn:hover {
+      transform: scale(1.1);
+      filter: brightness(1.1);
+    }
+    .admin-trigger-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+    }
+
+    .search-player-item {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .search-player-item:hover {
+      background: #e2e8f0;
+    }
+
+    .admin-code-item {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-top: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .rule-item {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .rule-title {
+      font-weight: bold;
+      color: #1e3a8a;
+      margin-bottom: 4px;
+      font-size: 0.95rem;
+    }
+    .rule-desc {
+      font-size: 0.85rem;
+      color: #475569;
+      line-height: 1.4;
+    }
+
+    #toast-container {
+      position: fixed;
+      bottom: 20px; right: 20px;
+      z-index: 4000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 90%;
+    }
+
+    .toast {
+      background: #ffffff;
+      color: #1f2937;
+      border: 2px solid #1e3a8a;
+      padding: 10px 16px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+      animation: fadeIn 0.3s forwards;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      header { padding: 8px 12px; }
+      .version-tag { font-size: 0.8rem; padding: 4px 8px; }
+      .rules-header-btn img { height: 28px; }
+      .download-app-btn img { height: 36px; }
+      .main-container { padding-top: 65px; padding-bottom: 110px; gap: 10px; }
+      .fish-logo-img { max-width: 250px; }
+      .center-menu { gap: 12px; margin-bottom: 10px; }
+      .img-btn img { width: 95px; }
+      .btn-news-img { width: 75px !important; }
+      .btn-index-img { width: 68px !important; }
+      .btn-market-img { width: 68px !important; }
+      .unread-news-indicator { top: -38px; right: 0px; }
+      .unread-news-indicator img { width: 70px; }
+      .admin-trigger-btn { right: 10px; bottom: 80px; width: 38px; height: 38px; }
+      .corner-bottom-left { bottom: 10px; left: 10px; }
+      .corner-bottom-right { bottom: 10px; right: 10px; gap: 6px; }
+      .modal-card { padding: 14px; max-height: 88vh; }
+      .backpack-on-map { bottom: 125px; right: 15px; width: 48px; }
+      #game-screen { background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #ffffff; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-left">
+      <div class="version-tag">v.1.0.0.1</div>
+      <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
+        <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
+      </button>
+    </div>
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
+      <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
+    </a>
+  </header>
+
+  <div class="corner-bottom-left">
+    <div id="user-badge" class="user-profile-badge" onclick="openMyProfileModal()">
+      <img id="user-avatar" src="https://via.placeholder.com/40" alt="Avatar">
+      <span id="user-display-name">Username</span>
+    </div>
+    <div id="account-container">
+      <button class="img-btn" onclick="openModal('modal-account')">
+        <img src="https://i.postimg.cc/Kjf35Nc8/account.png" alt="Account">
+      </button>
+    </div>
+    <button id="btn-logout" class="modal-action-btn" style="display:none; width:auto; padding: 6px 12px; font-size: 0.85rem;" onclick="logout()">Log out</button>
+  </div>
+
+  <main class="main-container" id="main-menu-container">
+    <div class="title-box">
+      <img src="https://i.postimg.cc/2yGLxwj5/logo.png" alt="The Fishing Game Logo" class="fish-logo-img">
+    </div>
+
+    <div class="center-menu">
+      <button class="img-btn" onclick="openModal('modal-shop')">
+        <img src="https://i.postimg.cc/2yGLxwj8/shop.png" alt="Shop">
+      </button>
+      <button class="img-btn" onclick="startGame()">
+        <img src="https://i.postimg.cc/d36Z9BQ7/play.png" alt="Play">
+      </button>
+      <button class="img-btn" onclick="openModal('modal-achievements')">
+        <img src="https://i.postimg.cc/rsjR9JyD/achievements.png" alt="Achievements">
+      </button>
+    </div>
+  </main>
+
+  <div id="game-screen">
+    <img src="https://i.postimg.cc/bNcMt94Y/backpack.png" alt="Backpack" class="backpack-on-map" onclick="openModal('modal-backpack')" title="Open Backpack">
+
+    <div class="game-hud">
+      <div class="hud-box" id="hud-coins">💰 0</div>
+      <div class="hud-box" id="hud-fish">🐟 0 Fishes</div>
+    </div>
+
+    <button class="exit-game-btn" onclick="exitGame()">Exit</button>
+    <button id="cast-btn" class="cast-line-btn" onclick="castLine()">Cast Line!</button>
+
+    <div id="fishing-minigame-overlay">
+      <div class="minigame-container">
+        <div class="minigame-title">CATCH THE FISH!</div>
+        
+        <div class="track-bar">
+          <div id="minigame-green-zone" class="green-zone"></div>
+          <div id="minigame-catch-bar" class="catch-bar"></div>
+        </div>
+
+        <div class="progress-track">
+          <div id="minigame-progress-fill" class="progress-fill"></div>
+        </div>
+
+        <div class="minigame-hint">HOLD click, Space, W or Up Arrow!</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="corner-bottom-right">
+    <button class="img-btn" onclick="openMarketModal()">
+      <img src="https://i.postimg.cc/pXqPJd8Z/market.png" alt="Market" class="btn-market-img">
+    </button>
+    <button class="img-btn" onclick="openIndexModal()">
+      <img src="https://i.postimg.cc/Y9mR2jN6/index.png" alt="Fish Index" class="btn-index-img">
+    </button>
+    
+    <div class="btn-news-container">
+      <div id="unread-news-badge" class="unread-news-indicator">
+        <img src="https://i.postimg.cc/CMsgQZbk/check-here.png" alt="Check News!">
+      </div>
+      <button class="img-btn" onclick="openNewsModal()">
+        <img src="https://i.postimg.cc/Vvg0FRsd/news.png" alt="News" class="btn-news-img">
+      </button>
+    </div>
+  </div>
+
+  <button id="adminBtn" class="admin-trigger-btn" onclick="openModal('modal-admin')">
+    <img src="https://i.postimg.cc/L6SrYVZf/admin.png" alt="Admin Panel">
+  </button>
+
+  <!-- Rules Modal -->
+  <div id="modal-rules" class="modal-overlay" style="z-index: 3500;">
+    <div class="modal-card" style="max-width: 500px;">
+      <button id="rules-modal-close" class="modal-close" onclick="closeRulesModal()">✖</button>
+      <h2 style="color: #1e3a8a; text-align: center; margin-top: 0;">📜 Game Rules</h2>
+      <p style="font-size:0.85rem; color:#64748b; text-align:center; margin-bottom: 12px;" id="rules-subtitle">Please review community rules carefully.</p>
+
+      <div id="rules-scroll-container" style="max-height: 280px; overflow-y: auto; padding-right: 5px;" onscroll="checkRulesScroll()">
+        <div class="rule-item">
+          <div class="rule-title">1. Respect within the community</div>
+          <div class="rule-desc">The use of offensive, toxic, or discriminatory topics in profiles (includes pfp, username, and bio) is prohibited.</div>
+        </div>
+
+        <div class="rule-item">
+          <div class="rule-title">2. Zero cheating (Fair Play)</div>
+          <div class="rule-desc">Exploits, external modifications, bots, or third-party tools used to alter fishing or market mechanics are not permitted.</div>
+        </div>
+
+        <div class="rule-item">
+          <div class="rule-title">3. Fair trading</div>
+          <div class="rule-desc">Transactions in the player marketplace must be fair; the use of secondary accounts to inflate prices or artificially transfer currency is prohibited.</div>
+        </div>
+
+        <div class="rule-item">
+          <div class="rule-title">4. Account security</div>
+          <div class="rule-desc">You are responsible for the security of your account. Do not share your login credentials with anyone. Administrators will never ask for your password.</div>
+        </div>
+      </div>
+
+      <div id="rules-accept-container" style="display: none; margin-top: 15px;">
+        <p style="font-size: 0.75rem; color: #e74c3c; text-align: center; margin: 0 0 8px 0;" id="scroll-warning-text">Scroll to the bottom of the rules to unlock Accept button.</p>
+        <button id="btn-accept-rules" type="button" class="modal-action-btn" style="background: #27ae60;" disabled onclick="acceptRulesAction()">Accept Rules</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warning Notice Modal for Players -->
+  <div id="modal-warning-notice" class="modal-overlay" style="z-index: 3200;">
+    <div class="modal-card" style="max-width: 420px; text-align: center; border: 3px solid #f39c12;">
+      <h2 style="color: #d35400; margin-top: 0;">⚠️ ACCOUNT WARNING</h2>
+      <p style="font-size: 1rem; color: #2c3e50; font-weight: bold;">An administrator has issued a warning for your account:</p>
+      
+      <div style="background: #fff3cd; padding: 14px; border-radius: 8px; border: 1px solid #ffeeba; margin: 15px 0; text-align: left;">
+        <p style="margin: 0; font-size: 0.95rem; color: #856404;"><strong>Reason:</strong> <span id="warning-reason-text">Behavior violation</span></p>
+      </div>
+
+      <p style="font-size: 0.8rem; color: #7f8c8d; margin-bottom: 15px;">Please make sure to follow the game rules to avoid further penalties or permanent ban.</p>
+      <button type="button" class="modal-action-btn" style="background: #f39c12;" onclick="dismissPlayerWarning()">Understood</button>
+    </div>
+  </div>
+
+  <!-- Ban Notification Modal -->
+  <div id="modal-ban-notice" class="modal-overlay" style="z-index: 3000;">
+    <div class="modal-card" style="max-width: 400px; text-align: center; border: 3px solid #e74c3c;">
+      <h2 style="color: #e74c3c; margin-top: 0;">ACCESS DENIED</h2>
+      <p style="font-size: 1.05rem; font-weight: bold;" id="ban-type-label">Your account has been banned.</p>
+      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; margin: 15px 0; text-align: left;">
+        <p style="margin: 0 0 8px 0; font-size: 0.9rem;"><strong>Reason:</strong> <span id="ban-reason-text" style="color: #c0392b;">No reason specified</span></p>
+        <p style="margin: 0; font-size: 0.9rem;"><strong>Duration:</strong> <span id="ban-duration-text" style="color: #2980b9;">Permanent</span></p>
+      </div>
+      <button type="button" class="modal-action-btn" style="background: #e74c3c;" onclick="handleBanDismiss()">Acknowledge & Logout</button>
+    </div>
+  </div>
+
+  <!-- Admin Warning Prompt Modal -->
+  <div id="modal-admin-warning-prompt" class="modal-overlay" style="z-index: 1060;">
+    <div class="modal-card" style="max-width: 360px;">
+      <button class="modal-close" onclick="document.getElementById('modal-admin-warning-prompt').style.display='none'">✖</button>
+      <h3 style="color: #d35400;">⚠️ Issue Warning to User</h3>
+      <p style="font-size: 0.85rem; color: #64748b;">The target user will see a popup requiring them to press "Understood".</p>
+      
+      <div class="form-group">
+        <label>Reason for Warning</label>
+        <textarea id="adminWarningReasonInput" placeholder="Specify violation reason..." rows="3" style="resize:none;" required></textarea>
+      </div>
+      <button type="button" class="modal-action-btn" style="background:#f39c12;" onclick="confirmAdminSendWarning()">Send Warning</button>
+    </div>
+  </div>
+
+  <!-- Bot Sell Quantity Prompt Modal -->
+  <div id="modal-botsell-prompt" class="modal-overlay" style="z-index: 1050;">
+    <div class="modal-card" style="max-width: 320px;">
+      <button class="modal-close" onclick="document.getElementById('modal-botsell-prompt').style.display='none'">✖</button>
+      <h3>Bot Sell Fish</h3>
+      <p style="font-size:0.85rem; color:#64748b;" id="prompt-botsell-name-label">Fish: Goldfish</p>
+      <div class="form-group">
+        <label>Quantity to Sell (Max: <span id="prompt-botsell-max-label">1</span>)</label>
+        <input type="number" id="botsell-qty-input" min="1" value="1" placeholder="Quantity">
+      </div>
+      <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="confirmBotSell()">Sell to Bot</button>
+    </div>
+  </div>
+
+  <!-- Admin Ban Reason Prompt Modal -->
+  <div id="modal-admin-ban-prompt" class="modal-overlay" style="z-index: 1050;">
+    <div class="modal-card" style="max-width: 350px;">
+      <button class="modal-close" onclick="document.getElementById('modal-admin-ban-prompt').style.display='none'">✖</button>
+      <h3 id="admin-ban-prompt-title">Ban User</h3>
+      
+      <div id="admin-ban-duration-group" style="display: none; margin-bottom: 12px;">
+        <label style="font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; display: block;">Temporary Ban Duration</label>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.75rem;">Days</label>
+            <input type="number" id="tempBanDaysInput" placeholder="0" value="0" min="0">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.75rem;">Hours</label>
+            <input type="number" id="tempBanHoursInput" placeholder="0" value="24" min="0">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.75rem;">Minutes</label>
+            <input type="number" id="tempBanMinutesInput" placeholder="0" value="0" min="0">
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.75rem;">Seconds</label>
+            <input type="number" id="tempBanSecondsInput" placeholder="0" value="0" min="0">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Reason for Ban</label>
+        <textarea id="adminBanReasonInput" placeholder="Enter reason for the ban..." rows="3" style="resize:none;" required></textarea>
+      </div>
+      <button type="button" class="modal-action-btn" style="background:#e74c3c;" onclick="confirmAdminBanAction()">Confirm Ban</button>
+    </div>
+  </div>
+
+  <div id="modal-market" class="modal-overlay">
+    <div class="modal-card" style="max-width: 650px;">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>Player Market & Sell</h2>
+      
+      <div class="tab-container">
+        <button id="tab-market-buy-btn" class="tab-btn active" onclick="switchMarketTab('buy')">Player Market</button>
+        <button id="tab-market-sell-btn" class="tab-btn" onclick="switchMarketTab('sell')">Sell My Fish</button>
+      </div>
+
+      <div id="market-buy-section">
+        <p style="font-size:0.85rem; color:#64748b; margin-bottom:10px;">Buy fish offered by real players in the community market:</p>
+        <div id="market-listings-container" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <p style="color:#64748b; text-align:center;">Loading market offers...</p>
+        </div>
+      </div>
+
+      <div id="market-sell-section" style="display: none;">
+        <p style="font-size:0.85rem; color:#64748b; margin-bottom:10px;">Select a fish from your backpack to sell:</p>
+        <div id="market-my-fishes-container" style="max-height: 280px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;">
+          <p style="color:#64748b; text-align:center; grid-column: 1/-1;">Loading your fishes...</p>
+        </div>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3 style="font-size: 1rem; color: #1e3a8a; margin-bottom: 5px;">My Active Market Listings (Cancel & Retrieve)</h3>
+      <div id="market-my-active-listings" style="max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;">
+        <p style="font-size: 0.8rem; color:#64748b; text-align:center;">Loading your active listings...</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-market-price-prompt" class="modal-overlay" style="z-index: 1050;">
+    <div class="modal-card" style="max-width: 320px;">
+      <button class="modal-close" onclick="document.getElementById('modal-market-price-prompt').style.display='none'">✖</button>
+      <h3>Set Market Price</h3>
+      <p style="font-size:0.85rem; color:#64748b;" id="prompt-fish-name-label">Fish: Opah</p>
+      <div class="form-group">
+        <label>Price in Coins (💰)</label>
+        <input type="number" id="market-sell-price-input" min="1" placeholder="e.g. 50">
+      </div>
+      <button type="button" class="modal-action-btn" style="background:#2ecc71;" onclick="confirmMarketSell()">Post to Market</button>
+    </div>
+  </div>
+
+  <div id="modal-account" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <div class="tab-container">
+        <button id="tab-login-btn" class="tab-btn active" onclick="switchAuthTab('login')">Login</button>
+        <button id="tab-register-btn" class="tab-btn" onclick="switchAuthTab('register')">Register</button>
+      </div>
+
+      <form id="form-login" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="login-email" autocomplete="email" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" autocomplete="current-password" required>
+        </div>
+        <div class="form-group">
+          <div id="recaptcha-login"></div>
+        </div>
+        <button type="submit" class="modal-action-btn">Sign In</button>
+        <p style="font-size:0.85rem; text-align:center; margin-top:10px; cursor:pointer; color:#1e3a8a;" onclick="openModal('modal-forgot')">Forgot password?</p>
+        <p style="font-size:0.9rem; text-align:center; margin-top:10px; cursor:pointer; color:#2ecc71; font-weight:bold;" onclick="openModal('modal-resend-verification')">Resend Verification Email</p>
+      </form>
+
+      <form id="form-register" onsubmit="handleRegister(event)" style="display:none;" autocomplete="on">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="reg-username" autocomplete="given-name" name="new-username" required maxlength="20">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="reg-email" autocomplete="email" name="new-email" required>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="reg-password" autocomplete="new-password" name="new-password" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label>Bio / Description</label>
+          <textarea id="reg-bio" placeholder="Tell us something about you..." maxlength="150" style="resize:none; height:60px;"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Profile Picture (Max 1MB)</label>
+          <input type="file" id="reg-avatar" accept="image/*">
+        </div>
+        <div class="form-group">
+          <div id="recaptcha-register"></div>
+        </div>
+        <button type="submit" class="modal-action-btn">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal-resend-verification" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>Resend Verification Email</h2>
+      <p style="font-size:0.9rem; color:#64748b;">Enter your login credentials to send a fresh verification link to your email.</p>
+      
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="resend-email" placeholder="Your account email" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="resend-password" placeholder="Your password" required>
+      </div>
+      <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="handleResendVerification()">Send Verification Email</button>
+    </div>
+  </div>
+
+  <div id="modal-forgot" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>Recover Password</h2>
+      <p style="font-size:0.9rem; color:#64748b;">Enter your account email to receive a password reset link.</p>
+      
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="forgot-email" placeholder="Your account email" required>
+      </div>
+      <button type="button" class="modal-action-btn" onclick="handleForgotPassword()">Send Reset Link</button>
+    </div>
+  </div>
+
+  <div id="modal-profile" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>Player Profile</h2>
+      <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+        <img id="profile-modal-avatar" src="https://via.placeholder.com/60" alt="Avatar" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid #1e3a8a;">
+        <div>
+          <h3 id="profile-modal-name" style="margin:0; font-size:1.2rem;">Username</h3>
+          <p id="verification-status" style="margin:3px 0; font-size:0.8rem; color:#e74c3c;">Email not verified</p>
+          <p id="verification-timer" style="margin:2px 0 0 0; font-size:0.75rem; color:#c0392b; font-weight:bold; display:none;">Auto-deletion in: Calculating...</p>
+          <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="profile-coins">0</span> | 🐟 Fish: <span id="profile-fish-count">0</span></p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Bio / Description</label>
+        <p id="profile-bio-display" style="background: #f8fafc; padding: 10px; border-radius: 8px; margin: 0; min-height: 45px; color: #1e293b; border: 1px solid #cbd5e1; word-break: break-all; font-size: 0.9rem;"></p>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+        <button type="button" class="modal-action-btn" style="background: #2980b9; flex: 1;" onclick="openMyAquarium()">🐠 See Aquarium</button>
+        <button type="button" class="modal-action-btn" style="background: #f39c12; flex: 1;" onclick="toggleEditProfileSection()">Edit Profile</button>
+      </div>
+
+      <div id="profile-edit-section" style="display: none; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #cbd5e1; margin-bottom: 15px;">
+        <h4 style="margin: 0 0 10px 0; color: #1e3a8a;">Edit Profile Details</h4>
+        <div class="form-group">
+          <label>Change Username</label>
+          <input type="text" id="profile-edit-username" placeholder="New username..." maxlength="20">
+        </div>
+        <div class="form-group">
+          <label>Current Password (Required to change details)</label>
+          <input type="password" id="profile-current-password" placeholder="Enter password to confirm">
+        </div>
+        <div class="form-group">
+          <label>Change Password (Optional)</label>
+          <input type="password" id="profile-new-password" placeholder="New password (min 6 chars)" minlength="6">
+        </div>
+        <div class="form-group">
+          <label>Bio / Description</label>
+          <textarea id="profile-edit-bio" placeholder="Write your new description..." maxlength="150" style="resize:none; height:60px;"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Change Profile Picture (Max 1MB)</label>
+          <input type="file" id="profile-edit-avatar" accept="image/*">
+        </div>
+        <button type="button" class="modal-action-btn" onclick="updateProfileData()">Save Changes</button>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3>Search Player</h3>
+      <form autocomplete="off" onsubmit="event.preventDefault(); handleUserSearch();">
+        <div class="form-group">
+          <input type="text" id="searchUsernameInput" autocomplete="off" name="search_player_unique_field" placeholder="Enter username...">
+        </div>
+        <button type="submit" class="modal-action-btn">Search User</button>
+      </form>
+      <div id="searchResult" style="margin-top: 10px; display:none;"></div>
+    </div>
+  </div>
+
+  <div id="modal-view-profile" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="openModal('modal-profile')">✖</button>
+      <h2>Player Info</h2>
+      <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+        <img id="view-profile-avatar" src="https://via.placeholder.com/60" alt="Avatar" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid #1e3a8a;">
+        <div>
+          <h3 id="view-profile-name" style="margin:0; font-size:1.2rem;">Username</h3>
+          <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="view-profile-coins">0</span> | 🐟 Fish: <span id="view-profile-fish-count">0</span></p>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Bio / Description</label>
+        <p id="view-profile-bio" style="background: #f8fafc; padding: 10px; border-radius: 8px; margin: 0; min-height: 50px; color: #1e293b; border: 1px solid #cbd5e1; word-break: break-all;"></p>
+      </div>
+
+      <button type="button" class="modal-action-btn" style="background: #2980b9; margin-top: 5px;" onclick="openOtherAquarium()">🐠 See Aquarium</button>
+    </div>
+  </div>
+
+  <div id="modal-aquarium" class="modal-overlay">
+    <div class="modal-card" style="max-width: 680px; padding: 15px; background: #ffffff; border: 2px solid #3498db;">
+      <button class="modal-close" onclick="closeAquariumModal()">✖</button>
+      <h2 id="aquarium-title" style="text-align:center; margin-top: 0; margin-bottom: 3px; font-size: 1.3rem;">🐠 Aquarium</h2>
+      <p style="font-size: 0.8rem; color: #64748b; text-align: center; margin-top:0; margin-bottom: 10px;" id="aquarium-subtitle">Viewing aquarium...</p>
+      
+      <div style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 10px;">
+        <button class="modal-action-btn" style="width: auto; padding: 4px 10px; font-size: 0.8rem;" onclick="changeAquariumRoom(-1)">◀ Prev Room</button>
+        <span id="aquarium-room-indicator" style="font-weight: bold; font-size: 0.95rem; color: #d97706;">Room 1</span>
+        <button class="modal-action-btn" style="width: auto; padding: 4px 10px; font-size: 0.8rem;" onclick="changeAquariumRoom(1)">Next Room ▶</button>
+      </div>
+
+      <div style="position: relative; width: 100%; aspect-ratio: 16 / 10; max-height: 420px; background-image: url('https://i.postimg.cc/3xDP6rVy/aquarium.png'); background-size: 100% 100%; background-position: center; background-repeat: no-repeat; border-radius: 10px; border: 2px solid #cbd5e1; overflow: hidden; margin-bottom: 12px;">
+        
+        <div style="position: absolute; top: 3.5%; left: 3%; right: 3%; display: flex; justify-content: space-between; pointer-events: none; height: 42%;">
+          <div id="shelf-top-0" style="width: 23%; height: 100%; pointer-events: auto; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; position: relative; overflow: hidden;" onclick="handleShelfClick(0)" title="Click to manage slot 1"></div>
+          <div id="shelf-top-1" style="width: 23%; height: 100%; pointer-events: auto; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; position: relative; overflow: hidden;" onclick="handleShelfClick(1)" title="Click to manage slot 2"></div>
+          <div id="shelf-top-2" style="width: 23%; height: 100%; pointer-events: auto; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; position: relative; overflow: hidden;" onclick="handleShelfClick(2)" title="Click to manage slot 3"></div>
+          <div id="shelf-top-3" style="width: 23%; height: 100%; pointer-events: auto; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; position: relative; overflow: hidden;" onclick="handleShelfClick(3)" title="Click to manage slot 4"></div>
+        </div>
+
+        <div style="position: absolute; bottom: 8.5%; left: 3%; right: 3%; display: flex; justify-content: space-between; pointer-events: none; height: 42%;">
+          <div id="shelf-bot-0" style="width: 23%; height: 100%; pointer-events: auto; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; position: relative; overflow: hidden;" onclick="handleShelfClick(4)" title="Click to manage slot 5"></div>
+          <div id="shelf-bot-1" style="width: 23%; height: 100%; pointer-events: auto; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; position: relative; overflow: hidden;" onclick="handleShelfClick(5)" title="Click to manage slot 6"></div>
+          <div id="shelf-bot-2" style="width: 23%; height: 100%; pointer-events: auto; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; position: relative; overflow: hidden;" onclick="handleShelfClick(6)" title="Click to manage slot 7"></div>
+          <div id="shelf-bot-3" style="width: 23%; height: 100%; pointer-events: auto; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; position: relative; overflow: hidden;" onclick="handleShelfClick(7)" title="Click to manage slot 8"></div>
+        </div>
+
+      </div>
+
+      <div id="aquarium-owner-controls" style="display: none; background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #cbd5e1;">
+        <p style="margin: 0 0 5px 0; font-size: 0.85rem; color: #27ae60; font-weight: bold;">Each slot requires a Mini Tank! Buy tanks in Bob's Shop if you need more.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-select-fish" class="modal-overlay" style="z-index: 1050;">
+    <div class="modal-card" style="max-width: 440px;">
+      <button class="modal-close" onclick="document.getElementById('modal-select-fish').style.display='none'">✖</button>
+      <h3 style="margin-top:0;">🐟 Select a Fish for Tank</h3>
+      <p style="font-size:0.85rem; color:#64748b;">Choose a fish from your inventory:</p>
+      <div id="select-fish-list" style="max-height: 240px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 10px;"></div>
+      <button type="button" class="modal-action-btn" style="background: #e74c3c;" onclick="removeFishFromShelf()">Remove Tank / Fish</button>
+    </div>
+  </div>
+
+  <div id="modal-index" class="modal-overlay">
+    <div class="modal-card" style="max-width: 440px; text-align: center;">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>Fish Index</h2>
+      <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">Discover all the fish species available in the game.</p>
+      
+      <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+        <button id="index-toggle-mode-btn" class="modal-action-btn" style="width: auto; padding: 6px 14px; background: #8e44ad; font-size: 0.85rem;" onclick="toggleIndexMode()">Limited</button>
+        <div style="flex: 1; text-align: left;">
+          <select id="index-rarity-select" onchange="onRarityFilterChange()" style="padding: 8px; font-weight: bold;">
+            <option value="Common">Common</option>
+            <option value="Rare">Rare</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; border: 2px solid #cbd5e1; border-radius: 12px; padding: 20px; position: relative; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <span id="index-rarity" style="position: absolute; top: 12px; right: 15px; background: #27ae60; color: #fff; padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: bold;">Common</span>
+        
+        <img id="index-fish-img" src="" alt="Fish" style="width: 110px; height: 110px; object-fit: contain; margin-bottom: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));">
+        
+        <h3 id="index-fish-name" style="margin: 0 0 5px 0; font-size: 1.2rem; color: #1e3a8a;">Fish Name</h3>
+        <p id="index-fish-desc" style="font-size: 0.9rem; color: #475569; margin: 0 0 15px 0; padding: 0 10px; min-height: 40px;">Description goes here...</p>
+        
+        <div style="display: flex; justify-content: space-between; width: 100%; position: absolute; top: 50%; transform: translateY(-50%); padding: 0 10px; pointer-events: none;">
+          <button onclick="changeIndexFish(-1)" style="pointer-events: auto; background: rgba(255, 255, 255, 0.9); border: 1px solid #cbd5e1; color: #1e3a8a; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">◀</button>
+          <button onclick="changeIndexFish(1)" style="pointer-events: auto; background: rgba(255, 255, 255, 0.9); border: 1px solid #cbd5e1; color: #1e3a8a; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">▶</button>
+        </div>
+      </div>
+      <p id="index-counter" style="margin-top: 15px; font-size: 0.85rem; color: #64748b;">1 / 5</p>
+    </div>
+  </div>
+
+  <div id="modal-news" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>Game News</h2>
+      <div id="newsFeed">Loading news...</div>
+      
+      <div class="news-controls" id="newsControls" style="display: none;">
+        <button id="prevNewsBtn" class="modal-action-btn" onclick="changeNews(-1)">◀ Prev</button>
+        <span class="news-counter" id="newsCounter">0 / 0</span>
+        <button id="nextNewsBtn" class="modal-action-btn" onclick="changeNews(1)">Next ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-shop" class="modal-overlay">
+    <div class="modal-card" style="text-align: center; position: relative;">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      
+      <div style="position: absolute; top: 15px; right: 45px; background: #e2e8f0; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #1e3a8a; font-size: 0.85rem; border: 1px solid #cbd5e1;">
+        💰 Coins: <span id="shop-user-coins">0</span>
+      </div>
+
+      <h2 style="margin-top: 0;">Bob's Fishing Shop</h2>
+
+      <img src="https://i.postimg.cc/NMtYbvzw/shop.png" alt="Bob Shop" style="width: 140px; height: auto; margin: 10px 0; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));">
+      <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 15px;">"Welcome! Redeem your promo codes or buy upgrades!"</p>
+
+      <div style="background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #cbd5e1; text-align: left;">
+        <h3 style="margin-top:0; font-size: 1.1rem; color: #2ecc71; text-align: center;">Redeem Promo Code</h3>
+        <form autocomplete="off" onsubmit="event.preventDefault(); redeemCode();">
+          <div class="form-group" style="margin-bottom: 8px;">
+            <input type="text" id="redeemCodeInput" autocomplete="off" name="redeem_code_field" placeholder="Enter promo code..." style="text-align: center; text-transform: uppercase;">
+          </div>
+          <button type="submit" class="modal-action-btn" style="background:#27ae60;">Claim Code</button>
+        </form>
+      </div>
+
+      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1;">
+        <div style="text-align: left; display: flex; align-items: center; gap: 10px;">
+          <img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Mini Tank" style="width: 40px; height: 40px; object-fit: contain;">
+          <div>
+            <strong>Mini Tank</strong><br><span style="font-size: 0.8rem; color: #64748b;">Required to place a fish in an aquarium slot</span>
+          </div>
+        </div>
+        <button id="buy-tank-btn" class="modal-action-btn" style="width: auto; padding: 6px 12px; background: #2ecc71;" onclick="buyMiniTank()">500 💰</button>
+      </div>
+
+      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1;">
+        <div style="text-align: left; display: flex; align-items: center; gap: 10px;">
+          <img src="https://i.postimg.cc/KYgqH6Sn/worm-bait.png" alt="Worm Bait" style="width: 40px; height: 40px; object-fit: contain;">
+          <div>
+            <strong>Worm Bait</strong><br><span style="font-size: 0.8rem; color: #64748b;">Increases chance for rare/epic/divine fish</span>
+          </div>
+        </div>
+        <button class="modal-action-btn" style="width: auto; padding: 6px 12px; background: #2ecc71;" onclick="buyWormBait()">250 💰</button>
+      </div>
+
+      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1;">
+        <div style="text-align: left; display: flex; align-items: center; gap: 10px;">
+          <img src="https://i.postimg.cc/qMyRXL7Z/add.png" alt="Extra Aquarium Room" style="width: 40px; height: 40px; object-fit: contain;">
+          <div>
+            <strong>Extra Aquarium Room</strong><br><span style="font-size: 0.8rem; color: #64748b;">Unlock a brand new aquarium room with 8 slots</span>
+          </div>
+        </div>
+        <button class="modal-action-btn" style="width: auto; padding: 6px 12px; background: #2ecc71;" onclick="buyAquariumRoom()">2000 💰</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-backpack" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>Player Backpack</h2>
+      <p style="font-size: 0.9rem; color: #64748b;">Your items and caught fish:</p>
+      
+      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
+        <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #1e3a8a;">Items Owned</h3>
+        <p id="backpack-tanks-count" style="margin: 3px 0; font-size: 0.85rem;">Mini Tanks Bought: 0</p>
+        <p id="backpack-rooms-count" style="margin: 3px 0; font-size: 0.85rem;">Aquarium Rooms Owned: 1</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; border-top: 1px solid #cbd5e1; padding-top: 8px;">
+          <span id="backpack-baits-count" style="font-size: 0.85rem; font-weight: bold; color: #27ae60;">Worm Baits: 0</span>
+          <button type="button" class="modal-action-btn" style="width: auto; padding: 5px 12px; background: #2ecc71; font-size: 0.8rem;" onclick="toggleUseWormBait()" id="backpack-bait-toggle-btn">Equip Bait</button>
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
+        <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #27ae60;">🐟 Caught Fishes</h3>
+        <div id="backpack-fish-list" style="max-height: 180px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; font-size: 0.85rem; color: #64748b; padding-top: 5px;">
+          No fish caught yet. Go fishing!
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-achievements" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>Achievements</h2>
+      <p style="font-size:0.85rem; color:#64748b; margin-bottom:15px;">Unlock achievements as you progress in the game!</p>
+      
+      <div id="achievements-list" style="display: flex; flex-direction: column; gap: 10px;">
+        <div id="ach-catch-first" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; opacity: 0.5;">
+          <div>
+            <h4 style="margin: 0 0 3px 0; font-size: 1rem; color: #1e3a8a;">Catch!</h4>
+            <p style="margin: 0 0 3px 0; font-size: 0.85rem; color: #1f2937; font-weight: bold;">That was easy.</p>
+            <span style="font-size: 0.75rem; color: #64748b;">Catch your first fish.</span>
+          </div>
+          <div id="ach-catch-first-status" style="margin-left: auto; font-weight: bold; color: #e74c3c; font-size: 0.85rem;">Locked</div>
+        </div>
+
+        <div id="ach-glu-glu" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; opacity: 0.5;">
+          <div>
+            <h4 style="margin: 0 0 3px 0; font-size: 1rem; color: #1e3a8a;">Glu glu tank</h4>
+            <p style="margin: 0 0 3px 0; font-size: 0.85rem; color: #1f2937; font-weight: bold;">Amazing!</p>
+            <span style="font-size: 0.75rem; color: #64748b;">Buy a fish tank.</span>
+          </div>
+          <div id="ach-glu-glu-status" style="margin-left: auto; font-weight: bold; color: #e74c3c; font-size: 0.85rem;">Locked</div>
+        </div>
+
+        <div id="ach-worm" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; opacity: 0.5;">
+          <div>
+            <h4 style="margin: 0 0 3px 0; font-size: 1rem; color: #1e3a8a;">Not hungry anymore</h4>
+            <p style="margin: 0 0 3px 0; font-size: 0.85rem; color: #1f2937; font-weight: bold;">That was a good worm!.</p>
+            <span style="font-size: 0.75rem; color: #64748b;">Use a bait to catch a fish.</span>
+          </div>
+          <div id="ach-worm-status" style="margin-left: auto; font-weight: bold; color: #e74c3c; font-size: 0.85rem;">Locked</div>
+        </div>
+
+        <div id="ach-divine" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; opacity: 0.5;">
+          <div>
+            <h4 style="margin: 0 0 3px 0; font-size: 1rem; color: #1e3a8a;">Divine i say</h4>
+            <p style="margin: 0 0 3px 0; font-size: 0.85rem; color: #1f2937; font-weight: bold;">Beautiful.</p>
+            <span style="font-size: 0.75rem; color: #64748b;">Catch a divine rarity fish.</span>
+          </div>
+          <div id="ach-divine-status" style="margin-left: auto; font-weight: bold; color: #e74c3c; font-size: 0.85rem;">Locked</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-admin" class="modal-overlay">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>Admin Control Panel</h2>
+      
+      <form autocomplete="off" onsubmit="return false;">
+        <div class="form-group">
+          <label>Target Username</label>
+          <input type="text" id="adminTargetUsername" autocomplete="off" name="admin_target_unique_field" placeholder="Exact username..." oninput="loadTargetUserInventoryForAdmin()">
+        </div>
+      </form>
+
+      <!-- Target User Stats Info Box -->
+      <div id="admin-user-stats-box" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 0.9rem; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-weight: bold; color: #1e3a8a;">User Overview:</span>
+        <span id="admin-stat-coins">💰 Coins: 0</span>
+        <span id="admin-stat-tanks">🐠 Mini Tanks: 0</span>
+        <span id="admin-stat-rooms">Aquarium Rooms: 1</span>
+        <span id="admin-stat-baits">Worm Baits: 0</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">
+        <button type="button" class="modal-action-btn" style="background:#e74c3c;" onclick="openBanPrompt(true)">Perma Ban</button>
+        <button type="button" class="modal-action-btn" style="background:#f39c12;" onclick="openBanPrompt(false)">Temp Ban</button>
+        <button type="button" class="modal-action-btn" style="background:#d35400;" onclick="openAdminWarningPrompt()">Send Warning</button>
+        <button type="button" class="modal-action-btn" style="background:#2ecc71;" onclick="adminUnbanUser()">Unban User</button>
+      </div>
+
+      <div class="form-group">
+        <label>Coins Amount</label>
+        <input type="number" id="adminCoinsAmount" placeholder="Amount">
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="adminModifyCoins(1)">Give Coins</button>
+        <button type="button" class="modal-action-btn" style="background:#c0392b;" onclick="adminModifyCoins(-1)">Remove Coins</button>
+      </div>
+
+      <div class="form-group">
+        <label>Mini Tanks Amount</label>
+        <input type="number" id="adminTanksAmount" placeholder="Tanks amount" value="1" min="1">
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="adminModifyTanks(1)">Give Tanks</button>
+        <button type="button" class="modal-action-btn" style="background:#c0392b;" onclick="adminModifyTanks(-1)">Remove Tanks</button>
+      </div>
+
+      <div class="form-group">
+        <label>Aquarium Rooms Amount</label>
+        <input type="number" id="adminRoomsAmount" placeholder="Rooms amount" value="1" min="1">
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="adminModifyRooms(1)">Give Rooms</button>
+        <button type="button" class="modal-action-btn" style="background:#c0392b;" onclick="adminModifyRooms(-1)">Remove Rooms</button>
+      </div>
+
+      <div class="form-group">
+        <label>Worm Baits Amount</label>
+        <input type="number" id="adminBaitsAmount" placeholder="Baits amount" value="1" min="1">
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="adminModifyBaits(1)">Give Baits</button>
+        <button type="button" class="modal-action-btn" style="background:#c0392b;" onclick="adminModifyBaits(-1)">Remove Baits</button>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3>🐟 Add Fish to User</h3>
+      <div class="form-group">
+        <label>Fish Name (e.g. Sardine, Betta Fish, Swordfish, Whale Shark)</label>
+        <input type="text" id="adminAddFishName" placeholder="Fish name...">
+      </div>
+      <button type="button" class="modal-action-btn" style="background:#27ae60; margin-bottom: 15px;" onclick="adminAddFishToUser()">Add Fish</button>
+
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3>Remove Fish from User Inventory</h3>
+      <div id="admin-target-fishes-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cbd5e1;">
+        <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view fishes...</p>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3>Promo Codes Management</h3>
+      <div class="form-group">
+        <label>Code Name</label>
+        <input type="text" id="adminPromoCode" autocomplete="off" placeholder="e.g. FISHING2026">
+      </div>
+      <div class="form-group">
+        <label>Coins Reward</label>
+        <input type="number" id="adminPromoCoins" placeholder="Coins amount">
+      </div>
+      <div class="form-group">
+        <label>Worm Baits Reward (Optional)</label>
+        <input type="number" id="adminPromoBaits" placeholder="Baits amount (e.g. 5)" min="0">
+      </div>
+      <div class="form-group">
+        <label>Bonus Fish Reward (Optional - exact fish name)</label>
+        <input type="text" id="adminPromoFish" placeholder="e.g. Legacy Fish or leave blank">
+      </div>
+      <button type="button" class="modal-action-btn" style="background:#2980b9; margin-bottom: 10px;" onclick="adminCreateCode()">Create Code</button>
+      
+      <div style="margin-top: 10px;">
+        <label style="font-size:0.9rem; color:#64748b; margin-bottom: 5px; display:block;">Active Codes List:</label>
+        <div id="adminCodesList" style="max-height: 120px; overflow-y: auto; background: #f8fafc; padding: 5px; border-radius: 8px; border: 1px solid #cbd5e1;">
+          <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Loading codes...</p>
+        </div>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3>Post News</h3>
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="newsTitle" placeholder="News title">
+      </div>
+      <div class="form-group">
+        <label>Content</label>
+        <textarea id="newsContent" placeholder="News body..." rows="3" style="resize:none;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Image (Max 1MB)</label>
+        <input type="file" id="newsImage" accept="image/*">
+      </div>
+      <button type="button" class="modal-action-btn" onclick="adminPostNews()">Publish News</button>
+    </div>
+  </div>
+
+  <div id="modal-admin-remove-fish" class="modal-overlay" style="z-index: 1050;">
+    <div class="modal-card" style="max-width: 300px;">
+      <button class="modal-close" onclick="document.getElementById('modal-admin-remove-fish').style.display='none'">✖</button>
+      <h3>Remove Fish Quantity</h3>
+      <p style="font-size:0.85rem; color:#64748b;" id="admin-remove-fish-name-label">Fish: Goldfish</p>
+      <div class="form-group">
+        <label>Quantity to remove</label>
+        <input type="number" id="admin-remove-fish-qty-input" min="1" value="1" placeholder="Quantity">
+      </div>
+      <button type="button" class="modal-action-btn" style="background:#c0392b;" onclick="confirmAdminRemoveFish()">Delete</button>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    const RECAPTCHA_SITE_KEY = "6Lex8BMuAAAAAPx6P5c7RwFUNi_9dpZPX0hw_Il9";
+    let recaptchaLoginId = null;
+    let recaptchaRegisterId = null;
+    let viewingTargetFishes = [];
+    let viewingTargetTanks = [];
+    let viewingTargetUsername = "";
+    let viewingTargetUid = "";
+    let isViewingMyAquarium = false;
+    let selectedShelfIndex = 0;
+    let currentAquariumRoomIndex = 0;
+    let totalAquariumRoomsOwned = 1;
+    let activeFishAnimations = [];
+    let currentIndexFish = 0;
+    let isLimitedMode = false;
+    let selectedFishToMarket = null;
+    let selectedFishToBotSell = null;
+    let adminSelectedFishToRemove = "";
+    let isCurrentBanPerma = true;
+    let verificationTimerInterval = null;
+    let isMandatoryRulesView = false;
+    let hasUserAcceptedRulesLocal = false;
+
+    let isMouseDown = false;
+    let minigameLoop = null;
+    let catchBarY = 0;
+    let catchBarSpeed = 0;
+    let greenZoneY = 80;
+    let greenZoneDir = 1.2;
+    let captureProgress = 30;
+    let pendingCaughtFish = null;
+    let usedBaitThisCast = false;
+
+    const ALLOWED_FISH_TYPES = [
+      { name: "Sardine", value: 5, rarity: "Common", desc: "A small, silvery fish that moves in large schools.", img: "https://i.postimg.cc/c1BSbKfF/sardine.png" },
+      { name: "Opah", value: 10, rarity: "Common", desc: "A large, colorful deep-water fish known for its distinct round body.", img: "https://i.postimg.cc/sxhg04JM/opah.png" },
+      { name: "Clownfish", value: 8, rarity: "Common", desc: "A small, vibrant orange fish with white stripes.", img: "https://i.postimg.cc/ry3jHGkf/clownfish.png" },
+      { name: "Guppy", value: 4, rarity: "Common", desc: "A tiny, active freshwater fish featuring a colorful tail fin.", img: "https://i.postimg.cc/VkcRfY5g/guppy.png" },
+      { name: "Tilapia", value: 9, rarity: "Common", desc: "A sturdy cichlid fish found in warm regions.", img: "https://i.postimg.cc/zXTCP9pD/tilapia.png" },
+      { name: "Goldfish", value: 6, rarity: "Common", desc: "A classic golden freshwater companion.", img: "https://i.postimg.cc/nLSBDZV3/goldfish.png" },
+      { name: "Cod", value: 7, rarity: "Common", desc: "A standard ocean fish found in cold northern waters.", img: "https://i.postimg.cc/rp8x6Fgw/cod.png" },
+      { name: "Maroon Clownfish", value: 24, rarity: "Rare", desc: "A striking clownfish variant with deep maroon hues and bright white bars.", img: "https://i.postimg.cc/3rFTcy29/maroon-clownfish.png" },
+      { name: "Carp", value: 20, rarity: "Rare", desc: "A large freshwater fish celebrated for its strength.", img: "https://i.postimg.cc/N0gmhfb0/carp.png" },
+      { name: "Neon Tetra", value: 22, rarity: "Rare", desc: "A glowing tropical fish with iridescent stripes.", img: "https://i.postimg.cc/TPRg8YQ2/neon-tetra.png" },
+      { name: "Salmon", value: 25, rarity: "Rare", desc: "A migratory swimmer traveling upstream through rivers.", img: "https://i.postimg.cc/bvzkXNLz/salmon.png" },
+      { name: "Surgeonfish", value: 28, rarity: "Rare", desc: "A bright blue marine swimmer with defensive spines.", img: "https://i.postimg.cc/BvqHWQNS/surgeonfish.png" },
+      { name: "Betta Fish", value: 80, rarity: "Epic", desc: "A vibrant and elegant freshwater fish with flowing fins.", img: "https://i.postimg.cc/T2J64ynq/betta-fish.png" },
+      { name: "Barreleye Fish", value: 55, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
+      { name: "Electric Eel", value: 75, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
+      { name: "Coelacanth", value: 120, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
+      { name: "Bluefin Tuna", value: 65, rarity: "Rare", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
+      { name: "Manta ray", value: 160, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
+      { name: "Great White Shark", value: 220, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
+      { name: "Swordfish", value: 650, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
+      { name: "Whale Shark", value: 850, rarity: "Mythic", desc: "The massive yet gentle giant filter-feeder of the deep sea.", img: "https://i.postimg.cc/HW9ghJbQ/whale-shark.png" },
+      { name: "Leafy Seadragon", value: 450, rarity: "Mythic", desc: "A master of camouflage adorned with leaf-like appendages.", img: "https://i.postimg.cc/rwsYSdfb/leafy-seadragon.png" },
+      { name: "Megamouth Shark", value: 700, rarity: "Mythic", desc: "An elusive deep-water giant with glowing lips.", img: "https://i.postimg.cc/WbXHFmwx/megamouth-shark.png" },
+      { name: "Basking Shark", value: 1200, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
+      { name: "Oarfish", value: 2000, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
+      { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A legendary collector species from ancient waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" }
+    ];
+
+    function onloadCallback() {
+      try {
+        recaptchaLoginId = grecaptcha.render('recaptcha-login', { 'sitekey': RECAPTCHA_SITE_KEY });
+        recaptchaRegisterId = grecaptcha.render('recaptcha-register', { 'sitekey': RECAPTCHA_SITE_KEY });
+      } catch (e) {
+        console.error("reCAPTCHA render error:", e);
+      }
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAqd4GXj6YKm_7c5TF5mIGPPbo1pk4mKig",
+      authDomain: "the-fishing-game-digitalized.firebaseapp.com",
+      projectId: "the-fishing-game-digitalized",
+      storageBucket: "the-fishing-game-digitalized.firebasestorage.app",
+      messagingSenderId: "543997573488",
+      appId: "1:543997573488:web:5f40d69af320e6d1f977b5",
+      measurementId: "G-54GSL312X2"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const ADMIN_UID = "09SjiwOt9fYdFbc1wQp17Ot467F2";
+
+    let newsList = [];
+    let currentNewsIndex = 0;
+
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerText = message;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    function validateUsernameFormat(username) {
+      if (username.length > 20) {
+        return "Username cannot be longer than 20 characters.";
+      }
+      if (username.includes(" ")) {
+        return "Spaces are not allowed in the username.";
+      }
+      const regex = /^[a-zA-Z0-9_]+$/;
+      if (!regex.test(username)) {
+        return "Forbidden characters: accents, letters like Ñ/ñ, and special characters (except '_') are not allowed.";
+      }
+      return null;
+    }
+
+    function openModal(modalId) {
+      if (isMandatoryRulesView && modalId !== 'modal-rules') {
+        return;
+      }
+      document.querySelectorAll('.modal-overlay').forEach(el => {
+        if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
+      });
+      document.getElementById(modalId).style.display = 'flex';
+      if (modalId === 'modal-profile') {
+        document.getElementById('profile-edit-section').style.display = 'none';
+        loadProfileData();
+      }
+      if (modalId === 'modal-shop') {
+        updateShopCoinsDisplay();
+      }
+      if (modalId === 'modal-admin') {
+        loadAdminCodes();
+        loadTargetUserInventoryForAdmin();
+      }
+      if (modalId === 'modal-backpack') {
+        loadBackpackData();
+      }
+      if (modalId === 'modal-achievements') {
+        loadAchievementsUI();
+      }
+      if (modalId === 'modal-news') {
+        if (newsList.length > 0) {
+          currentNewsIndex = newsList.length - 1;
+          renderCurrentNews();
+        }
+      }
+    }
+
+    function openNewsModal() {
+      openModal('modal-news');
+      markNewsAsRead();
+    }
+
+    function markNewsAsRead() {
+      if (newsList.length > 0) {
+        const latestId = newsList[newsList.length - 1].id;
+        localStorage.setItem('lastReadNewsId', latestId);
+      }
+      document.getElementById('unread-news-badge').style.display = 'none';
+    }
+
+    function openRulesModal(isMandatory = false) {
+      isMandatoryRulesView = isMandatory;
+      const modal = document.getElementById('modal-rules');
+      const closeBtn = document.getElementById('rules-modal-close');
+      const acceptContainer = document.getElementById('rules-accept-container');
+      const subtitle = document.getElementById('rules-subtitle');
+
+      if (isMandatory) {
+        closeBtn.style.display = 'none';
+        acceptContainer.style.display = 'block';
+        subtitle.innerText = "Welcome! You must read and accept the rules to continue.";
+        document.getElementById('btn-accept-rules').disabled = true;
+        document.getElementById('scroll-warning-text').style.display = 'block';
+      } else {
+        closeBtn.style.display = 'block';
+        acceptContainer.style.display = 'none';
+        subtitle.innerText = "Please review community rules carefully.";
+      }
+
+      const scrollContainer = document.getElementById('rules-scroll-container');
+      scrollContainer.scrollTop = 0;
+
+      modal.style.display = 'flex';
+    }
+
+    function closeRulesModal() {
+      if (isMandatoryRulesView) return;
+      document.getElementById('modal-rules').style.display = 'none';
+    }
+
+    function checkRulesScroll() {
+      if (!isMandatoryRulesView) return;
+      const el = document.getElementById('rules-scroll-container');
+      const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 15;
+
+      if (isAtBottom) {
+        const acceptBtn = document.getElementById('btn-accept-rules');
+        acceptBtn.disabled = false;
+        document.getElementById('scroll-warning-text').style.display = 'none';
+      }
+    }
+
+    async function acceptRulesAction() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        await db.collection('jugadores').doc(user.uid).update({
+          acceptedRules: true
+        });
+        hasUserAcceptedRulesLocal = true;
+        isMandatoryRulesView = false;
+        document.getElementById('modal-rules').style.display = 'none';
+        showToast("Rules accepted! Welcome to The Fishing Game.");
+      } catch (err) {
+        showToast("Error accepting rules: " + err.message);
+      }
+    }
+
+    function openAdminWarningPrompt() {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      if (!username) {
+        showToast("Enter a target username first.");
+        return;
+      }
+      document.getElementById('adminWarningReasonInput').value = "";
+      document.getElementById('modal-admin-warning-prompt').style.display = 'flex';
+    }
+
+    async function confirmAdminSendWarning() {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      const reason = document.getElementById('adminWarningReasonInput').value.trim();
+
+      if (!username || !reason) {
+        showToast("Username and Warning reason are required.");
+        return;
+      }
+
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+
+        await db.collection('jugadores').doc(targetUid).update({
+          hasWarning: true,
+          warningReason: reason
+        });
+
+        showToast(`Warning successfully issued to ${username}!`);
+        document.getElementById('modal-admin-warning-prompt').style.display = 'none';
+      } catch (err) {
+        showToast("Error issuing warning: " + err.message);
+      }
+    }
+
+    async function dismissPlayerWarning() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        await db.collection('jugadores').doc(user.uid).update({
+          hasWarning: false,
+          warningReason: ""
+        });
+
+        document.getElementById('modal-warning-notice').style.display = 'none';
+        showToast("Warning acknowledged.");
+      } catch (err) {
+        showToast("Error updating status.");
+      }
+    }
+
+    function toggleEditProfileSection() {
+      const sec = document.getElementById('profile-edit-section');
+      sec.style.display = (sec.style.display === 'none' || sec.style.display === '') ? 'block' : 'none';
+    }
+
+    async function updateShopCoinsDisplay() {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const doc = await db.collection('jugadores').doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById('shop-user-coins').innerText = data.coins || 0;
+        }
+      } catch (err) {
+        console.error("Error updating shop coins:", err);
+      }
+    }
+
+    function closeAllModals() {
+      if (isMandatoryRulesView) return;
+      stopFishAnimations();
+      if (verificationTimerInterval) clearInterval(verificationTimerInterval);
+      document.querySelectorAll('.modal-overlay').forEach(el => {
+        if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
+      });
+    }
+
+    function openMyProfileModal() {
+      openModal('modal-profile');
+    }
+
+    function openIndexModal() {
+      currentIndexFish = 0;
+      isLimitedMode = false;
+      updateIndexRarityDropdown();
+      renderIndexFish();
+      document.querySelectorAll('.modal-overlay').forEach(el => {
+        if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
+      });
+      document.getElementById('modal-index').style.display = 'flex';
+    }
+
+    function toggleIndexMode() {
+      isLimitedMode = !isLimitedMode;
+      const modeBtn = document.getElementById('index-toggle-mode-btn');
+      
+      if (isLimitedMode) {
+        modeBtn.innerText = "Normal";
+        modeBtn.style.background = "#27ae60";
+      } else {
+        modeBtn.innerText = "Limited";
+        modeBtn.style.background = "#8e44ad";
+      }
+
+      updateIndexRarityDropdown();
+      currentIndexFish = 0;
+      renderIndexFish();
+    }
+
+    function updateIndexRarityDropdown() {
+      const select = document.getElementById('index-rarity-select');
+      select.innerHTML = '';
+
+      if (isLimitedMode) {
+        const option = document.createElement('option');
+        option.value = "Legacy";
+        option.innerText = "Legacy";
+        select.appendChild(option);
+      } else {
+        ['Common', 'Rare', 'Epic', 'Legendary', 'Mythic', 'Divine'].forEach(rarity => {
+          const opt = document.createElement('option');
+          opt.value = rarity;
+          opt.innerText = rarity;
+          select.appendChild(opt);
+        });
+      }
+    }
+
+    function onRarityFilterChange() {
+      currentIndexFish = 0;
+      renderIndexFish();
+    }
+
+    function getFilteredIndexFishes() {
+      const selectedRarity = document.getElementById('index-rarity-select').value;
+      return ALLOWED_FISH_TYPES.filter(f => f.rarity === selectedRarity);
+    }
+
+    function changeIndexFish(direction) {
+      const filteredFishes = getFilteredIndexFishes();
+      if (filteredFishes.length === 0) return;
+
+      currentIndexFish += direction;
+      if (currentIndexFish < 0) {
+        currentIndexFish = filteredFishes.length - 1;
+      } else if (currentIndexFish >= filteredFishes.length) {
+        currentIndexFish = 0;
+      }
+      renderIndexFish();
+    }
+
+    function renderIndexFish() {
+      const filteredFishes = getFilteredIndexFishes();
+      if (filteredFishes.length === 0) {
+        document.getElementById('index-fish-img').src = "";
+        document.getElementById('index-fish-name').innerText = "No fish found";
+        document.getElementById('index-fish-desc').innerText = "No fishes available for this rarity yet.";
+        document.getElementById('index-rarity').innerText = "-";
+        document.getElementById('index-counter').innerText = "0 / 0";
+        return;
+      }
+
+      if (currentIndexFish >= filteredFishes.length) {
+        currentIndexFish = 0;
+      }
+
+      const fish = filteredFishes[currentIndexFish];
+      document.getElementById('index-fish-img').src = fish.img;
+      document.getElementById('index-fish-name').innerText = fish.name;
+      document.getElementById('index-fish-desc').innerText = fish.desc;
+      document.getElementById('index-rarity').innerText = fish.rarity;
+      
+      const badge = document.getElementById('index-rarity');
+      if (fish.rarity === "Rare") badge.style.background = "#3498db";
+      else if (fish.rarity === "Epic") badge.style.background = "#9b59b6";
+      else if (fish.rarity === "Legendary") badge.style.background = "#e67e22";
+      else if (fish.rarity === "Mythic") badge.style.background = "#e74c3c";
+      else if (fish.rarity === "Divine") badge.style.background = "#f1c40f";
+      else if (fish.rarity === "Legacy") badge.style.background = "#8e44ad";
+      else badge.style.background = "#27ae60";
+
+      document.getElementById('index-counter').innerText = `${currentIndexFish + 1} / ${filteredFishes.length}`;
+    }
+
+    async function checkAchievements(fishesCount, tankBought = false, usedBait = false, caughtDivine = false) {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const docRef = db.collection('jugadores').doc(user.uid);
+        const doc = await docRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          let achievements = data.achievements || {};
+          let updated = false;
+
+          if (fishesCount > 0 && !achievements.catchFirst) {
+            achievements.catchFirst = true;
+            updated = true;
+            showToast("Achievement Unlocked: Catch! (That was easy.)");
+          }
+
+          if (tankBought && !achievements.gluGluTank) {
+            achievements.gluGluTank = true;
+            updated = true;
+            showToast("Achievement Unlocked: Glu glu tank! (Amazing!)");
+          }
+
+          if (usedBait && !achievements.wormBaitAch) {
+            achievements.wormBaitAch = true;
+            updated = true;
+            showToast("Achievement Unlocked: Not Hungry Anymore (That was a good worm!.)");
+          }
+
+          if (caughtDivine && !achievements.divineAch) {
+            achievements.divineAch = true;
+            updated = true;
+            showToast("Achievement Unlocked: Divine i say (Beautiful.)");
+          }
+
+          if (updated) {
+            await docRef.update({ achievements: achievements });
+          }
+        }
+      } catch (err) {
+        console.error("Error checking achievements:", err);
+      }
+    }
+
+    async function loadAchievementsUI() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const doc = await db.collection('jugadores').doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          const achievements = data.achievements || {};
+
+          const achItem1 = document.getElementById('ach-catch-first');
+          const achStatus1 = document.getElementById('ach-catch-first-status');
+          if (achievements.catchFirst) {
+            achItem1.style.opacity = '1'; achItem1.style.borderColor = '#2ecc71';
+            achStatus1.innerHTML = 'Completed'; achStatus1.style.color = '#2ecc71';
+          }
+
+          const achItem2 = document.getElementById('ach-glu-glu');
+          const achStatus2 = document.getElementById('ach-glu-glu-status');
+          if (achievements.gluGluTank) {
+            achItem2.style.opacity = '1'; achItem2.style.borderColor = '#2ecc71';
+            achStatus2.innerHTML = 'Completed'; achStatus2.style.color = '#2ecc71';
+          }
+
+          const achItem3 = document.getElementById('ach-worm');
+          const achStatus3 = document.getElementById('ach-worm-status');
+          if (achievements.wormBaitAch) {
+            achItem3.style.opacity = '1'; achItem3.style.borderColor = '#2ecc71';
+            achStatus3.innerHTML = 'Completed'; achStatus3.style.color = '#2ecc71';
+          }
+
+          const achItem4 = document.getElementById('ach-divine');
+          const achStatus4 = document.getElementById('ach-divine-status');
+          if (achievements.divineAch) {
+            achItem4.style.opacity = '1'; achItem4.style.borderColor = '#2ecc71';
+            achStatus4.innerHTML = 'Completed'; achStatus4.style.color = '#2ecc71';
+          }
+        }
+      } catch (err) {
+        console.error("Error loading achievements UI:", err);
+      }
+    }
+
+    function openMarketModal() {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("You must be logged in to access the market.");
+        openModal('modal-account');
+        return;
+      }
+      document.querySelectorAll('.modal-overlay').forEach(el => {
+        if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
+      });
+      document.getElementById('modal-market').style.display = 'flex';
+      switchMarketTab('buy');
+    }
+
+    function switchMarketTab(tab) {
+      const buySec = document.getElementById('market-buy-section');
+      const sellSec = document.getElementById('market-sell-section');
+      const buyBtn = document.getElementById('tab-market-buy-btn');
+      const sellBtn = document.getElementById('tab-market-sell-btn');
+
+      if (tab === 'buy') {
+        buySec.style.display = 'block';
+        sellSec.style.display = 'none';
+        buyBtn.classList.add('active');
+        sellBtn.classList.remove('active');
+        loadMarketListings();
+      } else {
+        buySec.style.display = 'none';
+        sellSec.style.display = 'block';
+        sellBtn.classList.add('active');
+        buyBtn.classList.remove('active');
+        loadMyFishesForMarket();
+      }
+      loadMyActiveListings();
+    }
+
+    async function loadMarketListings() {
+      const container = document.getElementById('market-listings-container');
+      container.innerHTML = '<p style="color:#64748b; text-align:center;">Loading market offers...</p>';
+
+      try {
+        const snapshot = await db.collection('marketListings').orderBy('createdAt', 'desc').get();
+        if (snapshot.empty) {
+          container.innerHTML = '<p style="color:#64748b; text-align:center;">No player offers right now.</p>';
+          return;
+        }
+
+        let html = '';
+        snapshot.forEach(doc => {
+          const item = doc.data();
+          const fishObj = ALLOWED_FISH_TYPES.find(f => f.name === item.fishName) || ALLOWED_FISH_TYPES[0];
+          const isMyListing = auth.currentUser && item.sellerUid === auth.currentUser.uid;
+
+          html += `
+            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <img src="${fishObj.img}" style="width: 35px; height: 35px; object-fit: contain;">
+                <div>
+                  <strong>🐟 ${item.fishName}</strong><br>
+                  <span style="font-size:0.75rem; color:#64748b;">Seller: ${item.sellerName} | Price: 💰 ${item.price}</span>
+                </div>
+              </div>
+              <div>
+                ${isMyListing ? 
+                  `<span style="font-size:0.75rem; color:#d97706; font-weight:bold;">Your Listing</span>` : 
+                  `<button type="button" class="modal-action-btn" style="background:#27ae60; padding: 6px 12px; font-size: 0.8rem;" onclick="buyMarketItem('${doc.id}', '${item.sellerUid}', ${item.price}, '${item.fishName}')">Buy (${item.price} 💰)</button>`
+                }
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<p style="color:#e74c3c; text-align:center;">Error loading market.</p>';
+      }
+    }
+
+    async function loadMyFishesForMarket() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const container = document.getElementById('market-my-fishes-container');
+      container.innerHTML = '<p style="color:#64748b; text-align:center; grid-column: 1/-1;">Loading your fishes...</p>';
+
+      try {
+        const doc = await db.collection('jugadores').doc(user.uid).get();
+        if (doc.exists) {
+          const fishes = doc.data().fishes || [];
+          if (fishes.length === 0) {
+            container.innerHTML = '<p style="color:#64748b; text-align:center; grid-column: 1/-1;">You have no fish to sell!</p>';
+            return;
+          }
+
+          let fishCounts = {};
+          fishes.forEach((f, idx) => {
+            if (!fishCounts[f.name]) {
+              fishCounts[f.name] = { count: 0, firstIndex: idx, name: f.name };
+            }
+            fishCounts[f.name].count++;
+          });
+
+          let html = '';
+          Object.values(fishCounts).forEach((group) => {
+            const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === group.name) || ALLOWED_FISH_TYPES[0];
+            const isLimited = fishObj.isLimited === true;
+
+            html += `
+              <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative;">
+                <span style="position: absolute; top: 6px; right: 8px; background: #3498db; color: white; font-size: 0.75rem; font-weight: bold; padding: 1px 6px; border-radius: 10px;">x${group.count}</span>
+                <img src="${fishObj.img}" style="width: 50px; height: 50px; object-fit: contain; margin: 8px 0;">
+                <span style="font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 2px; color: #1e293b;">${group.name}</span>
+                <span style="font-size: 0.75rem; color: #d97706; font-weight: bold; margin-bottom: 8px;">Value: 💰 ${fishObj.value}</span>
+
+                ${isLimited ? 
+                  `<span style="font-size: 0.7rem; color: #8e44ad; font-weight: bold; background: #f3e8ff; padding: 4px 8px; border-radius: 6px; width: 100%; text-align: center;">Untradeable</span>` :
+                  `<div style="display: flex; gap: 4px; width: 100%;">
+                    <button type="button" class="modal-action-btn" style="background:#e74c3c; padding: 4px; font-size: 0.68rem; flex:1;" onclick="promptBotSell('${group.name}', ${group.count}, ${fishObj.value})">Bot Sell</button>
+                    <button type="button" class="modal-action-btn" style="background:#2980b9; padding: 4px; font-size: 0.68rem; flex:1;" onclick="promptMarketSell(${group.firstIndex}, '${group.name}')">Market</button>
+                  </div>`
+                }
+              </div>
+            `;
+          });
+          container.innerHTML = html;
+        }
+      } catch (err) {
+        container.innerHTML = '<p style="color:#e74c3c; text-align:center; grid-column: 1/-1;">Error loading inventory.</p>';
+      }
+    }
+
+    async function loadMyActiveListings() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const container = document.getElementById('market-my-active-listings');
+
+      try {
+        const snapshot = await db.collection('marketListings').where('sellerUid', '==', user.uid).get();
+        if (snapshot.empty) {
+          container.innerHTML = '<p style="font-size: 0.8rem; color:#64748b; text-align:center;">You have no active market offers.</p>';
+          return;
+        }
+
+        let html = '';
+        snapshot.forEach(doc => {
+          const item = doc.data();
+          const fishObj = ALLOWED_FISH_TYPES.find(f => f.name === item.fishName) || ALLOWED_FISH_TYPES[0];
+          html += `
+            <div style="background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <img src="${fishObj.img}" style="width: 25px; height: 25px; object-fit: contain;">
+                <span style="font-size: 0.85rem;"><strong>${item.fishName}</strong> - 💰 ${item.price}</span>
+              </div>
+              <button type="button" class="modal-action-btn" style="background:#c0392b; padding: 4px 8px; font-size: 0.75rem; width: auto;" onclick="cancelMarketListing('${doc.id}', '${item.fishName}')">Cancel & Retrieve</button>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<p style="font-size: 0.8rem; color:#e74c3c; text-align:center;">Error loading active listings.</p>';
+      }
+    }
+
+    async function promptBotSell(fishName, maxAvailable, fishValue) {
+      const fishObj = ALLOWED_FISH_TYPES.find(f => f.name === fishName);
+      if (fishObj && fishObj.isLimited) {
+        showToast("Limited edition fishes cannot be sold!");
+        return;
+      }
+
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const doc = await db.collection('jugadores').doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          let tanksMap = data.aquariumTanksMap || {};
+          let displayedInTanks = 0;
+          Object.values(tanksMap).forEach(roomTanks => {
+            if (Array.isArray(roomTanks)) {
+              displayedInTanks += roomTanks.filter(t => t === fishName).length;
+            }
+          });
+
+          const marketSnap = await db.collection('marketListings').where('sellerUid', '==', user.uid).where('fishName', '==', fishName).get();
+          let listedInMarket = marketSnap.size;
+
+          let availableToSell = maxAvailable - displayedInTanks - listedInMarket;
+          if (availableToSell <= 0) {
+            showToast("All your fishes of this type are currently protected in your Aquarium or listed on the Market!");
+            return;
+          }
+
+          selectedFishToBotSell = { name: fishName, maxAvailable: availableToSell, value: fishValue };
+          document.getElementById('prompt-botsell-name-label').innerText = `Fish: ${fishName} (Available: ${availableToSell})`;
+          document.getElementById('prompt-botsell-max-label').innerText = availableToSell;
+          document.getElementById('botsell-qty-input').value = 1;
+          document.getElementById('botsell-qty-input').max = availableToSell;
+          document.getElementById('modal-botsell-prompt').style.display = 'flex';
+        }
+      } catch (err) {
+        showToast("Error checking fish availability.");
+      }
+    }
+
+    async function confirmBotSell() {
+      const user = auth.currentUser;
+      if (!user || !selectedFishToBotSell) return;
+
+      const qtyInput = parseInt(document.getElementById('botsell-qty-input').value);
+      if (isNaN(qtyInput) || qtyInput <= 0) {
+        showToast("Please enter a valid quantity.");
+        return;
+      }
+
+      if (qtyInput > selectedFishToBotSell.maxAvailable) {
+        showToast("You don't have that many free fishes to sell!");
+        return;
+      }
+
+      const fishName = selectedFishToBotSell.name;
+      const fishValue = selectedFishToBotSell.value;
+      const totalCoinsEarned = fishValue * qtyInput;
+
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        let canSell = false;
+
+        await db.runTransaction(async (transaction) => {
+          const doc = await transaction.get(playerRef);
+          if (!doc.exists) throw new Error("Player not found");
+          
+          let fishes = doc.data().fishes || [];
+          let tanksMap = doc.data().aquariumTanksMap || {};
+
+          let totalDisplayed = 0;
+          Object.values(tanksMap).forEach(roomTanks => {
+            if (Array.isArray(roomTanks)) {
+              totalDisplayed += roomTanks.filter(t => t === fishName).length;
+            }
+          });
+
+          let marketQuerySnap = await db.collection('marketListings').where('sellerUid', '==', user.uid).where('fishName', '==', fishName).get();
+          let totalListed = marketQuerySnap.size;
+
+          let totalOwned = fishes.filter(f => f.name === fishName).length;
+          if (totalOwned - qtyInput < totalDisplayed + totalListed) {
+            throw new Error(`You cannot sell ${qtyInput} ${fishName}(s) because they are protected in your Aquarium or listed on the Market!`);
+          }
+
+          let removed = 0;
+          for (let i = fishes.length - 1; i >= 0 && removed < qtyInput; i--) {
+            if (fishes[i].name === fishName) {
+              fishes.splice(i, 1);
+              removed++;
+            }
+          }
+
+          transaction.update(playerRef, {
+            coins: firebase.firestore.FieldValue.increment(totalCoinsEarned),
+            fishes: fishes
+          });
+          canSell = true;
+        });
+
+        if (canSell) {
+          showToast(`💰 Bot sold ${qtyInput}x ${fishName} for +${totalCoinsEarned} coins!`);
+          document.getElementById('modal-botsell-prompt').style.display = 'none';
+          loadMyFishesForMarket();
+          updateGameHUD();
+        }
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    function promptMarketSell(fishIndex, fishName) {
+      const fishObj = ALLOWED_FISH_TYPES.find(f => f.name === fishName);
+      if (fishObj && fishObj.isLimited) {
+        showToast("Limited edition fishes cannot be posted to the market!");
+        return;
+      }
+
+      selectedFishToMarket = { index: fishIndex, name: fishName };
+      document.getElementById('prompt-fish-name-label').innerText = `Fish: ${fishName}`;
+      document.getElementById('market-sell-price-input').value = "";
+      document.getElementById('modal-market-price-prompt').style.display = 'flex';
+    }
+
+    async function confirmMarketSell() {
+      const user = auth.currentUser;
+      if (!user || !selectedFishToMarket) return;
+
+      const priceInput = parseInt(document.getElementById('market-sell-price-input').value);
+      if (isNaN(priceInput) || priceInput <= 0) {
+        showToast("Please enter a valid price.");
+        return;
+      }
+
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        const playerSnap = await playerRef.get();
+        if (!playerSnap.exists) return;
+
+        const playerData = playerSnap.data();
+        let fishes = playerData.fishes || [];
+        let tanksMap = playerData.aquariumTanksMap || {};
+        const fishIndex = selectedFishToMarket.index;
+        const fishName = selectedFishToMarket.name;
+
+        if (fishes.length <= fishIndex) {
+          showToast("Fish no longer exists in your inventory.");
+          document.getElementById('modal-market-price-prompt').style.display = 'none';
+          return;
+        }
+
+        let totalDisplayed = 0;
+        Object.values(tanksMap).forEach(roomTanks => {
+          if (Array.isArray(roomTanks)) {
+            totalDisplayed += roomTanks.filter(t => t === fishName).length;
+          }
+        });
+        let totalOwned = fishes.filter(f => f.name === fishName).length;
+        let precedingSameType = fishes.slice(0, fishIndex).filter(f => f.name === fishName).length;
+
+        if (totalOwned - precedingSameType <= totalDisplayed) {
+          showToast(`You cannot list ${fishName} on the market because displayed fishes in your Aquarium are protected!`);
+          document.getElementById('modal-market-price-prompt').style.display = 'none';
+          return;
+        }
+
+        fishes.splice(fishIndex, 1);
+
+        await db.collection('marketListings').add({
+          sellerUid: user.uid,
+          sellerName: playerData.username || "Player",
+          fishName: fishName,
+          price: priceInput,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await playerRef.update({ fishes: fishes });
+
+        showToast(`${fishName} successfully listed on Market for ${priceInput} 💰!`);
+        document.getElementById('modal-market-price-prompt').style.display = 'none';
+        loadMyFishesForMarket();
+        loadMyActiveListings();
+      } catch (err) {
+        showToast("Error listing item: " + err.message);
+      }
+    }
+
+    async function cancelMarketListing(listingId, fishName) {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const listingRef = db.collection('marketListings').doc(listingId);
+        const playerRef = db.collection('jugadores').doc(user.uid);
+
+        await db.runTransaction(async (transaction) => {
+          const listingSnap = await transaction.get(listingRef);
+          if (!listingSnap.exists) throw new Error("Listing does not exist.");
+          
+          const listingData = listingSnap.data();
+          if (listingData.sellerUid !== user.uid) throw new Error("Not authorized.");
+
+          transaction.update(playerRef, {
+            fishes: firebase.firestore.FieldValue.arrayUnion({ name: fishName, timestamp: new Date().toISOString() })
+          });
+
+          transaction.delete(listingRef);
+        });
+
+        showToast(`Listing cancelled. ${fishName} returned.`);
+        loadMyActiveListings();
+        loadMyFishesForMarket();
+      } catch (err) {
+        showToast("Error cancelling: " + err.message);
+      }
+    }
+
+    async function buyMarketItem(listingId, sellerUid, price, fishName) {
+      const user = auth.currentUser;
+      if (!user) return;
+      if (user.uid === sellerUid) {
+        showToast("You cannot buy your own listing!");
+        return;
+      }
+
+      try {
+        const buyerRef = db.collection('jugadores').doc(user.uid);
+        const sellerRef = db.collection('jugadores').doc(sellerUid);
+        const listingRef = db.collection('marketListings').doc(listingId);
+
+        await db.runTransaction(async (transaction) => {
+          const buyerSnap = await transaction.get(buyerRef);
+          const sellerSnap = await transaction.get(sellerRef);
+          const listingSnap = await transaction.get(listingRef);
+
+          if (!listingSnap.exists) throw new Error("Item already sold!");
+          if (!buyerSnap.exists) throw new Error("Buyer profile error.");
+
+          const buyerCoins = buyerSnap.data().coins || 0;
+          if (buyerCoins < price) throw new Error("Not enough coins!");
+
+          transaction.update(buyerRef, {
+            coins: buyerCoins - price,
+            fishes: firebase.firestore.FieldValue.arrayUnion({ name: fishName, timestamp: new Date().toISOString() })
+          });
+
+          if (sellerSnap.exists) {
+            transaction.update(sellerRef, {
+              coins: (sellerSnap.data().coins || 0) + price
+            });
+          }
+
+          transaction.delete(listingRef);
+        });
+
+        showToast(`Purchased ${fishName} for ${price} 💰!`);
+        loadMarketListings();
+        updateGameHUD();
+      } catch (err) {
+        showToast("Purchase error: " + err.message);
+      }
+    }
+
+    async function openMyAquarium() {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const doc = await db.collection('jugadores').doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          isViewingMyAquarium = true;
+          viewingTargetUid = user.uid;
+          totalAquariumRoomsOwned = data.aquariumRoomsOwned || 1;
+          currentAquariumRoomIndex = 0;
+          
+          let tanksMap = data.aquariumTanksMap || {};
+          renderAquarium(data.username || "My", data.fishes || [], tanksMap);
+        }
+      } catch (err) {
+        showToast("Error loading aquarium.");
+      }
+    }
+
+    function openOtherAquarium() {
+      isViewingMyAquarium = false;
+      let tanksMap = viewingTargetTanksMap || {};
+      renderAquarium(viewingTargetUsername, viewingTargetFishes, tanksMap);
+    }
+
+    let viewingTargetTanksMap = {};
+
+    function changeAquariumRoom(direction) {
+      const maxRooms = isViewingMyAquarium ? totalAquariumRoomsOwned : Object.keys(viewingTargetTanksMap).length || 1;
+      currentAquariumRoomIndex += direction;
+      if (currentAquariumRoomIndex < 0) {
+        currentAquariumRoomIndex = maxRooms - 1;
+      } else if (currentAquariumRoomIndex >= maxRooms) {
+        currentAquariumRoomIndex = 0;
+      }
+
+      const user = auth.currentUser;
+      if (isViewingMyAquarium && user) {
+        db.collection('jugadores').doc(user.uid).get().then(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            renderAquarium(data.username || "My", data.fishes || [], data.aquariumTanksMap || {});
+          }
+        });
+      } else {
+        renderAquarium(viewingTargetUsername, viewingTargetFishes, viewingTargetTanksMap);
+      }
+    }
+
+    function renderAquarium(username, fishes, tanksMap) {
+      stopFishAnimations();
+      document.querySelectorAll('.modal-overlay').forEach(el => {
+        if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
+      });
+      document.getElementById('modal-aquarium').style.display = 'flex';
+      document.getElementById('aquarium-title').innerText = `🐠 ${username}'s Aquarium`;
+      
+      const maxRooms = isViewingMyAquarium ? totalAquariumRoomsOwned : (Object.keys(tanksMap).length > 0 ? Object.keys(tanksMap).length : 1);
+      document.getElementById('aquarium-room-indicator').innerText = `Room ${currentAquariumRoomIndex + 1} / ${maxRooms}`;
+
+      const subtitle = document.getElementById('aquarium-subtitle');
+      const ownerControls = document.getElementById('aquarium-owner-controls');
+      
+      if (isViewingMyAquarium) {
+        subtitle.innerText = "Each slot requires 1 Mini Tank from your inventory!";
+        ownerControls.style.display = 'block';
+      } else {
+        subtitle.innerText = `Viewing ${username}'s displayed fish`;
+        ownerControls.style.display = 'none';
+      }
+
+      const roomKey = `room_${currentAquariumRoomIndex}`;
+      const safeTanks = (tanksMap && tanksMap[roomKey] && Array.isArray(tanksMap[roomKey]) && tanksMap[roomKey].length === 8) ? tanksMap[roomKey] : new Array(8).fill(null);
+      
+      for (let i = 0; i < 4; i++) {
+        renderShelfSlot(`top-${i}`, safeTanks[i], i);
+      }
+      for (let i = 0; i < 4; i++) {
+        renderShelfSlot(`bot-${i}`, safeTanks[i + 4], i + 4);
+      }
+    }
+
+    function renderShelfSlot(slotKey, fishName, shelfIndex) {
+      const slotEl = document.getElementById(`shelf-${slotKey}`);
+      if (!slotEl) return;
+      
+      if (!fishName) {
+        slotEl.innerHTML = `<span style="font-size: 0.65rem; color: rgba(0,0,0,0.5); background: rgba(255,255,255,0.7); padding: 2px 5px; border-radius: 4px; pointer-events: none;">${isViewingMyAquarium ? '+ Slot (Needs Tank)' : 'Empty'}</span>`;
+        slotEl.style.backgroundImage = 'none';
+      } else {
+        const fishObj = ALLOWED_FISH_TYPES.find(f => f.name === fishName) || ALLOWED_FISH_TYPES[0];
+        slotEl.innerHTML = `
+          <div style="position: relative; width: 100%; height: 100%; background-image: url('https://i.postimg.cc/DZs0wKSx/tanque-mini.png'); background-size: contain; background-repeat: no-repeat; background-position: center; overflow: hidden;">
+            <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; pointer-events: none;">
+          </div>
+        `;
+        startFishAnimation(shelfIndex);
+      }
+    }
+
+    function handleShelfClick(shelfIndex) {
+      if (!isViewingMyAquarium) return;
+      selectedShelfIndex = shelfIndex;
+      
+      const user = auth.currentUser;
+      if (!user) return;
+
+      db.collection('jugadores').doc(user.uid).get().then(async doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          const tanksCount = data.miniTanksCount || 0;
+          const fishes = data.fishes || [];
+          let tanksMap = data.aquariumTanksMap || {};
+          const roomKey = `room_${currentAquariumRoomIndex}`;
+          let tanks = tanksMap[roomKey] || new Array(8).fill(null);
+
+          if (tanks[selectedShelfIndex]) {
+            openSelectFishModal(fishes);
+            return;
+          }
+
+          if (tanksCount <= 0) {
+            showToast("You need a Mini Tank in your inventory! Buy one in Bob's Shop.");
+            return;
+          }
+
+          openSelectFishModal(fishes);
+        }
+      });
+    }
+
+    async function openSelectFishModal(fishes) {
+      const user = auth.currentUser;
+      let marketListedFishes = [];
+      if (user) {
+        const marketSnap = await db.collection('marketListings').where('sellerUid', '==', user.uid).get();
+        marketSnap.forEach(doc => {
+          marketListedFishes.push(doc.data().fishName);
+        });
+      }
+
+      const listEl = document.getElementById('select-fish-list');
+      if (!fishes || fishes.length === 0) {
+        listEl.innerHTML = '<p style="color:#64748b; text-align:center; margin:10px 0; grid-column:1/-1;">You have no fish in your inventory!</p>';
+      } else {
+        let fishCounts = {};
+        fishes.forEach(f => {
+          if (!fishCounts[f.name]) fishCounts[f.name] = 0;
+          fishCounts[f.name]++;
+        });
+
+        let html = '';
+        Object.entries(fishCounts).forEach(([fishName, count]) => {
+          const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === fishName) || ALLOWED_FISH_TYPES[0];
+          
+          const isListed = marketListedFishes.includes(fishName);
+
+          html += `
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative; ${isListed ? 'opacity: 0.6;' : 'cursor: pointer;'}" ${isListed ? '' : `onclick="assignFishToShelf('${fishName}')"`}>
+              <span style="position: absolute; top: 6px; right: 8px; background: #3498db; color: white; font-size: 0.75rem; font-weight: bold; padding: 1px 6px; border-radius: 10px;">x${count}</span>
+              <img src="${fishObj.img}" style="width: 50px; height: 50px; object-fit: contain; margin: 8px 0;">
+              <span style="font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 8px; color: #1e293b;">${fishName}</span>
+              ${isListed ? 
+                `<span style="font-size: 0.65rem; color: #c0392b; font-weight: bold; text-align: center; width: 100%;">On Market Offer</span>` :
+                `<button type="button" class="modal-action-btn" style="background:#27ae60; padding: 4px; font-size: 0.7rem; width: 100%;">Select</button>`
+              }
+            </div>
+          `;
+        });
+        listEl.innerHTML = html;
+      }
+      document.getElementById('modal-select-fish').style.display = 'flex';
+    }
+
+    async function assignFishToShelf(fishName) {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const marketSnap = await db.collection('marketListings').where('sellerUid', '==', user.uid).where('fishName', '==', fishName).get();
+        if (!marketSnap.empty) {
+          showToast(`You cannot put ${fishName} in a tank because it is currently listed on the Market!`);
+          return;
+        }
+
+        const docRef = db.collection('jugadores').doc(user.uid);
+        const doc = await docRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          let tanksMap = data.aquariumTanksMap || {};
+          const roomKey = `room_${currentAquariumRoomIndex}`;
+          let tanks = tanksMap[roomKey] || new Array(8).fill(null);
+          let fishes = data.fishes || [];
+          let tanksCount = data.miniTanksCount || 0;
+
+          let totalInInventory = fishes.filter(f => f.name === fishName).length;
+          
+          let totalDisplayedAcrossAllRooms = 0;
+          Object.entries(tanksMap).forEach(([rKey, rTanks]) => {
+            if (Array.isArray(rTanks)) {
+              totalDisplayedAcrossAllRooms += rTanks.filter((t, idx) => t === fishName && !(rKey === roomKey && idx === selectedShelfIndex)).length;
+            }
+          });
+
+          if (totalDisplayedAcrossAllRooms + 1 > totalInInventory) {
+            showToast(`You only have ${totalInInventory} ${fishName}(s) in your backpack and ${totalDisplayedAcrossAllRooms} already displayed elsewhere!`);
+            return;
+          }
+
+          if (!tanks[selectedShelfIndex]) {
+            if (tanksCount <= 0) {
+              showToast("Not enough Mini Tanks in inventory!");
+              return;
+            }
+            tanksCount -= 1;
+          }
+
+          tanks[selectedShelfIndex] = fishName;
+          tanksMap[roomKey] = tanks;
+          
+          await docRef.update({ 
+            aquariumTanksMap: tanksMap,
+            miniTanksCount: tanksCount
+          });
+          
+          showToast(`${fishName} placed in tank!`);
+          document.getElementById('modal-select-fish').style.display = 'none';
+          renderAquarium(data.username || "My", fishes, tanksMap);
+        }
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
+    }
+
+    async function removeFishFromShelf() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const docRef = db.collection('jugadores').doc(user.uid);
+        const doc = await docRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          let tanksMap = data.aquariumTanksMap || {};
+          const roomKey = `room_${currentAquariumRoomIndex}`;
+          let tanks = tanksMap[roomKey] || new Array(8).fill(null);
+
+          if (tanks[selectedShelfIndex]) {
+            let tanksCount = (data.miniTanksCount || 0) + 1;
+            tanks[selectedShelfIndex] = null;
+            tanksMap[roomKey] = tanks;
+
+            await docRef.update({ 
+              aquariumTanksMap: tanksMap,
+              miniTanksCount: tanksCount
+            });
+
+            showToast("Tank removed and returned to your inventory.");
+          }
+
+          document.getElementById('modal-select-fish').style.display = 'none';
+          renderAquarium(data.username || "My", data.fishes || [], tanksMap);
+        }
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
+    }
+
+    function startFishAnimation(shelfIndex) {
+      const fishImg = document.querySelector(`.swimming-fish-${shelfIndex}`);
+      if (!fishImg) return;
+
+      let posX = 40;
+      let posY = 50;
+      let speedX = (Math.random() > 0.5 ? 1 : -1) * (0.2 + Math.random() * 0.3);
+      let speedY = (Math.random() > 0.5 ? 1 : -1) * (0.1 + Math.random() * 0.2);
+
+      const minX = 10;
+      const maxX = 65;
+      const minY = 20;
+      const maxY = 70;
+
+      let moveTimer = 0;
+
+      const interval = setInterval(() => {
+        moveTimer++;
+        if (moveTimer > 40 + Math.random() * 50) {
+          moveTimer = 0;
+          speedX = (Math.random() > 0.5 ? 1 : -1) * (0.2 + Math.random() * 0.5);
+          speedY = (Math.random() > 0.5 ? 1 : -1) * (0.1 + Math.random() * 0.25);
+        }
+
+        posX += speedX;
+        posY += speedY;
+
+        if (posX <= minX) {
+          posX = minX;
+          speedX = Math.abs(speedX);
+          fishImg.style.transform = 'scaleX(1)';
+        } else if (posX >= maxX) {
+          posX = maxX;
+          speedX = -Math.abs(speedX);
+          fishImg.style.transform = 'scaleX(-1)';
+        }
+
+        if (posY <= minY) {
+          posY = minY;
+          speedY = Math.abs(speedY);
+        } else if (posY >= maxY) {
+          posY = maxY;
+          speedY = -Math.abs(speedY);
+        }
+
+        fishImg.style.left = posX + '%';
+        fishImg.style.top = posY + '%';
+      }, 50);
+
+      activeFishAnimations.push(interval);
+    }
+
+    function stopFishAnimations() {
+      activeFishAnimations.forEach(interval => clearInterval(interval));
+      activeFishAnimations = [];
+    }
+
+    function closeAquariumModal() {
+      closeAllModals();
+    }
+
+    function startGame() {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("You must be logged in to play!");
+        openModal('modal-account');
+        return;
+      }
+      document.getElementById('game-screen').style.display = 'block';
+      updateGameHUD();
+      showToast("Entered the fishing spot!");
+    }
+
+    function exitGame() {
+      stopMinigame(false);
+      document.getElementById('game-screen').style.display = 'none';
+      showToast("Returned to main menu.");
+    }
+
+    async function updateGameHUD() {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const doc = await db.collection('jugadores').doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById('hud-coins').innerText = `💰 ${data.coins || 0}`;
+          document.getElementById('hud-fish').innerText = `🐟 ${(data.fishes || []).length} Fishes`;
+        }
+      } catch (err) {
+        console.error("Error updating HUD:", err);
+      }
+    }
+
+    async function castLine() {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("Session expired. Please log in again.");
+        exitGame();
+        openModal('modal-account');
+        return;
+      }
+
+      const castBtn = document.getElementById('cast-btn');
+      castBtn.disabled = true;
+      castBtn.innerText = "Waiting for bite...";
+      showToast("Line cast! Waiting...");
+
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        const docSnap = await playerRef.get();
+        const data = docSnap.exists ? docSnap.data() : {};
+        const isBaitActive = data.isBaitActive || false;
+        const baitsCount = data.wormBaitsCount || 0;
+
+        usedBaitThisCast = false;
+        if (isBaitActive && baitsCount > 0) {
+          await playerRef.update({
+            wormBaitsCount: baitsCount - 1,
+            isBaitActive: false
+          });
+          usedBaitThisCast = true;
+          showToast("Worm bait consumed for this cast!");
+        }
+
+        setTimeout(() => {
+          castBtn.disabled = false;
+          castBtn.innerText = "Cast Line!";
+          
+          const standardFishes = ALLOWED_FISH_TYPES.filter(f => !f.isLimited);
+          
+          const rand = Math.random();
+          let chosenPool = standardFishes;
+
+          if (usedBaitThisCast) {
+            if (rand < 0.07) {
+              const divineMythic = standardFishes.filter(f => f.rarity === 'Divine' || f.rarity === 'Mythic');
+              if (divineMythic.length > 0) chosenPool = divineMythic;
+            } else if (rand < 0.20) {
+              const rareEpicLegendary = standardFishes.filter(f => f.rarity === 'Rare' || f.rarity === 'Epic' || f.rarity === 'Legendary');
+              if (rareEpicLegendary.length > 0) chosenPool = rareEpicLegendary;
+            }
+          }
+
+          const tierRoll = Math.random() * 100;
+          let targetRarity = "Common";
+          if (tierRoll < 0.05) targetRarity = "Divine";      
+          else if (tierRoll < 0.3) targetRarity = "Mythic";    
+          else if (tierRoll < 1.5) targetRarity = "Legendary"; 
+          else if (tierRoll < 6.0) targetRarity = "Epic";      
+          else if (tierRoll < 25.0) targetRarity = "Rare";     
+          else targetRarity = "Common";                        
+
+          let rarityPool = standardFishes.filter(f => f.rarity === targetRarity);
+          if (rarityPool.length === 0) rarityPool = standardFishes.filter(f => f.rarity === "Common");
+
+          pendingCaughtFish = rarityPool[Math.floor(Math.random() * rarityPool.length)] || standardFishes[0];
+
+          startFishingMinigame();
+        }, 2000 + Math.random() * 1500);
+
+      } catch (err) {
+        castBtn.disabled = false;
+        castBtn.innerText = "Cast Line!";
+        showToast("Error casting line: " + err.message);
+      }
+    }
+
+    function startFishingMinigame() {
+      const overlay = document.getElementById('fishing-minigame-overlay');
+      overlay.style.display = 'flex';
+
+      catchBarY = 10;
+      catchBarSpeed = 0;
+      greenZoneY = 80;
+      greenZoneDir = 1.2;
+      captureProgress = 30;
+      isMouseDown = false;
+
+      window.onmousedown = () => { isMouseDown = true; };
+      window.onmouseup = () => { isMouseDown = false; };
+      window.ontouchstart = () => { isMouseDown = true; };
+      window.ontouchend = () => { isMouseDown = false; };
+
+      window.onkeydown = (e) => {
+        if (e.code === 'Space' || e.key === 'KeyW' || e.key === 'w' || e.key === 'ArrowUp' || e.code === 'ArrowUp') {
+          isMouseDown = true;
+          if (e.code === 'Space') e.preventDefault();
+        }
+      };
+
+      window.onkeyup = (e) => {
+        if (e.code === 'Space' || e.key === 'KeyW' || e.key === 'w' || e.key === 'ArrowUp' || e.code === 'ArrowUp') {
+          isMouseDown = false;
+        }
+      };
+
+      const greenZoneEl = document.getElementById('minigame-green-zone');
+      const catchBarEl = document.getElementById('minigame-catch-bar');
+      const progressFillEl = document.getElementById('minigame-progress-fill');
+
+      clearInterval(minigameLoop);
+      minigameLoop = setInterval(() => {
+        greenZoneY += greenZoneDir * 1.5;
+        if (greenZoneY <= 10) { greenZoneY = 10; greenZoneDir *= -1; }
+        if (greenZoneY >= 185) { greenZoneY = 185; greenZoneDir *= -1; }
+        greenZoneEl.style.top = greenZoneY + 'px';
+
+        if (isMouseDown) {
+          catchBarSpeed += 0.8;
+        } else {
+          catchBarSpeed -= 0.6;
+        }
+        
+        catchBarSpeed *= 0.92;
+        catchBarY += catchBarSpeed;
+
+        if (catchBarY <= 0) { catchBarY = 0; catchBarSpeed = 0; }
+        if (catchBarY >= 235) { catchBarY = 235; catchBarSpeed = 0; }
+
+        catchBarEl.style.bottom = catchBarY + 'px';
+
+        const barTop = 260 - catchBarY - 22;
+        const greenTop = greenZoneY;
+        const greenBottom = greenZoneY + 65;
+
+        const isOverlapping = (barTop + 22 >= greenTop && barTop <= greenBottom);
+
+        if (isOverlapping) {
+          captureProgress += 0.7;
+          greenZoneEl.style.background = 'rgba(46, 204, 113, 0.95)';
+        } else {
+          captureProgress -= 0.5;
+          greenZoneEl.style.background = 'rgba(231, 76, 60, 0.75)';
+        }
+
+        if (captureProgress > 100) captureProgress = 100;
+        if (captureProgress < 0) captureProgress = 0;
+
+        progressFillEl.style.width = captureProgress + '%';
+        progressFillEl.style.background = isOverlapping ? '#2ecc71' : '#e74c3c';
+
+        if (captureProgress >= 100) {
+          stopMinigame(true);
+        } else if (captureProgress <= 0) {
+          stopMinigame(false);
+        }
+      }, 30);
+    }
+
+    async function stopMinigame(success) {
+      clearInterval(minigameLoop);
+      document.getElementById('fishing-minigame-overlay').style.display = 'none';
+
+      window.onmousedown = null;
+      window.onmouseup = null;
+      window.ontouchstart = null;
+      window.ontouchend = null;
+      window.onkeydown = null;
+      window.onkeyup = null;
+
+      if (success && pendingCaughtFish) {
+        const user = auth.currentUser;
+        if (!user) return;
+        try {
+          const playerRef = db.collection('jugadores').doc(user.uid);
+          const docSnap = await playerRef.get();
+          const data = docSnap.data();
+          const currentFishes = data.fishes || [];
+
+          await playerRef.update({
+            fishes: firebase.firestore.FieldValue.arrayUnion({ name: pendingCaughtFish.name, timestamp: new Date().toISOString() })
+          });
+
+          showToast(`You caught a ${pendingCaughtFish.name} (${pendingCaughtFish.rarity})!`);
+          updateGameHUD();
+          
+          const isDivine = pendingCaughtFish.rarity === 'Divine';
+          checkAchievements(currentFishes.length + 1, false, usedBaitThisCast, isDivine);
+        } catch (err) {
+          showToast("Error saving catch: " + err.message);
+        }
+      } else if (!success && pendingCaughtFish) {
+        showToast("The fish got away! Try again.");
+      }
+      pendingCaughtFish = null;
+      usedBaitThisCast = false;
+    }
+
+    async function buyMiniTank() {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("You must be logged in.");
+        return;
+      }
+
+      const cost = 500;
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        const doc = await playerRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          const coins = data.coins || 0;
+          const currentTanksCount = data.miniTanksCount || 0;
+
+          if (coins < cost) {
+            showToast("Not enough coins! You need 500 💰.");
+            return;
+          }
+
+          await playerRef.update({
+            coins: coins - cost,
+            miniTanksCount: currentTanksCount + 1
+          });
+
+          showToast("Success! Mini Tank bought and added to your backpack!");
+          loadBackpackData();
+          updateShopCoinsDisplay();
+          checkAchievements((data.fishes || []).length, true);
+        }
+      } catch (err) {
+        showToast("Error buying tank: " + err.message);
+      }
+    }
+
+    async function buyWormBait() {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("You must be logged in.");
+        return;
+      }
+
+      const cost = 250;
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        const doc = await playerRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          const coins = data.coins || 0;
+          const currentBaits = data.wormBaitsCount || 0;
+
+          if (coins < cost) {
+            showToast("Not enough coins! You need 250 💰.");
+            return;
+          }
+
+          await playerRef.update({
+            coins: coins - cost,
+            wormBaitsCount: currentBaits + 1
+          });
+
+          showToast("Success! Worm Bait bought and added to your backpack!");
+          loadBackpackData();
+          updateShopCoinsDisplay();
+        }
+      } catch (err) {
+        showToast("Error buying bait: " + err.message);
+      }
+    }
+
+    async function buyAquariumRoom() {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("You must be logged in.");
+        return;
+      }
+
+      const cost = 2000;
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        const doc = await playerRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          const coins = data.coins || 0;
+          const currentRooms = data.aquariumRoomsOwned || 1;
+
+          if (coins < cost) {
+            showToast("Not enough coins! You need 2000 💰 for a new aquarium room.");
+            return;
+          }
+
+          await playerRef.update({
+            coins: coins - cost,
+            aquariumRoomsOwned: currentRooms + 1
+          });
+
+          showToast("Success! New aquarium room purchased!");
+          loadBackpackData();
+          updateShopCoinsDisplay();
+          updateGameHUD();
+        }
+      } catch (err) {
+        showToast("Error buying room: " + err.message);
+      }
+    }
+
+    async function toggleUseWormBait() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        const doc = await playerRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          const baits = data.wormBaitsCount || 0;
+          const currentActive = data.isBaitActive || false;
+
+          if (baits <= 0 && !currentActive) {
+            showToast("You don't have any Worm Baits! Buy some in Bob's Shop.");
+            return;
+          }
+
+          const newActive = !currentActive;
+          await playerRef.update({ isBaitActive: newActive });
+          showToast(newActive ? "Worm Bait equipped! Next cast will have better luck." : "Worm Bait unequipped.");
+          loadBackpackData();
+        }
+      } catch (err) {
+        showToast("Error toggling bait: " + err.message);
+      }
+    }
+
+    async function loadBackpackData() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const listContainer = document.getElementById('backpack-fish-list');
+      listContainer.innerHTML = "Loading items...";
+
+      try {
+        const doc = await db.collection('jugadores').doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          const tanksCount = data.miniTanksCount || 0;
+          const roomsCount = data.aquariumRoomsOwned || 1;
+          const baitsCount = data.wormBaitsCount || 0;
+          const isBaitActive = data.isBaitActive || false;
+
+          document.getElementById('backpack-tanks-count').innerText = `Mini Tanks Bought: ${tanksCount}`;
+          document.getElementById('backpack-rooms-count').innerText = `Aquarium Rooms Owned: ${roomsCount}`;
+          document.getElementById('backpack-baits-count').innerText = `Worm Baits: ${baitsCount}`;
+          
+          const toggleBtn = document.getElementById('backpack-bait-toggle-btn');
+          if (isBaitActive) {
+            toggleBtn.innerText = "Unequip Bait";
+            toggleBtn.style.background = "#e74c3c";
+          } else {
+            toggleBtn.innerText = "Equip Bait";
+            toggleBtn.style.background = "#2ecc71";
+          }
+
+          const fishes = data.fishes || [];
+          if (fishes.length === 0) {
+            listContainer.innerHTML = "No fish caught yet. Go fishing!";
+            return;
+          }
+
+          let fishCounts = {};
+          fishes.forEach(f => {
+            if (!fishCounts[f.name]) {
+              fishCounts[f.name] = 0;
+            }
+            fishCounts[f.name]++;
+          });
+
+          let html = '';
+          Object.entries(fishCounts).forEach(([fishName, count]) => {
+            const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === fishName) || ALLOWED_FISH_TYPES[0];
+            html += `
+              <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+                <span style="position: absolute; top: 4px; right: 6px; background: #3498db; color: white; font-size: 0.7rem; font-weight: bold; padding: 1px 5px; border-radius: 8px;">x${count}</span>
+                <img src="${fishObj.img}" style="width: 42px; height: 42px; object-fit: contain; margin: 4px 0;">
+                <span style="font-size: 0.8rem; font-weight: bold; text-align: center; color: #1e293b;">${fishName}</span>
+              </div>
+            `;
+          });
+          listContainer.innerHTML = html;
+        }
+      } catch (err) {
+        listContainer.innerHTML = "Error loading backpack.";
+      }
+    }
+
+    function switchAuthTab(tab) {
+      if (tab === 'login') {
+        document.getElementById('form-login').style.display = 'block';
+        document.getElementById('form-register').style.display = 'none';
+        document.getElementById('tab-login-btn').classList.add('active');
+        document.getElementById('tab-register-btn').classList.remove('active');
+      } else {
+        document.getElementById('form-login').style.display = 'none';
+        document.getElementById('form-register').style.display = 'block';
+        document.getElementById('tab-register-btn').classList.add('active');
+        document.getElementById('tab-login-btn').classList.remove('active');
+      }
+    }
+
+    const comprimirImagen = (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 100;
+            const MAX_HEIGHT = 100;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.5));
+          };
+          img.onerror = (error) => reject(error);
+        };
+        reader.onerror = (error) => reject(error);
+      });
+    };
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const captcha = grecaptcha.getResponse(recaptchaLoginId);
+      if (!captcha) {
+        showToast("Please complete the reCAPTCHA.");
+        return;
+      }
+
+      const email = document.getElementById('login-email').value;
+      const pass = document.getElementById('login-password').value;
+
+      try {
+        await auth.signInWithEmailAndPassword(email, pass);
+        grecaptcha.reset(recaptchaLoginId);
+        closeAllModals();
+      } catch (err) {
+        showToast("Login error: " + err.message);
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const captcha = grecaptcha.getResponse(recaptchaRegisterId);
+      if (!captcha) {
+        showToast("Please complete the reCAPTCHA.");
+        return;
+      }
+
+      const username = document.getElementById('reg-username').value.trim();
+      
+      const validationError = validateUsernameFormat(username);
+      if (validationError) {
+        showToast(validationError);
+        return;
+      }
+
+      const email = document.getElementById('reg-email').value;
+      const pass = document.getElementById('reg-password').value;
+      const bio = document.getElementById('reg-bio').value;
+      const fileInput = document.getElementById('reg-avatar').files[0];
+
+      try {
+        const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+        const user = userCred.user;
+
+        let photoURL = "";
+        if (fileInput) {
+          if (fileInput.size > 1048576) {
+            showToast("Image exceeds 1MB limit.");
+            return;
+          }
+          photoURL = await comprimirImagen(fileInput);
+        }
+
+        await user.sendEmailVerification();
+        await user.updateProfile({ displayName: username });
+
+        await db.collection('jugadores').doc(user.uid).set({
+          username: username,
+          email: email,
+          bio: bio,
+          photoURL: photoURL,
+          coins: 0,
+          fishes: [],
+          miniTanksCount: 0,
+          wormBaitsCount: 0,
+          isBaitActive: false,
+          aquariumRoomsOwned: 1,
+          aquariumTanksMap: { room_0: new Array(8).fill(null) },
+          achievements: { catchFirst: false, gluGluTank: false, wormBaitAch: false, divineAch: false },
+          redeemedCodes: [],
+          lastUsernameChange: null,
+          isBanned: false,
+          tempBanUntil: null,
+          banReason: "",
+          hasWarning: false,
+          warningReason: "",
+          acceptedRules: false,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        showToast("Account created! Verification email sent.");
+        closeAllModals();
+        grecaptcha.reset(recaptchaRegisterId);
+      } catch (err) {
+        showToast("Registration error: " + err.message);
+      }
+    }
+
+    async function handleResendVerification() {
+      const email = document.getElementById('resend-email').value;
+      const pass = document.getElementById('resend-password').value;
+      if (!email || !pass) {
+        showToast("Enter your email and password.");
+        return;
+      }
+
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, pass);
+        if (cred.user.emailVerified) {
+          showToast("Your email is already verified!");
+        } else {
+          await cred.user.sendEmailVerification();
+          showToast("Fresh verification email sent!");
+        }
+        closeAllModals();
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
+    }
+
+    async function loadProfileData() {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      try {
+        await user.reload();
+        const statusEl = document.getElementById('verification-status');
+        const timerEl = document.getElementById('verification-timer');
+        
+        if (verificationTimerInterval) clearInterval(verificationTimerInterval);
+
+        const doc = await db.collection('jugadores').doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById('profile-modal-name').innerText = data.username || "Player";
+          document.getElementById('profile-bio-display').innerText = data.bio || "No bio yet.";
+          document.getElementById('profile-edit-username').value = data.username || "";
+          document.getElementById('profile-edit-bio').value = data.bio || "";
+          document.getElementById('profile-coins').innerText = data.coins || 0;
+          document.getElementById('profile-fish-count').innerText = (data.fishes || []).length;
+          document.getElementById('profile-current-password').value = "";
+          const newPassEl = document.getElementById('profile-new-password');
+          if (newPassEl) newPassEl.value = "";
+
+          if (data.photoURL) {
+            document.getElementById('profile-modal-avatar').src = data.photoURL;
+          }
+
+          if (user.emailVerified) {
+            statusEl.innerText = "Email verified";
+            statusEl.style.color = "#2ecc71";
+            timerEl.style.display = 'none';
+          } else {
+            statusEl.innerText = "Email not verified";
+            statusEl.style.color = "#e74c3c";
+            timerEl.style.display = 'block';
+
+            let createdAtMs = Date.now();
+            if (user.metadata && user.metadata.creationTime) {
+              createdAtMs = new Date(user.metadata.creationTime).getTime();
+            } else if (data.createdAt) {
+              createdAtMs = data.createdAt.toDate ? data.createdAt.toDate().getTime() : new Date(data.createdAt).getTime();
+            }
+
+            const deletionTimeMs = createdAtMs + (3 * 24 * 60 * 60 * 1000);
+
+            const updateTimerDisplay = () => {
+              const now = Date.now();
+              const diff = deletionTimeMs - now;
+
+              if (diff <= 0) {
+                timerEl.innerText = "Auto-deletion: Account scheduled for deletion!";
+                clearInterval(verificationTimerInterval);
+              } else {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                timerEl.innerText = `Auto-deletion in: ${days}d ${hours}h ${mins}m ${secs}s`;
+              }
+            };
+
+            updateTimerDisplay();
+            verificationTimerInterval = setInterval(updateTimerDisplay, 1000);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading profile:", err);
+      }
+    }
+
+    async function updateProfileData() {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("You must be logged in.");
+        return;
+      }
+
+      const newUsername = document.getElementById('profile-edit-username').value.trim();
+      const currentPassword = document.getElementById('profile-current-password').value;
+      const newPassword = document.getElementById('profile-new-password') ? document.getElementById('profile-new-password').value : "";
+      const newBio = document.getElementById('profile-edit-bio').value;
+      const fileInput = document.getElementById('profile-edit-avatar').files[0];
+
+      try {
+        const docRef = db.collection('jugadores').doc(user.uid);
+        const docSnap = await docRef.get();
+        if (!docSnap.exists) return;
+
+        const playerData = docSnap.data();
+        let photoURL = playerData.photoURL || "";
+        let currentUsername = playerData.username;
+
+        const isChangingUsername = newUsername && newUsername !== currentUsername;
+        const isChangingPassword = newPassword.length >= 6;
+
+        if (isChangingUsername || isChangingPassword) {
+          if (!currentPassword) {
+            showToast("Enter your current password to confirm profile changes.");
+            return;
+          }
+
+          showToast("Re-authenticating...");
+          const cred = firebase.auth.EmailAuthProvider.credential(user.email, currentPassword);
+          await user.reauthenticateWithCredential(cred);
+        }
+
+        if (isChangingUsername) {
+          const validationError = validateUsernameFormat(newUsername);
+          if (validationError) {
+            showToast(validationError);
+            return;
+          }
+
+          const lastChange = playerData.lastUsernameChange;
+          if (lastChange) {
+            const lastDate = lastChange.toDate ? lastChange.toDate() : new Date(lastChange);
+            const diffDays = (Date.now() - lastDate.getTime()) / (1000 * 3600 * 24);
+            if (diffDays < 14) {
+              const daysLeft = Math.ceil(14 - diffDays);
+              showToast(`You can change your username again in ${daysLeft} day(s).`);
+              return;
+            }
+          }
+
+          const nameCheck = await db.collection('jugadores').where('username', '==', newUsername).get();
+          if (!nameCheck.empty) {
+            showToast("This username is already taken.");
+            return;
+          }
+
+          await docRef.update({
+            username: newUsername,
+            lastUsernameChange: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          await user.updateProfile({ displayName: newUsername });
+          document.getElementById('user-display-name').innerText = newUsername;
+        }
+
+        if (isChangingPassword) {
+          await user.updatePassword(newPassword);
+          showToast("Password updated successfully! Logging out from all sessions...");
+          await auth.signOut();
+          closeAllModals();
+          return;
+        }
+
+        if (fileInput) {
+          if (fileInput.size > 1048576) {
+            showToast("Image exceeds 1MB limit.");
+            return;
+          }
+          photoURL = await comprimirImagen(fileInput);
+          document.getElementById('user-avatar').src = photoURL;
+          document.getElementById('profile-modal-avatar').src = photoURL;
+        }
+
+        await docRef.update({
+          bio: newBio,
+          photoURL: photoURL
+        });
+
+        showToast("Profile updated successfully!");
+        document.getElementById('profile-edit-section').style.display = 'none';
+        loadProfileData();
+      } catch (err) {
+        showToast("Error updating profile: " + err.message);
+      }
+    }
+
+    async function handleForgotPassword() {
+      const email = document.getElementById('forgot-email').value;
+      if (!email) {
+        showToast("Enter your email address.");
+        return;
+      }
+      try {
+        await auth.sendPasswordResetEmail(email);
+        showToast("Password reset link sent.");
+        closeAllModals();
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
+    }
+
+    async function redeemCode() {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("You must be logged in to redeem codes.");
+        return;
+      }
+
+      const code = document.getElementById('redeemCodeInput').value.trim().toUpperCase();
+      if (!code) {
+        showToast("Enter a code.");
+        return;
+      }
+
+      try {
+        const codeRef = db.collection('codes').doc(code);
+        const codeSnap = await codeRef.get();
+
+        if (!codeSnap.exists) {
+          showToast("Invalid or expired code.");
+          return;
+        }
+
+        const codeData = codeSnap.data();
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        const playerSnap = await playerRef.get();
+        const playerData = playerSnap.data();
+
+        const redeemedList = playerData.redeemedCodes || [];
+        if (redeemedList.includes(code)) {
+          showToast("You have already redeemed this code!");
+          return;
+        }
+
+        await db.runTransaction(async (transaction) => {
+          let updateData = {
+            coins: firebase.firestore.FieldValue.increment(codeData.coins || 0),
+            wormBaitsCount: firebase.firestore.FieldValue.increment(codeData.wormBaits || 0),
+            redeemedCodes: firebase.firestore.FieldValue.arrayUnion(code)
+          };
+
+          if (codeData.bonusFish) {
+            updateData.fishes = firebase.firestore.FieldValue.arrayUnion({ name: codeData.bonusFish, timestamp: new Date().toISOString() });
+          }
+
+          transaction.update(playerRef, updateData);
+        });
+
+        let msg = `Success! Received`;
+        let rewards = [];
+
+        if (codeData.coins > 0) rewards.push(`+${codeData.coins} coins`);
+        if (codeData.wormBaits > 0) rewards.push(`+${codeData.wormBaits} Worm Baits`);
+        if (codeData.bonusFish) rewards.push(`🐟 ${codeData.bonusFish}`);
+
+        showToast(msg + " " + (rewards.length > 0 ? rewards.join(", ") : "code rewards") + "!");
+        document.getElementById('redeemCodeInput').value = "";
+        updateShopCoinsDisplay();
+        updateGameHUD();
+      } catch (err) {
+        showToast("Error redeeming code: " + err.message);
+      }
+    }
+
+    async function handleUserSearch() {
+      const searchTerm = document.getElementById('searchUsernameInput').value.trim();
+      const resultDiv = document.getElementById('searchResult');
+      if (!searchTerm) {
+        showToast("Enter a username to search.");
+        return;
+      }
+
+      const snapshot = await db.collection('jugadores').where('username', '==', searchTerm).get();
+      if (snapshot.empty) {
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '<p style="color:#e74c3c; font-size:0.9rem;">No player found with that exact username.</p>';
+        return;
+      }
+
+      let html = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const avatar = data.photoURL || 'https://via.placeholder.com/40';
+        const fishesJson = JSON.stringify(data.fishes || []).replace(/"/g, '&quot;');
+        const tanksMapJson = JSON.stringify(data.aquariumTanksMap || { room_0: new Array(8).fill(null) }).replace(/"/g, '&quot;');
+        html += `
+          <div class="search-player-item" onclick="viewOtherProfile('${data.username}', '${data.bio || 'No bio'}', ${data.coins || 0}, ${(data.fishes || []).length}, '${avatar}', '${doc.id}', ${fishesJson}, ${tanksMapJson})">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <img src="${avatar}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
+              <div>
+                <strong>${data.username}</strong><br>
+                <span style="font-size:0.8rem; color:#64748b;">💰 Coins: ${data.coins || 0} | Click to view full profile</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = html;
+    }
+
+    function viewOtherProfile(username, bio, coins, fishCount, avatar, uid, fishes, tanksMap) {
+      viewingTargetUsername = username;
+      viewingTargetUid = uid;
+      viewingTargetFishes = fishes;
+      viewingTargetTanksMap = tanksMap;
+      currentAquariumRoomIndex = 0;
+      
+      document.getElementById('view-profile-name').innerText = username;
+      document.getElementById('view-profile-bio').innerText = bio;
+      document.getElementById('view-profile-coins').innerText = coins;
+      document.getElementById('view-profile-fish-count').innerText = fishCount;
+      document.getElementById('view-profile-avatar').src = avatar;
+      openModal('modal-view-profile');
+    }
+
+    function listenToNews() {
+      db.collection('news')
+        .orderBy('createdAt', 'asc')
+        .onSnapshot(snapshot => {
+          newsList = [];
+          snapshot.forEach(doc => {
+            newsList.push({ id: doc.id, ...doc.data() });
+          });
+
+          const newsFeed = document.getElementById('newsFeed');
+          const controls = document.getElementById('newsControls');
+
+          if (newsList.length === 0) {
+            newsFeed.innerHTML = '<p>No news available yet.</p>';
+            controls.style.display = 'none';
+            document.getElementById('unread-news-badge').style.display = 'none';
+            return;
+          }
+
+          controls.style.display = 'flex';
+          
+          const latestNewsId = newsList[newsList.length - 1].id;
+          const lastReadId = localStorage.getItem('lastReadNewsId');
+
+          if (latestNewsId !== lastReadId) {
+            document.getElementById('unread-news-badge').style.display = 'block';
+          } else {
+            document.getElementById('unread-news-badge').style.display = 'none';
+          }
+
+          if (document.getElementById('modal-news').style.display === 'flex') {
+            currentNewsIndex = newsList.length - 1;
+            renderCurrentNews();
+          }
+        });
+    }
+
+    function renderCurrentNews() {
+      const newsFeed = document.getElementById('newsFeed');
+      const newsCounter = document.getElementById('newsCounter');
+      const prevBtn = document.getElementById('prevNewsBtn');
+      const nextBtn = document.getElementById('nextNewsBtn');
+
+      if (newsList.length === 0) return;
+
+      if (currentNewsIndex >= newsList.length) {
+        currentNewsIndex = newsList.length - 1;
+      }
+      if (currentNewsIndex < 0) {
+        currentNewsIndex = 0;
+      }
+
+      const news = newsList[currentNewsIndex];
+      let formattedDate = "Just now";
+      if (news.createdAt) {
+        const dateObj = news.createdAt.toDate();
+        formattedDate = dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      
+      const currentUser = auth.currentUser;
+      const isAdmin = currentUser && currentUser.uid === ADMIN_UID;
+
+      newsFeed.innerHTML = `
+        <div class="news-card">
+          <h3 style="margin:0 0 5px 0; color:#1e3a8a;">${news.title}</h3>
+          <small style="color: #64748b; font-weight: bold;">Date: ${formattedDate}</small>
+          <p style="white-space: pre-line; margin-top:10px;">${news.content}</p>
+          ${news.imageUrl ? `<img src="${news.imageUrl}" style="max-width: 100%; border-radius: 4px; margin-top: 10px;">` : ''}
+          
+          ${isAdmin ? `<button type="button" class="modal-action-btn" style="background:#e74c3c; margin-top:15px;" onclick="deleteNews('${news.id}')">Delete News</button>` : ''}
+        </div>
+      `;
+
+      newsCounter.textContent = `${currentNewsIndex + 1} / ${newsList.length}`;
+      prevBtn.disabled = (currentNewsIndex === 0);
+      nextBtn.disabled = (currentNewsIndex === newsList.length - 1);
+    }
+
+    function changeNews(direction) {
+      currentNewsIndex += direction;
+      renderCurrentNews();
+    }
+
+    async function deleteNews(newsId) {
+      try {
+        await db.collection('news').doc(newsId).delete();
+        showToast("News deleted successfully.");
+      } catch (err) {
+        showToast("Error deleting news: " + err.message);
+      }
+    }
+
+    listenToNews();
+
+    async function getUidByUsername(username) {
+      const snapshot = await db.collection('jugadores').where('username', '==', username).get();
+      if (snapshot.empty) return null;
+      let uid = null;
+      snapshot.forEach(doc => { uid = doc.id; });
+      return uid;
+    }
+
+    async function loadTargetUserInventoryForAdmin() {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      const listContainer = document.getElementById('admin-target-fishes-list');
+      
+      const statCoins = document.getElementById('admin-stat-coins');
+      const statTanks = document.getElementById('admin-stat-tanks');
+      const statRooms = document.getElementById('admin-stat-rooms');
+      const statBaits = document.getElementById('admin-stat-baits');
+
+      if (!username) {
+        listContainer.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view fishes...</p>';
+        statCoins.innerText = '💰 Coins: 0';
+        statTanks.innerText = '🐠 Mini Tanks: 0';
+        statRooms.innerText = 'Aquarium Rooms: 1';
+        statBaits.innerText = 'Worm Baits: 0';
+        return;
+      }
+
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          listContainer.innerHTML = '<p style="font-size:0.8rem; color:#e74c3c; text-align:center; margin:10px 0;">User not found.</p>';
+          statCoins.innerText = '💰 Coins: 0';
+          statTanks.innerText = '🐠 Mini Tanks: 0';
+          statRooms.innerText = 'Aquarium Rooms: 1';
+          statBaits.innerText = 'Worm Baits: 0';
+          return;
+        }
+
+        const doc = await db.collection('jugadores').doc(targetUid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          statCoins.innerText = `💰 Coins: ${data.coins || 0}`;
+          statTanks.innerText = `🐠 Mini Tanks: ${data.miniTanksCount || 0}`;
+          statRooms.innerText = `Aquarium Rooms: ${data.aquariumRoomsOwned || 1}`;
+          statBaits.innerText = `Worm Baits: ${data.wormBaitsCount || 0}`;
+
+          const fishes = data.fishes || [];
+          if (fishes.length === 0) {
+            listContainer.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">User has no fishes.</p>';
+            return;
+          }
+
+          let fishCounts = {};
+          fishes.forEach(f => {
+            if (!fishCounts[f.name]) fishCounts[f.name] = 0;
+            fishCounts[f.name]++;
+          });
+
+          let html = '';
+          Object.entries(fishCounts).forEach(([fishName, count]) => {
+            html += `
+              <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 6px 10px; border-radius: 6px; margin-bottom: 5px; border: 1px solid #cbd5e1;">
+                <span style="font-size: 0.85rem;"><strong>${fishName}</strong> (x${count})</span>
+                <button type="button" class="modal-action-btn" style="background:#e74c3c; padding: 3px 8px; font-size: 0.75rem; width: auto;" onclick="promptAdminRemoveFish('${fishName}')">Delete</button>
+              </div>
+            `;
+          });
+          listContainer.innerHTML = html;
+        }
+      } catch (err) {
+        listContainer.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Error loading inventory.</p>';
+      }
+    }
+
+    function promptAdminRemoveFish(fishName) {
+      adminSelectedFishToRemove = fishName;
+      document.getElementById('admin-remove-fish-name-label').innerText = `Fish: ${fishName}`;
+      document.getElementById('admin-remove-fish-qty-input').value = 1;
+      document.getElementById('modal-admin-remove-fish').style.display = 'flex';
+    }
+
+    async function confirmAdminRemoveFish() {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      const qtyToRemove = parseInt(document.getElementById('admin-remove-fish-qty-input').value);
+      if (!username || isNaN(qtyToRemove) || qtyToRemove <= 0) {
+        showToast("Enter a valid quantity.");
+        return;
+      }
+
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+
+        const playerRef = db.collection('jugadores').doc(targetUid);
+        const docSnap = await playerRef.get();
+        if (!docSnap.exists) return;
+
+        let fishes = docSnap.data().fishes || [];
+        let removedCount = 0;
+
+        for (let i = fishes.length - 1; i >= 0 && removedCount < qtyToRemove; i--) {
+          if (fishes[i].name === adminSelectedFishToRemove) {
+            fishes.splice(i, 1);
+            removedCount++;
+          }
+        }
+
+        await playerRef.update({ fishes: fishes });
+        showToast(`Successfully removed ${removedCount} ${adminSelectedFishToRemove}(s) from ${username}.`);
+        document.getElementById('modal-admin-remove-fish').style.display = 'none';
+        loadTargetUserInventoryForAdmin();
+      } catch (err) {
+        showToast("Error removing fish: " + err.message);
+      }
+    }
+
+    async function adminAddFishToUser() {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      const fishNameInput = document.getElementById('adminAddFishName').value.trim();
+      if (!username || !fishNameInput) {
+        showToast("Enter a target username and fish name.");
+        return;
+      }
+
+      const matchFish = ALLOWED_FISH_TYPES.find(f => f.name.toLowerCase() === fishNameInput.toLowerCase());
+      if (!matchFish) {
+        showToast(`Error: The fish "${fishNameInput}" does not exist in the game database!`);
+        return;
+      }
+      const exactFishName = matchFish.name;
+
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+
+        await db.collection('jugadores').doc(targetUid).update({
+          fishes: firebase.firestore.FieldValue.arrayUnion({ name: exactFishName, timestamp: new Date().toISOString() })
+        });
+
+        showToast(`Added ${exactFishName} to ${username}!`);
+        document.getElementById('adminAddFishName').value = "";
+        loadTargetUserInventoryForAdmin();
+      } catch (err) {
+        showToast("Error adding fish: " + err.message);
+      }
+    }
+
+    async function adminModifyTanks(multiplier) {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      const amount = parseInt(document.getElementById('adminTanksAmount').value);
+      if (!username || isNaN(amount) || amount <= 0) {
+        showToast("Enter a valid username and tank amount.");
+        return;
+      }
+
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+
+        const playerRef = db.collection('jugadores').doc(targetUid);
+        const docSnap = await playerRef.get();
+        if (!docSnap.exists) return;
+
+        let currentTanks = docSnap.data().miniTanksCount || 0;
+        let val = amount * multiplier;
+        let newTanksCount = currentTanks + val;
+        if (newTanksCount < 0) newTanksCount = 0;
+
+        await playerRef.update({ miniTanksCount: newTanksCount });
+        showToast(`Mini Tanks updated for ${username} (${val > 0 ? '+' : ''}${val})`);
+        loadTargetUserInventoryForAdmin();
+      } catch (err) {
+        showToast("Error updating tanks: " + err.message);
+      }
+    }
+
+    async function adminModifyRooms(multiplier) {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      const amount = parseInt(document.getElementById('adminRoomsAmount').value);
+      if (!username || isNaN(amount) || amount <= 0) {
+        showToast("Enter a valid username and room amount.");
+        return;
+      }
+
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+
+        const playerRef = db.collection('jugadores').doc(targetUid);
+        const docSnap = await playerRef.get();
+        if (!docSnap.exists) return;
+
+        let currentRooms = docSnap.data().aquariumRoomsOwned || 1;
+        let val = amount * multiplier;
+        let newRoomsCount = currentRooms + val;
+        if (newRoomsCount < 1) newRoomsCount = 1;
+
+        await playerRef.update({ aquariumRoomsOwned: newRoomsCount });
+        showToast(`Aquarium Rooms updated for ${username} (${val > 0 ? '+' : ''}${val})`);
+        loadTargetUserInventoryForAdmin();
+      } catch (err) {
+        showToast("Error updating rooms: " + err.message);
+      }
+    }
+
+    async function adminModifyBaits(multiplier) {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      const amount = parseInt(document.getElementById('adminBaitsAmount').value);
+      if (!username || isNaN(amount) || amount <= 0) {
+        showToast("Enter a valid username and bait amount.");
+        return;
+      }
+
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+
+        const playerRef = db.collection('jugadores').doc(targetUid);
+        const docSnap = await playerRef.get();
+        if (!docSnap.exists) return;
+
+        let currentBaits = docSnap.data().wormBaitsCount || 0;
+        let val = amount * multiplier;
+        let newBaitsCount = currentBaits + val;
+        if (newBaitsCount < 0) newBaitsCount = 0;
+
+        await playerRef.update({ wormBaitsCount: newBaitsCount });
+        showToast(`Worm Baits updated for ${username} (${val > 0 ? '+' : ''}${val})`);
+        loadTargetUserInventoryForAdmin();
+      } catch (err) {
+        showToast("Error updating baits: " + err.message);
+      }
+    }
+
+    function openBanPrompt(isPerma) {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      if (!username) {
+        showToast("Enter a target username first.");
+        return;
+      }
+      isCurrentBanPerma = isPerma;
+      document.getElementById('admin-ban-prompt-title').innerText = isPerma ? "Permanent Ban User" : "Temporary Ban User";
+      document.getElementById('admin-ban-duration-group').style.display = isPerma ? 'none' : 'block';
+      document.getElementById('adminBanReasonInput').value = "";
+      document.getElementById('modal-admin-ban-prompt').style.display = 'flex';
+    }
+
+    async function confirmAdminBanAction() {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      const reason = document.getElementById('adminBanReasonInput').value.trim() || "No reason provided";
+      if (!username) return;
+
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+
+        if (isCurrentBanPerma) {
+          await db.collection('jugadores').doc(targetUid).update({
+            isBanned: true,
+            tempBanUntil: null,
+            banReason: reason
+          });
+          showToast(`Permanently banned ${username}.`);
+        } else {
+          const days = parseInt(document.getElementById('tempBanDaysInput').value) || 0;
+          const hours = parseInt(document.getElementById('tempBanHoursInput').value) || 0;
+          const minutes = parseInt(document.getElementById('tempBanMinutesInput').value) || 0;
+          const seconds = parseInt(document.getElementById('tempBanSecondsInput').value) || 0;
+
+          const totalMilliseconds = (days * 24 * 3600 + hours * 3600 + minutes * 60 + seconds) * 1000;
+
+          if (totalMilliseconds <= 0) {
+            showToast("Please specify a valid duration greater than 0.");
+            return;
+          }
+
+          const unbanDate = new Date(Date.now() + totalMilliseconds);
+          await db.collection('jugadores').doc(targetUid).update({
+            isBanned: false,
+            tempBanUntil: unbanDate,
+            banReason: reason
+          });
+          showToast(`Temp banned ${username} successfully.`);
+        }
+        document.getElementById('modal-admin-ban-prompt').style.display = 'none';
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
+    }
+
+    async function adminUnbanUser() {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      if (!username) {
+        showToast("Enter a target username.");
+        return;
+      }
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+        await db.collection('jugadores').doc(targetUid).update({
+          isBanned: false,
+          tempBanUntil: null,
+          banReason: ""
+        });
+        showToast(`User ${username} successfully unbanned.`);
+      } catch (err) {
+        showToast("Error unbanning user: " + err.message);
+      }
+    }
+
+    async function adminModifyCoins(multiplier) {
+      const username = document.getElementById('adminTargetUsername').value.trim();
+      const amount = parseInt(document.getElementById('adminCoinsAmount').value);
+      if (!username || isNaN(amount)) {
+        showToast("Enter a valid username and coin amount.");
+        return;
+      }
+
+      try {
+        const targetUid = await getUidByUsername(username);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+        const val = amount * multiplier;
+        await db.collection('jugadores').doc(targetUid).update({
+          coins: firebase.firestore.FieldValue.increment(val)
+        });
+        showToast(`Coins updated for ${username} (${val > 0 ? '+' : ''}${val})`);
+        loadTargetUserInventoryForAdmin();
+      } catch (err) {
+        showToast("Error updating coins: " + err.message);
+      }
+    }
+
+    async function adminCreateCode() {
+      const codeName = document.getElementById('adminPromoCode').value.trim().toUpperCase();
+      const coins = parseInt(document.getElementById('adminPromoCoins').value) || 0;
+      const bonusBaits = parseInt(document.getElementById('adminPromoBaits').value) || 0;
+      const bonusFishInput = document.getElementById('adminPromoFish').value.trim();
+
+      if (!codeName) {
+        showToast("Enter a valid code name.");
+        return;
+      }
+
+      let exactBonusFish = null;
+      if (bonusFishInput) {
+        const matchFish = ALLOWED_FISH_TYPES.find(f => f.name.toLowerCase() === bonusFishInput.toLowerCase());
+        exactBonusFish = matchFish ? matchFish.name : bonusFishInput;
+      }
+
+      try {
+        await db.collection('codes').doc(codeName).set({
+          coins: coins,
+          wormBaits: bonusBaits,
+          bonusFish: exactBonusFish,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast(`Promo code "${codeName}" created successfully!`);
+        document.getElementById('adminPromoCode').value = "";
+        document.getElementById('adminPromoCoins').value = "";
+        document.getElementById('adminPromoBaits').value = "";
+        document.getElementById('adminPromoFish').value = "";
+        loadAdminCodes();
+      } catch (err) {
+        showToast("Error creating code: " + err.message);
+      }
+    }
+
+    async function loadAdminCodes() {
+      const container = document.getElementById('adminCodesList');
+      container.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Loading codes...</p>';
+      
+      try {
+        const snapshot = await db.collection('codes').get();
+        if (snapshot.empty) {
+          container.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">No active codes.</p>';
+          return;
+        }
+
+        let html = '';
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const code = doc.id;
+          const coins = data.coins || 0;
+          const baitsText = data.wormBaits ? ` + ${data.wormBaits} Baits` : '';
+          const fishText = data.bonusFish ? ` + 🐟 ${data.bonusFish}` : '';
+          html += `
+            <div class="admin-code-item">
+              <span><strong>${code}</strong> (${coins} 💰${baitsText}${fishText})</span>
+              <button type="button" style="background:#e74c3c; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="adminDeleteCode('${code}')">Delete</button>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Error loading codes.</p>';
+      }
+    }
+
+    async function adminDeleteCode(codeName) {
+      try {
+        await db.collection('codes').doc(codeName).delete();
+        showToast(`Code "${codeName}" deleted successfully.`);
+        loadAdminCodes();
+      } catch (err) {
+        showToast("Error deleting code: " + err.message);
+      }
+    }
+
+    async function adminPostNews() {
+      const title = document.getElementById('newsTitle').value.trim();
+      const content = document.getElementById('newsContent').value.trim();
+      const imageFile = document.getElementById('newsImage').files[0];
+
+      if (!title || !content) {
+        showToast("Title and content are required.");
+        return;
+      }
+
+      let imageBase64 = null;
+      if (imageFile) {
+        if (imageFile.size > 1048576) {
+          showToast("News image cannot exceed 1MB.");
+          return;
+        }
+        imageBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.readAsDataURL(imageFile);
+        });
+      }
+
+      try {
+        await db.collection('news').add({
+          title: title,
+          content: content,
+          imageUrl: imageBase64,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast("News published successfully!");
+        closeAllModals();
+        document.getElementById('newsTitle').value = "";
+        document.getElementById('newsContent').value = "";
+        document.getElementById('newsImage').value = "";
+      } catch (err) {
+        showToast("Error publishing news: " + err.message);
+      }
+    }
+
+    auth.onAuthStateChanged(async user => {
+      const adminBtn = document.getElementById('adminBtn');
+      if (user) {
+        closeAllModals(); 
+        try {
+          const docRef = db.collection('jugadores').doc(user.uid);
+          let doc = await docRef.get();
+          
+          if (!doc.exists) {
+            const defaultUsername = user.displayName || user.email.split('@')[0] || "Player";
+            await docRef.set({
+              username: defaultUsername,
+              email: user.email,
+              bio: "",
+              photoURL: "",
+              coins: 0,
+              fishes: [],
+              miniTanksCount: 0,
+              wormBaitsCount: 0,
+              isBaitActive: false,
+              aquariumRoomsOwned: 1,
+              aquariumTanksMap: { room_0: new Array(8).fill(null) },
+              achievements: { catchFirst: false, gluGluTank: false, wormBaitAch: false, divineAch: false },
+              redeemedCodes: [],
+              lastUsernameChange: null,
+              isBanned: false,
+              tempBanUntil: null,
+              banReason: "",
+              hasWarning: false,
+              warningReason: "",
+              acceptedRules: false,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            doc = await docRef.get();
+          }
+
+          const data = doc.data();
+          
+          let isBanned = data.isBanned === true;
+          let tempBanUntil = data.tempBanUntil;
+          let banReason = data.banReason || "No reason specified";
+
+          if (!isBanned && tempBanUntil) {
+            const unbanDate = tempBanUntil.toDate ? tempBanUntil.toDate() : new Date(tempBanUntil);
+            if (Date.now() < unbanDate.getTime()) {
+              isBanned = true;
+            } else {
+              await docRef.update({ tempBanUntil: null, banReason: "" });
+              isBanned = false;
+            }
+          }
+
+          if (isBanned) {
+            document.getElementById('ban-type-label').innerText = tempBanUntil ? "Your account is temporarily banned." : "Your account has been permanently banned.";
+            document.getElementById('ban-reason-text').innerText = banReason;
+            
+            if (tempBanUntil) {
+              const unbanDate = tempBanUntil.toDate ? tempBanUntil.toDate() : new Date(tempBanUntil);
+              document.getElementById('ban-duration-text').innerText = `Temporary (Expires: ${unbanDate.toLocaleString()})`;
+            } else {
+              document.getElementById('ban-duration-text').innerText = "Permanent";
+            }
+
+            document.getElementById('modal-ban-notice').style.display = 'flex';
+            return;
+          }
+
+          if (data.hasWarning) {
+            document.getElementById('warning-reason-text').innerText = data.warningReason || "Behavior violation";
+            document.getElementById('modal-warning-notice').style.display = 'flex';
+          } else {
+            document.getElementById('modal-warning-notice').style.display = 'none';
+          }
+
+          if (!data.acceptedRules) {
+            openRulesModal(true);
+          }
+
+          document.getElementById('account-container').style.display = 'none';
+          document.getElementById('btn-logout').style.display = 'inline-flex';
+          document.getElementById('user-badge').style.display = 'flex';
+          document.getElementById('user-display-name').innerText = data.username || "Player";
+          if (data.photoURL) {
+            document.getElementById('user-avatar').src = data.photoURL;
+          } else {
+            document.getElementById('user-avatar').src = "https://via.placeholder.com/40";
+          }
+        } catch(e) {
+          console.error("Error loading user session:", e);
+        }
+
+        if (ADMIN_UID && user.uid === ADMIN_UID) {
+          adminBtn.style.display = 'flex';
+        } else {
+          adminBtn.style.display = 'none';
+        }
+      } else {
+        document.getElementById('account-container').style.display = 'flex';
+        document.getElementById('btn-logout').style.display = 'none';
+        document.getElementById('user-badge').style.display = 'none';
+        adminBtn.style.display = 'none';
+      }
+      
+      if (document.getElementById('modal-news').style.display === 'flex') {
+        if (newsList.length > 0) {
+          currentNewsIndex = newsList.length - 1;
+          renderCurrentNews();
+        }
+      }
+    });
+
+    function handleBanDismiss() {
+      document.getElementById('modal-ban-notice').style.display = 'none';
+      auth.signOut();
+    }
+
+    function logout() {
+      auth.signOut();
+      showToast("Logged out successfully.");
+    }
+  </script>
+</body>
+</html>
