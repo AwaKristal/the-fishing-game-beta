@@ -4,13 +4,13 @@
   "display": "standalone",
   "name": "The Fishing Game BETA",
   "orientation": "any",
-  "scope": "/",
+  "scope": "./",
   "short_name": "The Fishing Game BETA",
-  "start_url": "/",
+  "start_url": "./index.html",
   "theme_color": "#ffffff",
   "icons": [
     {
-      "src": "https://i.postimg.cc/rsFhhvFP/icon.png",
+      "src": "./icon.png",
       "type": "image/png",
       "sizes": "192x192"
     }
