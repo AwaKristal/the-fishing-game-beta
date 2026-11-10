@@ -72,7 +72,6 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
-    /* Botón de reglas ajustado al tamaño exacto de los demás botones de acción */
     .rules-header-btn {
       background: none;
       border: none;
@@ -195,10 +194,32 @@
       z-index: 99;
     }
 
+    /* Estilo para el contenedor del botón de recompensa diaria y su temporizador */
+    .daily-reward-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      margin-bottom: 4px;
+    }
+
+    .daily-timer-badge {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #ffffff;
+      background: rgba(30, 58, 138, 0.85);
+      padding: 2px 6px;
+      border-radius: 6px;
+      margin-top: -4px;
+      border: 1px solid rgba(255,255,255,0.4);
+      white-space: nowrap;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
     .btn-news-container {
       position: relative;
       display: inline-block;
-      margin-top: 18px;
+      margin-top: 4px;
     }
 
     .unread-news-indicator {
@@ -237,6 +258,13 @@
     }
 
     .btn-market-img {
+      width: 85px !important;
+      height: auto !important;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+    }
+
+    .btn-daily-img {
       width: 85px !important;
       height: auto !important;
       object-fit: contain;
@@ -664,6 +692,8 @@
       .btn-news-img { width: 75px !important; }
       .btn-index-img { width: 68px !important; }
       .btn-market-img { width: 68px !important; }
+      .btn-daily-img { width: 68px !important; }
+      .daily-timer-badge { font-size: 0.6rem; padding: 1px 4px; }
       .unread-news-indicator { top: -38px; right: 15px; }
       .unread-news-indicator img { width: 70px; }
       .admin-trigger-btn { right: 10px; bottom: 80px; width: 38px; height: 38px; }
@@ -679,7 +709,7 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.1</div>
+      <div class="version-tag">v.1.0.0.2 BETA</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
@@ -750,6 +780,14 @@
   </div>
 
   <div class="corner-bottom-right">
+    <!-- Botón de Recompensa Diaria con Temporizador -->
+    <div class="daily-reward-container">
+      <button class="img-btn" onclick="claimDailyReward()" title="Daily Reward">
+        <img src="https://i.postimg.cc/fb0Ltxkr/dailyreward.png" alt="Daily Reward" class="btn-daily-img">
+      </button>
+      <div id="daily-timer-display" class="daily-timer-badge">Ready!</div>
+    </div>
+
     <button class="img-btn" onclick="openMarketModal()">
       <img src="https://i.postimg.cc/pXqPJd8Z/market.png" alt="Market" class="btn-market-img">
     </button>
@@ -1491,6 +1529,7 @@
     let verificationTimerInterval = null;
     let isMandatoryRulesView = false;
     let hasUserAcceptedRulesLocal = false;
+    let dailyTimerInterval = null;
 
     let isMouseDown = false;
     let minigameLoop = null;
@@ -1529,7 +1568,7 @@
       { name: "Basking Shark", value: 1200, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
       { name: "Oarfish", value: 2000, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
       { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A legendary collector species from ancient waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
-      { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish obtainable only via special codes.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
+      { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
 
     function onloadCallback() {
@@ -1686,6 +1725,103 @@
       } catch (err) {
         showToast("Error accepting rules: " + err.message);
       }
+    }
+
+    /* Lógica para la Recompensa Diaria y Temporizador de 24 horas */
+    async function claimDailyReward() {
+      const user = auth.currentUser;
+      if (!user) {
+        showToast("You must be logged in to claim daily rewards.");
+        openModal('modal-account');
+        return;
+      }
+
+      try {
+        const docRef = db.collection('jugadores').doc(user.uid);
+        const doc = await docRef.get();
+        if (!doc.exists) return;
+
+        const data = doc.data();
+        const lastClaim = data.lastDailyClaim ? (data.lastDailyClaim.toDate ? data.lastDailyClaim.toDate() : new Date(data.lastDailyClaim)) : null;
+        const now = new Date();
+
+        if (lastClaim) {
+          const diffMs = now - lastClaim;
+          const coolDownMs = 24 * 60 * 60 * 1000;
+          if (diffMs < coolDownMs) {
+            showToast("Daily reward already claimed! Come back later.");
+            return;
+          }
+        }
+
+        // Recompensas: 300 monedas, 2 baits y con 15% de probabilidad un Mini Tank adicional
+        const rewardCoins = 300;
+        const rewardBaits = 2;
+        const luckTank = Math.random() < 0.15;
+
+        let updateData = {
+          coins: firebase.firestore.FieldValue.increment(rewardCoins),
+          wormBaitsCount: firebase.firestore.FieldValue.increment(rewardBaits),
+          lastDailyClaim: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (luckTank) {
+          updateData.miniTanksCount = firebase.firestore.FieldValue.increment(1);
+        }
+
+        await docRef.update(updateData);
+
+        let msg = `🎉 Daily Reward Claimed! +${rewardCoins} 💰, +${rewardBaits} Worm Baits`;
+        if (luckTank) {
+          msg += ` & 🐠 LUCKY! +1 Mini Tank!`;
+        }
+        showToast(msg);
+        updateGameHUD();
+        startDailyTimer(new Date());
+      } catch (err) {
+        showToast("Error claiming reward: " + err.message);
+      }
+    }
+
+    function initDailyTimerSync() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      db.collection('jugadores').doc(user.uid).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          const lastClaim = data.lastDailyClaim ? (data.lastDailyClaim.toDate ? data.lastDailyClaim.toDate() : new Date(data.lastDailyClaim)) : null;
+          startDailyTimer(lastClaim);
+        }
+      });
+    }
+
+    function startDailyTimer(lastClaimDate) {
+      if (dailyTimerInterval) clearInterval(dailyTimerInterval);
+
+      const timerDisplay = document.getElementById('daily-timer-display');
+      if (!lastClaimDate) {
+        timerDisplay.innerText = "Ready!";
+        return;
+      }
+
+      const coolDownMs = 24 * 60 * 60 * 1000;
+
+      dailyTimerInterval = setInterval(() => {
+        const now = Date.now();
+        const lastTime = lastClaimDate.getTime();
+        const diff = coolDownMs - (now - lastTime);
+
+        if (diff <= 0) {
+          timerDisplay.innerText = "Ready!";
+          clearInterval(dailyTimerInterval);
+        } else {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const secs = Math.floor((diff % (1000 * 60)) / 1000);
+          timerDisplay.innerText = `${hours}h ${mins}m ${secs}s`;
+        }
+      }, 1000);
     }
 
     function openAdminWarningPrompt() {
@@ -3278,6 +3414,7 @@
           hasWarning: false,
           warningReason: "",
           acceptedRules: false,
+          lastDailyClaim: null,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
@@ -4183,6 +4320,7 @@
       const adminBtn = document.getElementById('adminBtn');
       if (user) {
         closeAllModals(); 
+        initDailyTimerSync();
         try {
           const docRef = db.collection('jugadores').doc(user.uid);
           let doc = await docRef.get();
@@ -4210,6 +4348,7 @@
               hasWarning: false,
               warningReason: "",
               acceptedRules: false,
+              lastDailyClaim: null,
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             doc = await docRef.get();
@@ -4280,6 +4419,7 @@
         document.getElementById('btn-logout').style.display = 'none';
         document.getElementById('user-badge').style.display = 'none';
         adminBtn.style.display = 'none';
+        if (dailyTimerInterval) clearInterval(dailyTimerInterval);
       }
       
       if (document.getElementById('modal-news').style.display === 'flex') {
