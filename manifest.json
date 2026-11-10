@@ -1,0 +1,28 @@
+{
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "The Fishing Game BETA",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "The Fishing Game BETA",
+  "start_url": "/",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "https://i.postimg.cc/rsFhhvFP/icon.png",
+      "type": "image/png",
+      "sizes": "64x64",
+      "isSquare": true,
+      "isPng": true,
+      "isWebp": false,
+      "isJpg": false,
+      "width": 64,
+      "is512x512": false,
+      "is256x256": false,
+      "is192x192": false
+    }
+  ],
+  "id": "/the-fishing-game-beta/",
+  "description": "The revival of my old game i made in school with paper about fishing!"
+}
