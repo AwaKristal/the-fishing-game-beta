@@ -1075,7 +1075,7 @@
         <img id="profile-modal-avatar" src="https://via.placeholder.com/60" alt="Avatar" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid #1e3a8a;">
         <div>
           <h3 id="profile-modal-name" style="margin:0; font-size:1.2rem;">Username</h3>
-          <p id="verification-status" style="margin:3px 0; font-size:0.8rem; color:#e74c3c;">Email not verified</p>
+          <p id="verification-status" style="margin:3px 0; font-size:0.8rem; color:#e74c3c; display:none;">Email not verified</p>
           <p id="verification-timer" style="margin:2px 0 0 0; font-size:0.75rem; color:#c0392b; font-weight:bold; display:none;">Auto-deletion in: Calculating...</p>
           <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="profile-coins">0</span> | 🐟 Fish: <span id="profile-fish-count">0</span></p>
         </div>
@@ -1565,7 +1565,7 @@
       { name: "Megamouth Shark", value: 700, rarity: "Mythic", desc: "An elusive deep-water giant with glowing lips.", img: "https://i.postimg.cc/WbXHFmwx/megamouth-shark.png" },
       { name: "Basking Shark", value: 1200, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
       { name: "Oarfish", value: 2000, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
-      { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A legendary collector species from ancient waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
+      { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A mysterious fish from ancient and divine waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
       { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
 
@@ -3476,42 +3476,51 @@
             document.getElementById('profile-modal-avatar').src = data.photoURL;
           }
 
-          if (user.emailVerified) {
-            statusEl.innerText = "Email verified";
-            statusEl.style.color = "#2ecc71";
-            timerEl.style.display = 'none';
-          } else {
-            statusEl.innerText = "Email not verified";
-            statusEl.style.color = "#e74c3c";
-            timerEl.style.display = 'block';
+          // VERIFICACIÓN DE PRIVILEGIOS: Solo el Creador (ADMIN_UID) ve esta info
+          const isCreator = user.uid === ADMIN_UID;
 
-            let createdAtMs = Date.now();
-            if (user.metadata && user.metadata.creationTime) {
-              createdAtMs = new Date(user.metadata.creationTime).getTime();
-            } else if (data.createdAt) {
-              createdAtMs = data.createdAt.toDate ? data.createdAt.toDate().getTime() : new Date(data.createdAt).getTime();
-            }
+          if (isCreator) {
+            statusEl.style.display = 'block';
+            if (user.emailVerified) {
+              statusEl.innerText = "Email verified (Admin View)";
+              statusEl.style.color = "#2ecc71";
+              timerEl.style.display = 'none';
+            } else {
+              statusEl.innerText = "Email not verified (Admin View)";
+              statusEl.style.color = "#e74c3c";
+              timerEl.style.display = 'block';
 
-            const deletionTimeMs = createdAtMs + (3 * 24 * 60 * 60 * 1000);
-
-            const updateTimerDisplay = () => {
-              const now = Date.now();
-              const diff = deletionTimeMs - now;
-
-              if (diff <= 0) {
-                timerEl.innerText = "Auto-deletion: Account scheduled for deletion!";
-                clearInterval(verificationTimerInterval);
-              } else {
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const secs = Math.floor((diff % (1000 * 60)) / 1000);
-                timerEl.innerText = `Auto-deletion in: ${days}d ${hours}h ${mins}m ${secs}s`;
+              let createdAtMs = Date.now();
+              if (user.metadata && user.metadata.creationTime) {
+                createdAtMs = new Date(user.metadata.creationTime).getTime();
+              } else if (data.createdAt) {
+                createdAtMs = data.createdAt.toDate ? data.createdAt.toDate().getTime() : new Date(data.createdAt).getTime();
               }
-            };
 
-            updateTimerDisplay();
-            verificationTimerInterval = setInterval(updateTimerDisplay, 1000);
+              const deletionTimeMs = createdAtMs + (3 * 24 * 60 * 60 * 1000);
+
+              const updateTimerDisplay = () => {
+                const now = Date.now();
+                const diff = deletionTimeMs - now;
+
+                if (diff <= 0) {
+                  timerEl.innerText = "Auto-deletion: Account scheduled for deletion!";
+                  clearInterval(verificationTimerInterval);
+                } else {
+                  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                  const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                  timerEl.innerText = `Auto-deletion in: ${days}d ${hours}h ${mins}m ${secs}s`;
+                }
+              };
+
+              updateTimerDisplay();
+              verificationTimerInterval = setInterval(updateTimerDisplay, 1000);
+            }
+          } else {
+            statusEl.style.display = 'none';
+            timerEl.style.display = 'none';
           }
         }
       } catch (err) {
