@@ -1046,7 +1046,7 @@
       
       <div class="form-group">
         <label>Reason for Warning</label>
-        <textarea id="adminWarningReasonInput" placeholder="Specify violation reason..." rows="3" style="resize:none;" required></textarea>
+        <textarea id="adminWarningReasonInput" placeholder="Specify violation reason..." rows="3" style="resize:none;" autocomplete="off" required></textarea>
       </div>
       <button type="button" class="modal-action-btn" style="background:#f39c12;" onclick="confirmAdminSendWarning()">Send Warning</button>
     </div>
@@ -1060,7 +1060,7 @@
       <p style="font-size:0.85rem; color:#64748b;" id="prompt-botsell-name-label">Fish: Goldfish</p>
       <div class="form-group">
         <label>Quantity to Sell (Max: <span id="prompt-botsell-max-label">1</span>)</label>
-        <input type="number" id="botsell-qty-input" min="1" value="1" placeholder="Quantity">
+        <input type="number" id="botsell-qty-input" min="1" value="1" placeholder="Quantity" autocomplete="off">
       </div>
       <div style="display: flex; gap: 8px;">
         <button type="button" class="modal-action-btn" style="background:#27ae60; flex:1;" onclick="confirmBotSell(false)">Sell Qty</button>
@@ -1080,26 +1080,26 @@
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
           <div class="form-group" style="margin-bottom: 0;">
             <label style="font-size: 0.75rem;">Days</label>
-            <input type="number" id="tempBanDaysInput" placeholder="0" value="0" min="0">
+            <input type="number" id="tempBanDaysInput" placeholder="0" value="0" min="0" autocomplete="off">
           </div>
           <div class="form-group" style="margin-bottom: 0;">
             <label style="font-size: 0.75rem;">Hours</label>
-            <input type="number" id="tempBanHoursInput" placeholder="0" value="24" min="0">
+            <input type="number" id="tempBanHoursInput" placeholder="0" value="24" min="0" autocomplete="off">
           </div>
           <div class="form-group" style="margin-bottom: 0;">
             <label style="font-size: 0.75rem;">Minutes</label>
-            <input type="number" id="tempBanMinutesInput" placeholder="0" value="0" min="0">
+            <input type="number" id="tempBanMinutesInput" placeholder="0" value="0" min="0" autocomplete="off">
           </div>
           <div class="form-group" style="margin-bottom: 0;">
             <label style="font-size: 0.75rem;">Seconds</label>
-            <input type="number" id="tempBanSecondsInput" placeholder="0" value="0" min="0">
+            <input type="number" id="tempBanSecondsInput" placeholder="0" value="0" min="0" autocomplete="off">
           </div>
         </div>
       </div>
 
       <div class="form-group">
         <label>Reason for Ban</label>
-        <textarea id="adminBanReasonInput" placeholder="Enter reason for the ban..." rows="3" style="resize:none;" required></textarea>
+        <textarea id="adminBanReasonInput" placeholder="Enter reason for the ban..." rows="3" style="resize:none;" autocomplete="off" required></textarea>
       </div>
       <button type="button" class="modal-action-btn" style="background:#e74c3c;" onclick="confirmAdminBanAction()">Confirm Ban</button>
     </div>
@@ -1144,7 +1144,7 @@
       <p style="font-size:0.85rem; color:#64748b;" id="prompt-fish-name-label">Fish: Opah</p>
       <div class="form-group">
         <label>Price per unit (💰)</label>
-        <input type="number" id="market-sell-price-input" min="1" placeholder="e.g. 50">
+        <input type="number" id="market-sell-price-input" min="1" placeholder="e.g. 50" autocomplete="off">
       </div>
       <button type="button" class="modal-action-btn" style="background:#2ecc71;" onclick="confirmMarketSell()">Post to Market</button>
     </div>
@@ -1158,6 +1158,7 @@
         <button id="tab-register-btn" class="tab-btn" onclick="switchAuthTab('register')">Register</button>
       </div>
 
+      <!-- ÚNICO LUGAR CON AUTOCOMPLETE Y GUARDADO DE CONTRASEÑA HABILITADO -->
       <form id="form-login" onsubmit="handleLogin(event)">
         <div class="form-group">
           <label>Email Address</label>
@@ -1175,7 +1176,11 @@
         <p style="font-size:0.9rem; text-align:center; margin-top:10px; cursor:pointer; color:#2ecc71; font-weight:bold;" onclick="openModal('modal-resend-verification')">Resend Verification Email</p>
       </form>
 
+      <!-- REGISTRO Y OTROS CON AUTOCOMPLETE="OFF" Y PROTECCIÓN CONTRA PASSWORD PROMPT -->
       <form id="form-register" onsubmit="handleRegister(event)" style="display:none;" autocomplete="off">
+        <input type="text" style="display:none" name="prevent_autofill_user">
+        <input type="password" style="display:none" name="prevent_autofill_pass">
+        
         <div class="form-group">
           <label>Username</label>
           <input type="text" id="reg-username" autocomplete="off" name="new-username" required maxlength="20">
@@ -1190,7 +1195,7 @@
         </div>
         <div class="form-group">
           <label>Bio / Description</label>
-          <textarea id="reg-bio" placeholder="Tell us something about you..." maxlength="150" style="resize:none; height:60px;"></textarea>
+          <textarea id="reg-bio" placeholder="Tell us something about you..." maxlength="150" autocomplete="off" style="resize:none; height:60px;"></textarea>
         </div>
         <div class="form-group">
           <label>Profile Picture (Max 1MB)</label>
@@ -1212,11 +1217,11 @@
       
       <div class="form-group">
         <label>Email Address</label>
-        <input type="email" id="resend-email" placeholder="Your account email" required>
+        <input type="email" id="resend-email" placeholder="Your account email" autocomplete="off" required>
       </div>
       <div class="form-group">
         <label>Password</label>
-        <input type="password" id="resend-password" placeholder="Your password" required>
+        <input type="password" id="resend-password" placeholder="Your password" autocomplete="off" required>
       </div>
       <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="handleResendVerification()">Send Verification Email</button>
     </div>
@@ -1230,7 +1235,7 @@
       
       <div class="form-group">
         <label>Email Address</label>
-        <input type="email" id="forgot-email" placeholder="Your account email" required>
+        <input type="email" id="forgot-email" placeholder="Your account email" autocomplete="off" required>
       </div>
       <button type="button" class="modal-action-btn" onclick="handleForgotPassword()">Send Reset Link</button>
     </div>
@@ -1277,7 +1282,7 @@
         </div>
         <div class="form-group">
           <label>Bio / Description</label>
-          <textarea id="profile-edit-bio" placeholder="Write your new description..." maxlength="150" style="resize:none; height:60px;"></textarea>
+          <textarea id="profile-edit-bio" placeholder="Write your new description..." maxlength="150" autocomplete="off" style="resize:none; height:60px;"></textarea>
         </div>
         <div class="form-group">
           <label>Change Profile Picture (Max 1MB)</label>
@@ -1298,6 +1303,7 @@
     </div>
   </div>
 
+  <!-- Modal View Other Profile (Con soporte dinámico para Add Friend o DM) -->
   <div id="modal-view-profile" class="modal-overlay">
     <div class="modal-card">
       <button class="modal-close" onclick="openModal('modal-profile')">✖</button>
@@ -1317,7 +1323,8 @@
 
       <div style="display: flex; gap: 8px; margin-top: 10px;">
         <button type="button" class="modal-action-btn" style="background: #2980b9; flex:1;" onclick="openOtherAquarium()">See Aquarium</button>
-        <button type="button" class="modal-action-btn" style="background: #8e44ad; flex:1;" id="btn-send-friend-req-view" onclick="sendFriendRequestFromView()">Add Friend</button>
+        <!-- Botón dinámico que cambiará a DM si ya son amigos -->
+        <button type="button" class="modal-action-btn" style="background: #8e44ad; flex:1;" id="btn-send-friend-req-view" onclick="handleProfileFriendButton()">Add Friend</button>
       </div>
     </div>
   </div>
@@ -1377,7 +1384,7 @@
       <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px;">
         <button id="index-toggle-mode-btn" class="modal-action-btn" style="width: auto; padding: 6px 14px; background: #8e44ad; font-size: 0.85rem;" onclick="toggleIndexMode()">Limited</button>
         <div style="flex: 1; text-align: left;">
-          <select id="index-rarity-select" onchange="onRarityFilterChange()" style="padding: 8px; font-weight: bold;">
+          <select id="index-rarity-select" onchange="onRarityFilterChange()" style="padding: 8px; font-weight: bold;" autocomplete="off">
             <option value="Common">Common</option>
             <option value="Rare">Rare</option>
           </select>
@@ -1571,7 +1578,7 @@
 
       <div class="form-group">
         <label>Coins Amount</label>
-        <input type="number" id="adminCoinsAmount" placeholder="Amount">
+        <input type="number" id="adminCoinsAmount" placeholder="Amount" autocomplete="off">
       </div>
       <div style="display: flex; gap: 8px; margin-bottom: 15px;">
         <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="adminModifyCoins(1)">Give Coins</button>
@@ -1580,7 +1587,7 @@
 
       <div class="form-group">
         <label>Mini Tanks Amount</label>
-        <input type="number" id="adminTanksAmount" placeholder="Tanks amount" value="1" min="1">
+        <input type="number" id="adminTanksAmount" placeholder="Tanks amount" value="1" min="1" autocomplete="off">
       </div>
       <div style="display: flex; gap: 8px; margin-bottom: 15px;">
         <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="adminModifyTanks(1)">Give Tanks</button>
@@ -1589,7 +1596,7 @@
 
       <div class="form-group">
         <label>Aquarium Rooms Amount</label>
-        <input type="number" id="adminRoomsAmount" placeholder="Rooms amount" value="1" min="1">
+        <input type="number" id="adminRoomsAmount" placeholder="Rooms amount" value="1" min="1" autocomplete="off">
       </div>
       <div style="display: flex; gap: 8px; margin-bottom: 15px;">
         <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="adminModifyRooms(1)">Give Rooms</button>
@@ -1598,7 +1605,7 @@
 
       <div class="form-group">
         <label>Worm Baits Amount</label>
-        <input type="number" id="adminBaitsAmount" placeholder="Baits amount" value="1" min="1">
+        <input type="number" id="adminBaitsAmount" placeholder="Baits amount" value="1" min="1" autocomplete="off">
       </div>
       <div style="display: flex; gap: 8px; margin-bottom: 15px;">
         <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="adminModifyBaits(1)">Give Baits</button>
@@ -1627,11 +1634,11 @@
       </div>
       <div class="form-group">
         <label>Coins Reward</label>
-        <input type="number" id="adminPromoCoins" placeholder="Coins amount">
+        <input type="number" id="adminPromoCoins" placeholder="Coins amount" autocomplete="off">
       </div>
       <div class="form-group">
         <label>Worm Baits Reward (Optional)</label>
-        <input type="number" id="adminPromoBaits" placeholder="Baits amount (e.g. 5)" min="0">
+        <input type="number" id="adminPromoBaits" placeholder="Baits amount (e.g. 5)" min="0" autocomplete="off">
       </div>
       <div class="form-group">
         <label>Bonus Fish Reward (Optional - exact fish name)</label>
@@ -1654,7 +1661,7 @@
       </div>
       <div class="form-group">
         <label>Content</label>
-        <textarea id="newsContent" placeholder="News body..." rows="3" style="resize:none;"></textarea>
+        <textarea id="newsContent" placeholder="News body..." rows="3" autocomplete="off" style="resize:none;"></textarea>
       </div>
       <div class="form-group">
         <label>Image (Max 1MB)</label>
@@ -1671,7 +1678,7 @@
       <p style="font-size:0.85rem; color:#64748b;" id="admin-remove-fish-name-label">Fish: Goldfish</p>
       <div class="form-group">
         <label>Quantity to remove</label>
-        <input type="number" id="admin-remove-fish-qty-input" min="1" value="1" placeholder="Quantity">
+        <input type="number" id="admin-remove-fish-qty-input" min="1" value="1" placeholder="Quantity" autocomplete="off">
       </div>
       <button type="button" class="modal-action-btn" style="background:#c0392b;" onclick="confirmAdminRemoveFish()">Delete</button>
     </div>
@@ -1774,8 +1781,8 @@
 
     function onloadCallback() {
       try {
-        recaptchaLoginId = grecaptcha.render('recaptcha-login', { 'sitekey': RECAPTCHA_SITE_KEY });
-        recaptchaRegisterId = grecaptcha.render('recaptcha-register', { 'sitekey': RECAPTCHA_SITE_KEY });
+        recaptchaLoginId = greCAPTCHA.render('recaptcha-login', { 'sitekey': RECAPTCHA_SITE_KEY });
+        recaptchaRegisterId = greCAPTCHA.render('recaptcha-register', { 'sitekey': RECAPTCHA_SITE_KEY });
       } catch (e) {
         console.error("reCAPTCHA render error:", e);
       }
@@ -2062,12 +2069,34 @@
       }
     }
 
-    async function sendFriendRequestFromView() {
-      if (!viewingTargetUsername) return;
-      document.getElementById('addFriendUsernameInput').value = viewingTargetUsername;
-      openFriendsModal();
-      switchFriendsTab('add');
-      sendFriendRequest();
+    async function handleProfileFriendButton() {
+      const user = auth.currentUser;
+      if (!user || !viewingTargetUid) return;
+
+      if (viewingTargetUid === user.uid) {
+        showToast("This is your own profile!");
+        return;
+      }
+
+      try {
+        const myDoc = await db.collection('jugadores').doc(user.uid).get();
+        const myData = myDoc.data() || {};
+        const friendsList = myData.friends || [];
+
+        if (friendsList.includes(viewingTargetUid)) {
+          // Ya son amigos -> Abrir chat directamente
+          document.getElementById('modal-view-profile').style.display = 'none';
+          openChatWithFriend(viewingTargetUid, viewingTargetUsername);
+        } else {
+          // No son amigos -> Enviar solicitud
+          document.getElementById('addFriendUsernameInput').value = viewingTargetUsername;
+          openFriendsModal();
+          switchFriendsTab('add');
+          sendFriendRequest();
+        }
+      } catch (err) {
+        showToast("Error interacting with user: " + err.message);
+      }
     }
 
     async function sendFriendRequest() {
@@ -2100,7 +2129,6 @@
           return;
         }
 
-        // Verificar si ya existe solicitud enviada de ti hacia él
         const existingQuery = await db.collection('friendRequests')
           .where('senderUid', '==', user.uid)
           .where('receiverUid', '==', targetUid)
@@ -2111,7 +2139,6 @@
           return;
         }
 
-        // Verificar si el otro usuario ya te envió solicitud (para evitar cruces y duplicados)
         const reverseQuery = await db.collection('friendRequests')
           .where('senderUid', '==', targetUid)
           .where('receiverUid', '==', user.uid)
@@ -3501,28 +3528,33 @@
           let chosenPool = standardFishes;
 
           if (usedBaitThisCast) {
-            if (rand < 0.07) {
+            // MEJORA EN PROBABILIDAD DE CEBO: Tasas incrementadas drásticamente para peces valiosos/raros
+            if (rand < 0.25) {
               const divineMythic = standardFishes.filter(f => f.rarity === 'Divine' || f.rarity === 'Mythic');
               if (divineMythic.length > 0) chosenPool = divineMythic;
-            } else if (rand < 0.20) {
+            } else if (rand < 0.65) {
               const rareEpicLegendary = standardFishes.filter(f => f.rarity === 'Rare' || f.rarity === 'Epic' || f.rarity === 'Legendary');
               if (rareEpicLegendary.length > 0) chosenPool = rareEpicLegendary;
+            } else {
+              const commonPool = standardFishes.filter(f => f.rarity === 'Common');
+              if (commonPool.length > 0) chosenPool = commonPool;
             }
+          } else {
+            const tierRoll = Math.random() * 100;
+            let targetRarity = "Common";
+            if (tierRoll < 0.05) targetRarity = "Divine";      
+            else if (tierRoll < 0.3) targetRarity = "Mythic";    
+            else if (tierRoll < 1.5) targetRarity = "Legendary"; 
+            else if (tierRoll < 6.0) targetRarity = "Epic";      
+            else if (tierRoll < 25.0) targetRarity = "Rare";     
+            else targetRarity = "Common";                        
+
+            let rarityPool = standardFishes.filter(f => f.rarity === targetRarity);
+            if (rarityPool.length === 0) rarityPool = standardFishes.filter(f => f.rarity === "Common");
+            chosenPool = rarityPool;
           }
 
-          const tierRoll = Math.random() * 100;
-          let targetRarity = "Common";
-          if (tierRoll < 0.05) targetRarity = "Divine";      
-          else if (tierRoll < 0.3) targetRarity = "Mythic";    
-          else if (tierRoll < 1.5) targetRarity = "Legendary"; 
-          else if (tierRoll < 6.0) targetRarity = "Epic";      
-          else if (tierRoll < 25.0) targetRarity = "Rare";     
-          else targetRarity = "Common";                        
-
-          let rarityPool = standardFishes.filter(f => f.rarity === targetRarity);
-          if (rarityPool.length === 0) rarityPool = standardFishes.filter(f => f.rarity === "Common");
-
-          pendingCaughtFish = rarityPool[Math.floor(Math.random() * rarityPool.length)] || standardFishes[0];
+          pendingCaughtFish = chosenPool[Math.floor(Math.random() * chosenPool.length)] || standardFishes[0];
 
           startFishingMinigame();
         }, 2000 + Math.random() * 1500);
@@ -4343,6 +4375,32 @@
         viewJoinedEl.innerText = `Joined in: ${parsedDate.toLocaleDateString()}`;
       } else {
         viewJoinedEl.innerText = `Joined in: -`;
+      }
+
+      // Comprobar si ya son amigos para cambiar el botón dinámicamente
+      const currentUser = auth.currentUser;
+      const btnRef = document.getElementById('btn-send-friend-req-view');
+      
+      if (currentUser && currentUser.uid === uid) {
+        btnRef.style.display = 'none';
+      } else {
+        btnRef.style.display = 'block';
+        if (currentUser) {
+          try {
+            const myDoc = await db.collection('jugadores').doc(currentUser.uid).get();
+            const friendsList = (myDoc.data() || {}).friends || [];
+            if (friendsList.includes(uid)) {
+              btnRef.innerText = "DM";
+              btnRef.style.background = "#1e3a8a";
+            } else {
+              btnRef.innerText = "Add Friend";
+              btnRef.style.background = "#8e44ad";
+            }
+          } catch(e) {
+            btnRef.innerText = "Add Friend";
+            btnRef.style.background = "#8e44ad";
+          }
+        }
       }
 
       openModal('modal-view-profile');
