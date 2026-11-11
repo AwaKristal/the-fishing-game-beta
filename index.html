@@ -374,6 +374,62 @@
     }
     .cast-line-btn:hover { background: #27ae60; }
 
+    /* Animación de Pez Capturado Saliendo del Agua */
+    .caught-fish-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 5000;
+      pointer-events: none;
+      animation: fishSplashOut 2.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .caught-fish-popup img {
+      width: 140px;
+      height: 140px;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
+    }
+
+    .caught-fish-popup .fish-title {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #ffffff;
+      text-shadow: 0 3px 6px rgba(0,0,0,0.8);
+      background: rgba(30, 58, 138, 0.85);
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-top: 10px;
+      border: 2px solid #ffffff;
+    }
+
+    @keyframes fishSplashOut {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 20%) scale(0.2) rotate(-15deg);
+      }
+      30% {
+        opacity: 1;
+        transform: translate(-50%, -60%) scale(1.2) rotate(5deg);
+      }
+      45% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+      }
+      80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -80%) scale(0.8);
+      }
+    }
+
     #fishing-minigame-overlay {
       display: none;
       position: absolute;
@@ -711,7 +767,7 @@
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -831,6 +887,11 @@
         <div class="rule-item">
           <div class="rule-title">4. Account security</div>
           <div class="rule-desc">You are responsible for the security of your account. Do not share your login credentials with anyone. Administrators will never ask for your password.</div>
+        </div>
+
+        <div class="rule-item">
+          <div class="rule-title">5. Bug abuse & Cooldowns</div>
+          <div class="rule-desc">Exploiting system lag, clicking rapidly to duplicate purchases or claim rewards improperly is strictly prohibited. All store and reward actions are protected with a mandatory 5-second cooldown.</div>
         </div>
       </div>
 
@@ -1528,6 +1589,7 @@
     let isMandatoryRulesView = false;
     let hasUserAcceptedRulesLocal = false;
     let dailyTimerInterval = null;
+    let lastActionTimestamp = 0; // Sistema de Cooldown de 5s
 
     let isMouseDown = false;
     let minigameLoop = null;
@@ -1568,6 +1630,29 @@
       { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A mysterious fish from ancient and divine waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
       { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
+
+    function checkCooldown() {
+      const now = Date.now();
+      const diff = (now - lastActionTimestamp) / 1000;
+      if (diff < 5) {
+        const remaining = (5 - diff).toFixed(1);
+        showToast(`⏳ Cooldown active! Wait ${remaining}s before performing another action.`);
+        return false;
+      }
+      lastActionTimestamp = now;
+      return true;
+    }
+
+    function triggerCaughtFishPopup(fishObj) {
+      const popup = document.createElement('div');
+      popup.className = 'caught-fish-popup';
+      popup.innerHTML = `
+        <img src="${fishObj.img}" alt="${fishObj.name}">
+        <div class="fish-title">✨ ${fishObj.name} (${fishObj.rarity}) ✨</div>
+      `;
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 2800);
+    }
 
     function onloadCallback() {
       try {
@@ -1726,6 +1811,7 @@
     }
 
     async function claimDailyReward() {
+      if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user) {
         showToast("You must be logged in to claim daily rewards.");
@@ -2307,6 +2393,7 @@
     }
 
     async function confirmBotSell() {
+      if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user || !selectedFishToBotSell) return;
 
@@ -2391,6 +2478,7 @@
     }
 
     async function confirmMarketSell() {
+      if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user || !selectedFishToMarket) return;
 
@@ -2454,6 +2542,7 @@
     }
 
     async function cancelMarketListing(listingId, fishName) {
+      if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user) return;
 
@@ -2484,6 +2573,7 @@
     }
 
     async function buyMarketItem(listingId, sellerUid, price, fishName) {
+      if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user) return;
       if (user.uid === sellerUid) {
@@ -3072,6 +3162,9 @@
             fishes: firebase.firestore.FieldValue.arrayUnion({ name: pendingCaughtFish.name, timestamp: new Date().toISOString() })
           });
 
+          // Disparar Animación de Pez Saliendo del Agua
+          triggerCaughtFishPopup(pendingCaughtFish);
+
           showToast(`You caught a ${pendingCaughtFish.name} (${pendingCaughtFish.rarity})!`);
           updateGameHUD();
           
@@ -3088,6 +3181,7 @@
     }
 
     async function buyMiniTank() {
+      if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user) {
         showToast("You must be logged in.");
@@ -3124,6 +3218,7 @@
     }
 
     async function buyWormBait() {
+      if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user) {
         showToast("You must be logged in.");
@@ -3159,6 +3254,7 @@
     }
 
     async function buyAquariumRoom() {
+      if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user) {
         showToast("You must be logged in.");
@@ -3643,6 +3739,7 @@
     }
 
     async function redeemCode() {
+      if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user) {
         showToast("You must be logged in to redeem codes.");
