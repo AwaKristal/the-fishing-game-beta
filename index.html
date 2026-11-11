@@ -706,6 +706,56 @@
       line-height: 1.4;
     }
 
+    /* Estilos del Chat DM */
+    .chat-box-container {
+      display: flex;
+      flex-direction: column;
+      height: 320px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px;
+      overflow: hidden;
+    }
+    .chat-messages-area {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 5px;
+    }
+    .chat-bubble {
+      max-width: 80%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      position: relative;
+      word-break: break-word;
+    }
+    .chat-bubble.sent {
+      align-self: flex-end;
+      background: #1e3a8a;
+      color: #ffffff;
+      border-bottom-right-radius: 2px;
+    }
+    .chat-bubble.received {
+      align-self: flex-start;
+      background: #e2e8f0;
+      color: #1f2937;
+      border-bottom-left-radius: 2px;
+    }
+    .chat-report-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.75rem;
+      margin-left: 6px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .chat-report-btn:hover { opacity: 1; }
+
     #toast-container {
       position: fixed;
       bottom: 20px; right: 20px;
@@ -767,7 +817,7 @@
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -777,10 +827,13 @@
       <img id="user-avatar" src="https://via.placeholder.com/40" alt="Avatar">
       <span id="user-display-name">Username</span>
     </div>
-    <div id="account-container">
-      <button class="img-btn" onclick="openModal('modal-account')">
-        <img src="https://i.postimg.cc/Kjf35Nc8/account.png" alt="Account">
-      </button>
+    <div style="display: flex; gap: 6px;">
+      <div id="account-container">
+        <button class="img-btn" onclick="openModal('modal-account')">
+          <img src="https://i.postimg.cc/Kjf35Nc8/account.png" alt="Account">
+        </button>
+      </div>
+      <button id="btn-friends" class="modal-action-btn" style="display:none; width:auto; padding: 6px 12px; font-size: 0.85rem; background:#8e44ad;" onclick="openFriendsModal()">👥 Friends & DMs</button>
     </div>
     <button id="btn-logout" class="modal-action-btn" style="display:none; width:auto; padding: 6px 12px; font-size: 0.85rem;" onclick="logout()">Log out</button>
   </div>
@@ -871,7 +924,7 @@
       <div id="rules-scroll-container" style="max-height: 280px; overflow-y: auto; padding-right: 5px;" onscroll="checkRulesScroll()">
         <div class="rule-item">
           <div class="rule-title">1. Respect within the community</div>
-          <div class="rule-desc">The use of offensive, toxic, or discriminatory topics in profiles (includes pfp, username, and bio) is prohibited.</div>
+          <div class="rule-desc">The use of offensive, toxic, discriminatory topics or offensive language in profiles (pfp, username, bio) and chat is strictly prohibited.</div>
         </div>
 
         <div class="rule-item">
@@ -898,6 +951,60 @@
       <div id="rules-accept-container" style="display: none; margin-top: 15px;">
         <p style="font-size: 0.75rem; color: #e74c3c; text-align: center; margin: 0 0 8px 0;" id="scroll-warning-text">Scroll to the bottom of the rules to unlock Accept button.</p>
         <button id="btn-accept-rules" type="button" class="modal-action-btn" style="background: #27ae60;" disabled onclick="acceptRulesAction()">Accept Rules</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Friends & DMs -->
+  <div id="modal-friends" class="modal-overlay">
+    <div class="modal-card" style="max-width: 550px;">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>👥 Friends & Direct Messages</h2>
+      
+      <div class="tab-container">
+        <button id="tab-friends-list-btn" class="tab-btn active" onclick="switchFriendsTab('list')">Friends Chat</button>
+        <button id="tab-friends-add-btn" class="tab-btn" onclick="switchFriendsTab('add')">Add Friend</button>
+        <button id="tab-friends-req-btn" class="tab-btn" onclick="switchFriendsTab('requests')">Requests (<span id="friend-req-count">0</span>)</button>
+      </div>
+
+      <div id="friends-list-section">
+        <p style="font-size:0.85rem; color:#64748b; margin-bottom:10px;">Select a friend to open direct messages:</p>
+        <div id="friends-list-container" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <p style="color:#64748b; text-align:center;">Loading friends...</p>
+        </div>
+      </div>
+
+      <div id="friends-add-section" style="display: none;">
+        <p style="font-size:0.85rem; color:#64748b; margin-bottom:10px;">Send friend request by exact username:</p>
+        <div class="form-group">
+          <input type="text" id="addFriendUsernameInput" placeholder="Enter username...">
+        </div>
+        <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="sendFriendRequest()">Send Request</button>
+      </div>
+
+      <div id="friends-requests-section" style="display: none;">
+        <div id="friend-requests-container" style="max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <p style="color:#64748b; text-align:center;">Loading requests...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Direct Chat DM -->
+  <div id="modal-chat-dm" class="modal-overlay" style="z-index: 1050;">
+    <div class="modal-card" style="max-width: 480px;">
+      <button class="modal-close" onclick="document.getElementById('modal-chat-dm').style.display='none'">✖</button>
+      <h3 style="margin-top:0;" id="chat-dm-title">💬 Chat with Friend</h3>
+      
+      <div class="chat-box-container">
+        <div id="chat-messages-area" class="chat-messages-area">
+          <p style="color:#64748b; text-align:center; font-size:0.8rem;">Loading messages...</p>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <input type="text" id="chatMessageInput" placeholder="Type a message..." style="flex:1; padding:10px; border-radius:8px; border:1px solid #cbd5e1;" onkeydown="if(event.key==='Enter') sendDirectMessage()">
+        <button type="button" class="modal-action-btn" style="width:auto; padding:10px 18px; background:#1e3a8a;" onclick="sendDirectMessage()">Send</button>
       </div>
     </div>
   </div>
@@ -955,7 +1062,10 @@
         <label>Quantity to Sell (Max: <span id="prompt-botsell-max-label">1</span>)</label>
         <input type="number" id="botsell-qty-input" min="1" value="1" placeholder="Quantity">
       </div>
-      <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="confirmBotSell()">Sell to Bot</button>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="modal-action-btn" style="background:#27ae60; flex:1;" onclick="confirmBotSell(false)">Sell Qty</button>
+        <button type="button" class="modal-action-btn" style="background:#e67e22; flex:1;" onclick="confirmBotSell(true)">SELL ALL</button>
+      </div>
     </div>
   </div>
 
@@ -1033,7 +1143,7 @@
       <h3>Set Market Price</h3>
       <p style="font-size:0.85rem; color:#64748b;" id="prompt-fish-name-label">Fish: Opah</p>
       <div class="form-group">
-        <label>Price in Coins (💰)</label>
+        <label>Price per unit (💰)</label>
         <input type="number" id="market-sell-price-input" min="1" placeholder="e.g. 50">
       </div>
       <button type="button" class="modal-action-btn" style="background:#2ecc71;" onclick="confirmMarketSell()">Post to Market</button>
@@ -1205,7 +1315,10 @@
         <p id="view-profile-bio" style="background: #f8fafc; padding: 10px; border-radius: 8px; margin: 0; min-height: 50px; color: #1e293b; border: 1px solid #cbd5e1; word-break: break-all;"></p>
       </div>
 
-      <button type="button" class="modal-action-btn" style="background: #2980b9; margin-top: 5px;" onclick="openOtherAquarium()">🐠 See Aquarium</button>
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button type="button" class="modal-action-btn" style="background: #2980b9; flex:1;" onclick="openOtherAquarium()">🐠 See Aquarium</button>
+        <button type="button" class="modal-action-btn" style="background: #8e44ad; flex:1;" id="btn-send-friend-req-view" onclick="sendFriendRequestFromView()">➕ Add Friend</button>
+      </div>
     </div>
   </div>
 
@@ -1591,6 +1704,11 @@
     let dailyTimerInterval = null;
     let lastActionTimestamp = 0; // Sistema de Cooldown de 5s
 
+    // Amigos y DM
+    let activeChatFriendUid = null;
+    let activeChatFriendName = "";
+    let chatUnsubscribe = null;
+
     let isMouseDown = false;
     let minigameLoop = null;
     let catchBarY = 0;
@@ -1906,6 +2024,321 @@
       }, 1000);
     }
 
+    /* SISTEMA DE AMIGOS Y CHAT DMS */
+    function openFriendsModal() {
+      openModal('modal-friends');
+      switchFriendsTab('list');
+      updateFriendRequestsCount();
+    }
+
+    function switchFriendsTab(tab) {
+      const listSec = document.getElementById('friends-list-section');
+      const addSec = document.getElementById('friends-add-section');
+      const reqSec = document.getElementById('friends-requests-section');
+      
+      const listBtn = document.getElementById('tab-friends-list-btn');
+      const addBtn = document.getElementById('tab-friends-add-btn');
+      const reqBtn = document.getElementById('tab-friends-req-btn');
+
+      listSec.style.display = 'none';
+      addSec.style.display = 'none';
+      reqSec.style.display = 'none';
+
+      listBtn.classList.remove('active');
+      addBtn.classList.remove('active');
+      reqBtn.classList.remove('active');
+
+      if (tab === 'list') {
+        listSec.style.display = 'block';
+        listBtn.classList.add('active');
+        loadFriendsList();
+      } else if (tab === 'add') {
+        addSec.style.display = 'block';
+        addBtn.classList.add('active');
+      } else if (tab === 'requests') {
+        reqSec.style.display = 'block';
+        reqBtn.classList.add('active');
+        loadFriendRequests();
+      }
+    }
+
+    async function sendFriendRequestFromView() {
+      if (!viewingTargetUsername) return;
+      document.getElementById('addFriendUsernameInput').value = viewingTargetUsername;
+      openFriendsModal();
+      switchFriendsTab('add');
+      sendFriendRequest();
+    }
+
+    async function sendFriendRequest() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const targetUsername = document.getElementById('addFriendUsernameInput').value.trim();
+      if (!targetUsername) {
+        showToast("Enter a username.");
+        return;
+      }
+
+      try {
+        const targetUid = await getUidByUsername(targetUsername);
+        if (!targetUid) {
+          showToast("User not found.");
+          return;
+        }
+
+        if (targetUid === user.uid) {
+          showToast("You cannot add yourself as a friend!");
+          return;
+        }
+
+        const myDoc = await db.collection('jugadores').doc(user.uid).get();
+        const myData = myDoc.data();
+
+        if ((myData.friends || []).includes(targetUid)) {
+          showToast("This user is already your friend.");
+          return;
+        }
+
+        await db.collection('friendRequests').add({
+          senderUid: user.uid,
+          senderName: myData.username || "Player",
+          receiverUid: targetUid,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        showToast(`Friend request sent to ${targetUsername}!`);
+        document.getElementById('addFriendUsernameInput').value = "";
+      } catch (err) {
+        showToast("Error sending request: " + err.message);
+      }
+    }
+
+    async function updateFriendRequestsCount() {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const snap = await db.collection('friendRequests').where('receiverUid', '==', user.uid).get();
+        document.getElementById('friend-req-count').innerText = snap.size;
+      } catch(e){}
+    }
+
+    async function loadFriendRequests() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const container = document.getElementById('friend-requests-container');
+      container.innerHTML = '<p style="color:#64748b; text-align:center;">Loading requests...</p>';
+
+      try {
+        const snap = await db.collection('friendRequests').where('receiverUid', '==', user.uid).get();
+        if (snap.empty) {
+          container.innerHTML = '<p style="color:#64748b; text-align:center;">No pending friend requests.</p>';
+          return;
+        }
+
+        let html = '';
+        snap.forEach(doc => {
+          const req = doc.data();
+          html += `
+            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+              <span>Request from: <strong>${req.senderName}</strong></span>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="modal-action-btn" style="background:#27ae60; padding:4px 8px; font-size:0.75rem; width:auto;" onclick="acceptFriendRequest('${doc.id}', '${req.senderUid}')">Accept</button>
+                <button type="button" class="modal-action-btn" style="background:#e74c3c; padding:4px 8px; font-size:0.75rem; width:auto;" onclick="rejectFriendRequest('${doc.id}')">Reject</button>
+              </div>
+            </div>
+          `;
+        });
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<p style="color:#e74c3c; text-align:center;">Error loading requests.</p>';
+      }
+    }
+
+    async function acceptFriendRequest(reqId, senderUid) {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        await db.collection('jugadores').doc(user.uid).update({
+          friends: firebase.firestore.FieldValue.arrayUnion(senderUid)
+        });
+        await db.collection('jugadores').doc(senderUid).update({
+          friends: firebase.firestore.FieldValue.arrayUnion(user.uid)
+        });
+        await db.collection('friendRequests').doc(reqId).delete();
+
+        showToast("Friend request accepted!");
+        loadFriendRequests();
+        updateFriendRequestsCount();
+      } catch (err) {
+        showToast("Error accepting request: " + err.message);
+      }
+    }
+
+    async function rejectFriendRequest(reqId) {
+      try {
+        await db.collection('friendRequests').doc(reqId).delete();
+        showToast("Request rejected.");
+        loadFriendRequests();
+        updateFriendRequestsCount();
+      } catch (err) {
+        showToast("Error rejecting request.");
+      }
+    }
+
+    async function loadFriendsList() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const container = document.getElementById('friends-list-container');
+      container.innerHTML = '<p style="color:#64748b; text-align:center;">Loading friends...</p>';
+
+      try {
+        const doc = await db.collection('jugadores').doc(user.uid).get();
+        const friendsUids = doc.data().friends || [];
+
+        if (friendsUids.length === 0) {
+          container.innerHTML = '<p style="color:#64748b; text-align:center;">No friends added yet. Use Add Friend tab!</p>';
+          return;
+        }
+
+        let html = '';
+        for (let fUid of friendsUids) {
+          const friendDoc = await db.collection('jugadores').doc(fUid).get();
+          if (friendDoc.exists) {
+            const fData = friendDoc.data();
+            const avatar = fData.photoURL || 'https://via.placeholder.com/35';
+            html += `
+              <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <img src="${avatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
+                  <strong>${fData.username || 'Player'}</strong>
+                </div>
+                <button type="button" class="modal-action-btn" style="background:#1e3a8a; padding:6px 12px; font-size:0.8rem; width:auto;" onclick="openChatWithFriend('${fUid}', '${fData.username}')">💬 Open DM</button>
+              </div>
+            `;
+          }
+        }
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = '<p style="color:#e74c3c; text-align:center;">Error loading friends.</p>';
+      }
+    }
+
+    function getChatId(uid1, uid2) {
+      return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+    }
+
+    function openChatWithFriend(friendUid, friendName) {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      activeChatFriendUid = friendUid;
+      activeChatFriendName = friendName;
+
+      document.getElementById('chat-dm-title').innerText = `💬 Chat with ${friendName}`;
+      document.getElementById('modal-chat-dm').style.display = 'flex';
+
+      const chatId = getChatId(user.uid, friendUid);
+
+      if (chatUnsubscribe) chatUnsubscribe();
+
+      const messagesArea = document.getElementById('chat-messages-area');
+      messagesArea.innerHTML = '<p style="color:#64748b; text-align:center; font-size:0.8rem;">Loading messages...</p>';
+
+      chatUnsubscribe = db.collection('directChats').doc(chatId).collection('messages')
+        .orderBy('createdAt', 'asc')
+        .onSnapshot(snapshot => {
+          messagesArea.innerHTML = '';
+          if (snapshot.empty) {
+            messagesArea.innerHTML = '<p style="color:#64748b; text-align:center; font-size:0.8rem;">No messages yet. Say hi!</p>';
+            return;
+          }
+
+          snapshot.forEach(doc => {
+            const msg = doc.data();
+            const isMe = msg.senderUid === user.uid;
+            
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${isMe ? 'sent' : 'received'}`;
+            
+            let reportBtnHtml = !isMe ? `<button class="chat-report-btn" onclick="reportMessage('${doc.id}', '${msg.senderUid}', '${msg.senderName}', '${escapeHtml(msg.text)}')" title="Report message">🚩</button>` : '';
+
+            bubble.innerHTML = `
+              <span>${escapeHtml(msg.text)}</span>
+              ${reportBtnHtml}
+            `;
+            messagesArea.appendChild(bubble);
+          });
+
+          messagesArea.scrollTop = messagesArea.scrollHeight;
+        });
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    async function sendDirectMessage() {
+      const user = auth.currentUser;
+      if (!user || !activeChatFriendUid) return;
+
+      const input = document.getElementById('chatMessageInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = '';
+      const chatId = getChatId(user.uid, activeChatFriendUid);
+      const myDoc = await db.collection('jugadores').doc(user.uid).get();
+      const myName = myDoc.exists ? myDoc.data().username : "Player";
+
+      try {
+        await db.collection('directChats').doc(chatId).collection('messages').add({
+          senderUid: user.uid,
+          senderName: myName,
+          text: text,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch (err) {
+        showToast("Error sending message.");
+      }
+    }
+
+    async function reportMessage(msgId, senderUid, senderName, msgText) {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const reporterDoc = await db.collection('jugadores').doc(user.uid).get();
+        const reporterName = reporterDoc.exists ? reporterDoc.data().username : "Anonymous Player";
+
+        const botReportMessage = `🚨 MESSAGE REPORTED 🚨\nReporter: ${reporterName} (UID: ${user.uid})\nAuthor: ${senderName} (UID: ${senderUid})\nMessage: "${msgText}"`;
+
+        const chatId = getChatId(ADMIN_UID, user.uid);
+        
+        await db.collection('directChats').doc(chatId).collection('messages').add({
+          senderUid: "SYSTEM_BOT",
+          senderName: "SYSTEM BOT 🤖",
+          text: botReportMessage,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection('reports').add({
+          reporterUid: user.uid,
+          reporterName: reporterName,
+          reportedUid: senderUid,
+          reportedName: senderName,
+          messageContent: msgText,
+          messageId: msgId,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        showToast("Message reported! The System Bot sent the report to the Admin's DM.");
+      } catch (err) {
+        showToast("Error reporting message: " + err.message);
+      }
+    }
+
     function openAdminWarningPrompt() {
       const username = document.getElementById('adminTargetUsername').value.trim();
       if (!username) {
@@ -1984,6 +2417,7 @@
       if (isMandatoryRulesView) return;
       stopFishAnimations();
       if (verificationTimerInterval) clearInterval(verificationTimerInterval);
+      if (chatUnsubscribe) chatUnsubscribe();
       document.querySelectorAll('.modal-overlay').forEach(el => {
         if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
       });
@@ -2392,12 +2826,14 @@
       }
     }
 
-    async function confirmBotSell() {
+    /* BOT SELL CON CODIGO COMPLETO PARA SELL ALL */
+    async function confirmBotSell(isSellAll = false) {
       if (!checkCooldown()) return;
       const user = auth.currentUser;
       if (!user || !selectedFishToBotSell) return;
 
-      const qtyInput = parseInt(document.getElementById('botsell-qty-input').value);
+      let qtyInput = isSellAll ? selectedFishToBotSell.maxAvailable : parseInt(document.getElementById('botsell-qty-input').value);
+      
       if (isNaN(qtyInput) || qtyInput <= 0) {
         showToast("Please enter a valid quantity.");
         return;
@@ -3493,6 +3929,7 @@
           photoURL: photoURL,
           coins: 0,
           fishes: [],
+          friends: [],
           miniTanksCount: 0,
           wormBaitsCount: 0,
           isBaitActive: false,
@@ -4439,6 +4876,8 @@
 
     auth.onAuthStateChanged(async user => {
       const adminBtn = document.getElementById('adminBtn');
+      const friendsBtn = document.getElementById('btn-friends');
+
       if (user) {
         closeAllModals(); 
         initDailyTimerSync();
@@ -4455,6 +4894,7 @@
               photoURL: "",
               coins: 0,
               fishes: [],
+              friends: [],
               miniTanksCount: 0,
               wormBaitsCount: 0,
               isBaitActive: false,
@@ -4519,6 +4959,7 @@
 
           document.getElementById('account-container').style.display = 'none';
           document.getElementById('btn-logout').style.display = 'inline-flex';
+          friendsBtn.style.display = 'inline-flex';
           document.getElementById('user-badge').style.display = 'flex';
           document.getElementById('user-display-name').innerText = data.username || "Player";
           if (data.photoURL) {
@@ -4526,6 +4967,7 @@
           } else {
             document.getElementById('user-avatar').src = "https://via.placeholder.com/40";
           }
+          updateFriendRequestsCount();
         } catch(e) {
           console.error("Error loading user session:", e);
         }
@@ -4538,6 +4980,7 @@
       } else {
         document.getElementById('account-container').style.display = 'flex';
         document.getElementById('btn-logout').style.display = 'none';
+        friendsBtn.style.display = 'none';
         document.getElementById('user-badge').style.display = 'none';
         adminBtn.style.display = 'none';
         if (dailyTimerInterval) clearInterval(dailyTimerInterval);
