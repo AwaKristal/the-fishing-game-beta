@@ -1075,6 +1075,7 @@
         <img id="profile-modal-avatar" src="https://via.placeholder.com/60" alt="Avatar" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid #1e3a8a;">
         <div>
           <h3 id="profile-modal-name" style="margin:0; font-size:1.2rem;">Username</h3>
+          <p id="profile-joined-date" style="margin:2px 0; font-size:0.75rem; color:#64748b; font-weight:bold;">Joined in: -</p>
           <p id="verification-status" style="margin:3px 0; font-size:0.8rem; color:#e74c3c; display:none;">Email not verified</p>
           <p id="verification-timer" style="margin:2px 0 0 0; font-size:0.75rem; color:#c0392b; font-weight:bold; display:none;">Auto-deletion in: Calculating...</p>
           <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="profile-coins">0</span> | 🐟 Fish: <span id="profile-fish-count">0</span></p>
@@ -1136,6 +1137,7 @@
         <img id="view-profile-avatar" src="https://via.placeholder.com/60" alt="Avatar" style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid #1e3a8a;">
         <div>
           <h3 id="view-profile-name" style="margin:0; font-size:1.2rem;">Username</h3>
+          <p id="view-profile-joined-date" style="margin:2px 0; font-size:0.75rem; color:#64748b; font-weight:bold;">Joined in: -</p>
           <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="view-profile-coins">0</span> | 🐟 Fish: <span id="view-profile-fish-count">0</span></p>
         </div>
       </div>
@@ -3456,6 +3458,7 @@
         await user.reload();
         const statusEl = document.getElementById('verification-status');
         const timerEl = document.getElementById('verification-timer');
+        const joinedDateEl = document.getElementById('profile-joined-date');
         
         if (verificationTimerInterval) clearInterval(verificationTimerInterval);
 
@@ -3471,6 +3474,17 @@
           document.getElementById('profile-current-password').value = "";
           const newPassEl = document.getElementById('profile-new-password');
           if (newPassEl) newPassEl.value = "";
+
+          // Mostrar Fecha de Creación ("Joined in:")
+          if (data.createdAt) {
+            const createdAtDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+            joinedDateEl.innerText = `Joined in: ${createdAtDate.toLocaleDateString()}`;
+          } else if (user.metadata && user.metadata.creationTime) {
+            const createdAtDate = new Date(user.metadata.creationTime);
+            joinedDateEl.innerText = `Joined in: ${createdAtDate.toLocaleDateString()}`;
+          } else {
+            joinedDateEl.innerText = `Joined in: Recent`;
+          }
 
           if (data.photoURL) {
             document.getElementById('profile-modal-avatar').src = data.photoURL;
@@ -3726,8 +3740,14 @@
         const avatar = data.photoURL || 'https://via.placeholder.com/40';
         const fishesJson = JSON.stringify(data.fishes || []).replace(/"/g, '&quot;');
         const tanksMapJson = JSON.stringify(data.aquariumTanksMap || { room_0: new Array(8).fill(null) }).replace(/"/g, '&quot;');
+        
+        let createdAtIso = "";
+        if (data.createdAt && data.createdAt.toDate) {
+          createdAtIso = data.createdAt.toDate().toISOString();
+        }
+
         html += `
-          <div class="search-player-item" onclick="viewOtherProfile('${data.username}', '${data.bio || 'No bio'}', ${data.coins || 0}, ${(data.fishes || []).length}, '${avatar}', '${doc.id}', ${fishesJson}, ${tanksMapJson})">
+          <div class="search-player-item" onclick="viewOtherProfile('${data.username}', '${data.bio || 'No bio'}', ${data.coins || 0}, ${(data.fishes || []).length}, '${avatar}', '${doc.id}', ${fishesJson}, ${tanksMapJson}, '${createdAtIso}')">
             <div style="display:flex; align-items:center; gap:10px;">
               <img src="${avatar}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
               <div>
@@ -3743,7 +3763,7 @@
       resultDiv.innerHTML = html;
     }
 
-    function viewOtherProfile(username, bio, coins, fishCount, avatar, uid, fishes, tanksMap) {
+    function viewOtherProfile(username, bio, coins, fishCount, avatar, uid, fishes, tanksMap, createdAtIso) {
       viewingTargetUsername = username;
       viewingTargetUid = uid;
       viewingTargetFishes = fishes;
@@ -3755,6 +3775,15 @@
       document.getElementById('view-profile-coins').innerText = coins;
       document.getElementById('view-profile-fish-count').innerText = fishCount;
       document.getElementById('view-profile-avatar').src = avatar;
+
+      const viewJoinedEl = document.getElementById('view-profile-joined-date');
+      if (createdAtIso) {
+        const parsedDate = new Date(createdAtIso);
+        viewJoinedEl.innerText = `Joined in: ${parsedDate.toLocaleDateString()}`;
+      } else {
+        viewJoinedEl.innerText = `Joined in: -`;
+      }
+
       openModal('modal-view-profile');
     }
 
