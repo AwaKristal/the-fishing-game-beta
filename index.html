@@ -3474,11 +3474,14 @@
           const newPassEl = document.getElementById('profile-new-password');
           if (newPassEl) newPassEl.value = "";
 
+          let createdAtMs = Date.now();
           if (data.createdAt) {
             const createdAtDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+            createdAtMs = createdAtDate.getTime();
             joinedDateEl.innerText = `Joined in: ${createdAtDate.toLocaleDateString()}`;
           } else if (user.metadata && user.metadata.creationTime) {
             const createdAtDate = new Date(user.metadata.creationTime);
+            createdAtMs = createdAtDate.getTime();
             joinedDateEl.innerText = `Joined in: ${createdAtDate.toLocaleDateString()}`;
           } else {
             joinedDateEl.innerText = `Joined in: Recent`;
@@ -3488,50 +3491,42 @@
             document.getElementById('profile-modal-avatar').src = data.photoURL;
           }
 
-          const isCreator = user.uid === ADMIN_UID;
+          // Permitir que el usuario vea su propio estado de verificación y el temporizador correctamente
+          statusEl.style.display = 'block';
+          if (user.emailVerified) {
+            statusEl.innerText = "Email verified";
+            statusEl.style.color = "#2ecc71";
+            timerEl.style.display = 'none';
 
-          if (isCreator) {
-            statusEl.style.display = 'block';
-            if (user.emailVerified) {
-              statusEl.innerText = "Email verified";
-              statusEl.style.color = "#2ecc71";
-              timerEl.style.display = 'none';
-            } else {
-              statusEl.innerText = "Email not verified";
-              statusEl.style.color = "#e74c3c";
-              timerEl.style.display = 'block';
-
-              let createdAtMs = Date.now();
-              if (user.metadata && user.metadata.creationTime) {
-                createdAtMs = new Date(user.metadata.creationTime).getTime();
-              } else if (data.createdAt) {
-                createdAtMs = data.createdAt.toDate ? data.createdAt.toDate().getTime() : new Date(data.createdAt).getTime();
-              }
-
-              const deletionTimeMs = createdAtMs + (3 * 24 * 60 * 60 * 1000);
-
-              const updateTimerDisplay = () => {
-                const now = Date.now();
-                const diff = deletionTimeMs - now;
-
-                if (diff <= 0) {
-                  timerEl.innerText = "Auto-deletion: Account scheduled for deletion!";
-                  clearInterval(verificationTimerInterval);
-                } else {
-                  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                  const secs = Math.floor((diff % (1000 * 60)) / 1000);
-                  timerEl.innerText = `Auto-deletion in: ${days}d ${hours}h ${mins}m ${secs}s`;
-                }
-              };
-
-              updateTimerDisplay();
-              verificationTimerInterval = setInterval(updateTimerDisplay, 1000);
+            // Actualizamos Firestore automáticamente si seguía en false
+            if (!data.isVerifiedEmail) {
+              db.collection('jugadores').doc(user.uid).update({ isVerifiedEmail: true }).catch(() => {});
             }
           } else {
-            statusEl.style.display = 'none';
-            timerEl.style.display = 'none';
+            statusEl.innerText = "Email not verified";
+            statusEl.style.color = "#e74c3c";
+            timerEl.style.display = 'block';
+
+            const deletionTimeMs = createdAtMs + (3 * 24 * 60 * 60 * 1000);
+
+            const updateTimerDisplay = () => {
+              const now = Date.now();
+              const diff = deletionTimeMs - now;
+
+              if (diff <= 0) {
+                timerEl.innerText = "Auto-deletion: Account scheduled for deletion!";
+                clearInterval(verificationTimerInterval);
+              } else {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+                timerEl.innerText = `Auto-deletion in: ${days}d ${hours}h ${mins}m ${secs}s`;
+              }
+            };
+
+            updateTimerDisplay();
+            verificationTimerInterval = setInterval(updateTimerDisplay, 1000);
           }
         }
       } catch (err) {
@@ -3774,6 +3769,7 @@
       document.getElementById('view-profile-avatar').src = avatar;
 
       const viewJoinedEl = document.getElementById('view-profile-joined-date');
+      let targetCreatedAtMs = createdAtIso ? new Date(createdAtIso).getTime() : Date.now();
       if (createdAtIso) {
         const parsedDate = new Date(createdAtIso);
         viewJoinedEl.innerText = `Joined in: ${parsedDate.toLocaleDateString()}`;
@@ -3792,29 +3788,16 @@
         viewStatusEl.style.display = 'block';
         
         let targetDoc = await db.collection('jugadores').doc(uid).get();
-        let isVerified = false;
-        let targetCreatedAtMs = createdAtIso ? new Date(createdAtIso).getTime() : Date.now();
-
-        if (targetDoc.exists) {
-          const tData = targetDoc.data();
-          if (tData.createdAt && tData.createdAt.toDate) {
-            targetCreatedAtMs = tData.createdAt.toDate().getTime();
-          }
+        let targetData = targetDoc.exists ? targetDoc.data() : {};
+        if (targetData.createdAt && targetData.createdAt.toDate) {
+          targetCreatedAtMs = targetData.createdAt.toDate().getTime();
         }
-
-        try {
-          const usersRef = db.collection('jugadores').doc(uid);
-          const snap = await usersRef.get();
-          if(snap.exists) {
-            isVerified = snap.data().isVerifiedEmail || false; 
-          }
-        } catch(e) {}
 
         let resolvedVerified = false;
         if (uid === currentUser.uid) {
           resolvedVerified = currentUser.emailVerified;
         } else {
-          resolvedVerified = isVerified;
+          resolvedVerified = targetData.isVerifiedEmail || false; 
         }
 
         if (resolvedVerified) {
