@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -289,6 +289,21 @@
       height: 32px;
       border-radius: 50%;
       object-fit: cover;
+    }
+
+    /* MOCHILA PEQUEÑA JUNTO AL USUARIO EN LA ESQUINA INFERIOR IZQUIERDA */
+    .backpack-badge-inline {
+      display: none; /* Se muestra al iniciar sesión */
+      width: 38px;
+      height: auto;
+      cursor: pointer;
+      transition: transform 0.2s ease, filter 0.2s ease;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+      vertical-align: middle;
+    }
+    .backpack-badge-inline:hover {
+      transform: scale(1.15);
+      filter: brightness(1.15);
     }
 
     #game-screen {
@@ -812,22 +827,26 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.2 BETA</div>
+      <div class="version-tag">v.1.0.0.2</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
 
   <div class="corner-bottom-left">
-    <div id="user-badge" class="user-profile-badge" onclick="openMyProfileModal()">
-      <img id="user-avatar" src="https://via.placeholder.com/40" alt="Avatar">
-      <span id="user-display-name">Username</span>
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <div id="user-badge" class="user-profile-badge" onclick="openMyProfileModal()">
+        <img id="user-avatar" src="https://via.placeholder.com/40" alt="Avatar">
+        <span id="user-display-name">Username</span>
+      </div>
+      <!-- MOCHILA PEQUEÑA COLOCADA A LA DERECHA DEL "USUARIO" EN LA ESQUINA INFERIOR IZQUIERDA -->
+      <img id="backpack-badge-inline" src="https://i.postimg.cc/bNcMt94Y/backpack.png" alt="Backpack" class="backpack-badge-inline" onclick="openModal('modal-backpack')" title="Open Backpack">
     </div>
-    <div style="display: flex; gap: 6px;">
+    <div style="display: flex; gap: 6px; margin-top: 4px;">
       <div id="account-container">
         <button class="img-btn" onclick="openModal('modal-account')">
           <img src="https://i.postimg.cc/Kjf35Nc8/account.png" alt="Account">
@@ -1123,7 +1142,10 @@
       </div>
 
       <div id="market-sell-section" style="display: none;">
-        <p style="font-size:0.85rem; color:#64748b; margin-bottom:10px;">Select a fish from your backpack to sell:</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <p style="font-size:0.85rem; color:#64748b; margin:0;">Select a fish from your backpack to sell (Protected or limited fish are hidden):</p>
+          <button type="button" class="modal-action-btn" style="background: #e67e22; width: auto; padding: 6px 12px; font-size: 0.8rem;" onclick="sellAllInventoryAction()">SELL ALL INVENTORY</button>
+        </div>
         <div id="market-my-fishes-container" style="max-height: 280px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;">
           <p style="color:#64748b; text-align:center; grid-column: 1/-1;">Loading your fishes...</p>
         </div>
@@ -1158,7 +1180,6 @@
         <button id="tab-register-btn" class="tab-btn" onclick="switchAuthTab('register')">Register</button>
       </div>
 
-      <!-- ÚNICO LUGAR CON AUTOCOMPLETE Y GUARDADO DE CONTRASEÑA HABILITADO -->
       <form id="form-login" onsubmit="handleLogin(event)">
         <div class="form-group">
           <label>Email Address</label>
@@ -1176,7 +1197,6 @@
         <p style="font-size:0.9rem; text-align:center; margin-top:10px; cursor:pointer; color:#2ecc71; font-weight:bold;" onclick="openModal('modal-resend-verification')">Resend Verification Email</p>
       </form>
 
-      <!-- REGISTRO Y OTROS CON AUTOCOMPLETE="OFF" Y PROTECCIÓN CONTRA PASSWORD PROMPT -->
       <form id="form-register" onsubmit="handleRegister(event)" style="display:none;" autocomplete="off">
         <input type="text" style="display:none" name="prevent_autofill_user">
         <input type="password" style="display:none" name="prevent_autofill_pass">
@@ -1303,7 +1323,7 @@
     </div>
   </div>
 
-  <!-- Modal View Other Profile (Con soporte dinámico para Add Friend o DM) -->
+  <!-- Modal View Other Profile -->
   <div id="modal-view-profile" class="modal-overlay">
     <div class="modal-card">
       <button class="modal-close" onclick="openModal('modal-profile')">✖</button>
@@ -1323,7 +1343,6 @@
 
       <div style="display: flex; gap: 8px; margin-top: 10px;">
         <button type="button" class="modal-action-btn" style="background: #2980b9; flex:1;" onclick="openOtherAquarium()">See Aquarium</button>
-        <!-- Botón dinámico que cambiará a DM si ya son amigos -->
         <button type="button" class="modal-action-btn" style="background: #8e44ad; flex:1;" id="btn-send-friend-req-view" onclick="handleProfileFriendButton()">Add Friend</button>
       </div>
     </div>
@@ -1459,7 +1478,7 @@
         <div style="text-align: left; display: flex; align-items: center; gap: 10px;">
           <img src="https://i.postimg.cc/KYgqH6Sn/worm-bait.png" alt="Worm Bait" style="width: 40px; height: 40px; object-fit: contain;">
           <div>
-            <strong>Worm Bait</strong><br><span style="font-size: 0.8rem; color: #64748b;">Increases chance for rare/epic/divine fish</span>
+            <strong>Worm Bait</strong><br><span style="font-size: 0.8rem; color: #64748b;">Lowers common chance & boosts rare+ catches</span>
           </div>
         </div>
         <button class="modal-action-btn" style="width: auto; padding: 6px 12px; background: #2ecc71;" onclick="buyWormBait()">250 💰</button>
@@ -2084,11 +2103,9 @@
         const friendsList = myData.friends || [];
 
         if (friendsList.includes(viewingTargetUid)) {
-          // Ya son amigos -> Abrir chat directamente
           document.getElementById('modal-view-profile').style.display = 'none';
           openChatWithFriend(viewingTargetUid, viewingTargetUsername);
         } else {
-          // No son amigos -> Enviar solicitud
           document.getElementById('addFriendUsernameInput').value = viewingTargetUsername;
           openFriendsModal();
           switchFriendsTab('add');
@@ -2383,7 +2400,7 @@
         const reporterDoc = await db.collection('jugadores').doc(user.uid).get();
         const reporterName = reporterDoc.exists ? reporterDoc.data().username : "Anonymous Player";
 
-        const botReportMessage = `MESSAGE REPORTED\nReporter: ${reporterName} (UID: ${user.uid})\nAuthor: ${senderName} (UID: ${senderUid})\nMessage: "${msgText}"`;
+        const botReportMessage = `🚨 MESSAGE REPORTED\n• Reporter: ${reporterName} (UID: ${user.uid})\n• Author: ${senderName} (UID: ${senderUid})\n• Message: "${msgText}"`;
 
         const chatId = getChatId(ADMIN_UID, user.uid);
         
@@ -2778,7 +2795,26 @@
       try {
         const doc = await db.collection('jugadores').doc(user.uid).get();
         if (doc.exists) {
-          const fishes = doc.data().fishes || [];
+          const data = doc.data();
+          const fishes = data.fishes || [];
+          const tanksMap = data.aquariumTanksMap || {};
+          
+          const marketSnap = await db.collection('marketListings').where('sellerUid', '==', user.uid).get();
+          let marketListedMap = {};
+          marketSnap.forEach(d => {
+            const fName = d.data().fishName;
+            marketListedMap[fName] = (marketListedMap[fName] || 0) + 1;
+          });
+
+          let displayedTanksMap = {};
+          Object.values(tanksMap).forEach(roomTanks => {
+            if (Array.isArray(roomTanks)) {
+              roomTanks.forEach(tName => {
+                if (tName) displayedTanksMap[tName] = (displayedTanksMap[tName] || 0) + 1;
+              });
+            }
+          });
+
           if (fishes.length === 0) {
             container.innerHTML = '<p style="color:#64748b; text-align:center; grid-column: 1/-1;">You have no fish to sell!</p>';
             return;
@@ -2793,29 +2829,42 @@
           });
 
           let html = '';
+          let hasSellableFish = false;
+
           Object.values(fishCounts).forEach((group) => {
             const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === group.name) || ALLOWED_FISH_TYPES[0];
             const isLimited = fishObj.isLimited === true;
 
+            if (isLimited) return;
+
+            const inTank = displayedTanksMap[group.name] || 0;
+            const inMarket = marketListedMap[group.name] || 0;
+            const availableCount = group.count - inTank - inMarket;
+
+            if (availableCount <= 0) return;
+
+            hasSellableFish = true;
+
             html += `
               <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative;">
-                <span style="position: absolute; top: 6px; right: 8px; background: #3498db; color: white; font-size: 0.75rem; font-weight: bold; padding: 1px 6px; border-radius: 10px;">x${group.count}</span>
+                <span style="position: absolute; top: 6px; right: 8px; background: #3498db; color: white; font-size: 0.75rem; font-weight: bold; padding: 1px 6px; border-radius: 10px;">x${availableCount}</span>
                 <img src="${fishObj.img}" style="width: 50px; height: 50px; object-fit: contain; margin: 8px 0;">
                 <span style="font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 2px; color: #1e293b;">${group.name}</span>
-                
-                ${isLimited ? '' : `<span style="font-size: 0.75rem; color: #d97706; font-weight: bold; margin-bottom: 8px;">Value: 💰 ${fishObj.value}</span>`}
+                <span style="font-size: 0.75rem; color: #d97706; font-weight: bold; margin-bottom: 8px;">Value: 💰 ${fishObj.value}</span>
 
-                ${isLimited ? 
-                  `<span style="font-size: 0.7rem; color: #8e44ad; font-weight: bold; background: #f3e8ff; padding: 4px 8px; border-radius: 6px; width: 100%; text-align: center;">Untradeable</span>` :
-                  `<div style="display: flex; gap: 4px; width: 100%;">
-                    <button type="button" class="modal-action-btn" style="background:#e74c3c; padding: 4px; font-size: 0.68rem; flex:1;" onclick="promptBotSell('${group.name}', ${group.count}, ${fishObj.value})">Bot Sell</button>
-                    <button type="button" class="modal-action-btn" style="background:#2980b9; padding: 4px; font-size: 0.68rem; flex:1;" onclick="promptMarketSell(${group.firstIndex}, '${group.name}')">Market</button>
-                  </div>`
-                }
+                <div style="display: flex; gap: 4px; width: 100%;">
+                  <button type="button" class="modal-action-btn" style="background:#e74c3c; padding: 4px; font-size: 0.68rem; flex:1;" onclick="promptBotSell('${group.name}', ${availableCount}, ${fishObj.value})">Bot Sell</button>
+                  <button type="button" class="modal-action-btn" style="background:#2980b9; padding: 4px; font-size: 0.68rem; flex:1;" onclick="promptMarketSell(${group.firstIndex}, '${group.name}')">Market</button>
+                </div>
               </div>
             `;
           });
-          container.innerHTML = html;
+
+          if (!hasSellableFish) {
+            container.innerHTML = '<p style="color:#64748b; text-align:center; grid-column: 1/-1;">All your fishes are currently protected in your Aquarium, listed on the Market, or Limited!</p>';
+          } else {
+            container.innerHTML = html;
+          }
         }
       } catch (err) {
         container.innerHTML = '<p style="color:#e74c3c; text-align:center; grid-column: 1/-1;">Error loading inventory.</p>';
@@ -2879,7 +2928,7 @@
           const marketSnap = await db.collection('marketListings').where('sellerUid', '==', user.uid).where('fishName', '==', fishName).get();
           let listedInMarket = marketSnap.size;
 
-          let availableToSell = maxAvailable - displayedInTanks - listedInMarket;
+          let availableToSell = maxAvailable;
           if (availableToSell <= 0) {
             showToast("All your fishes of this type are currently protected in your Aquarium or listed on the Market!");
             return;
@@ -2965,6 +3014,87 @@
           loadMyFishesForMarket();
           updateGameHUD();
         }
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+
+    async function sellAllInventoryAction() {
+      if (!checkCooldown()) return;
+      const user = auth.currentUser;
+      if (!user) return;
+
+      if (!confirm("Are you sure you want to sell ALL available fish in your inventory? (Fish in aquariums, market listings, and limited editions are automatically excluded).")) {
+        return;
+      }
+
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        let totalCoinsEarned = 0;
+        let soldCount = 0;
+
+        await db.runTransaction(async (transaction) => {
+          const doc = await transaction.get(playerRef);
+          if (!doc.exists) throw new Error("Player not found");
+
+          const data = doc.data();
+          let fishes = data.fishes || [];
+          let tanksMap = data.aquariumTanksMap || {};
+
+          let displayedMap = {};
+          Object.values(tanksMap).forEach(roomTanks => {
+            if (Array.isArray(roomTanks)) {
+              roomTanks.forEach(tName => {
+                if (tName) displayedMap[tName] = (displayedMap[tName] || 0) + 1;
+              });
+            }
+          });
+
+          const marketSnap = await db.collection('marketListings').where('sellerUid', '==', user.uid).get();
+          let marketMap = {};
+          marketSnap.forEach(d => {
+            const fName = d.data().fishName;
+            marketMap[fName] = (marketMap[fName] || 0) + 1;
+          });
+
+          let keptFishes = [];
+          let protectedOrSoldCounts = {};
+
+          for (let f of fishes) {
+            const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === f.name);
+            const isLimited = fishObj && fishObj.isLimited === true;
+
+            if (isLimited) {
+              keptFishes.push(f);
+              continue;
+            }
+
+            let name = f.name;
+            let currentProtected = (displayedMap[name] || 0) + (marketMap[name] || 0);
+            let alreadyAccounted = protectedOrSoldCounts[name] || 0;
+
+            if (alreadyAccounted < currentProtected) {
+              protectedOrSoldCounts[name] = alreadyAccounted + 1;
+              keptFishes.push(f);
+            } else {
+              totalCoinsEarned += (fishObj ? fishObj.value : 5);
+              soldCount++;
+            }
+          }
+
+          if (soldCount === 0) {
+            throw new Error("No available fish to sell in your inventory!");
+          }
+
+          transaction.update(playerRef, {
+            coins: firebase.firestore.FieldValue.increment(totalCoinsEarned),
+            fishes: keptFishes
+          });
+        });
+
+        showToast(`Successfully sold ${soldCount} fish for +${totalCoinsEarned} 💰 coins!`);
+        loadMyFishesForMarket();
+        updateGameHUD();
       } catch (err) {
         showToast(err.message);
       }
@@ -3528,13 +3658,12 @@
           let chosenPool = standardFishes;
 
           if (usedBaitThisCast) {
-            // MEJORA EN PROBABILIDAD DE CEBO: Tasas incrementadas drásticamente para peces valiosos/raros
-            if (rand < 0.25) {
-              const divineMythic = standardFishes.filter(f => f.rarity === 'Divine' || f.rarity === 'Mythic');
+            if (rand < 0.45) {
+              const divineMythic = standardFishes.filter(f => f.rarity === 'Divine' || f.rarity === 'Mythic' || f.rarity === 'Legendary');
               if (divineMythic.length > 0) chosenPool = divineMythic;
-            } else if (rand < 0.65) {
-              const rareEpicLegendary = standardFishes.filter(f => f.rarity === 'Rare' || f.rarity === 'Epic' || f.rarity === 'Legendary');
-              if (rareEpicLegendary.length > 0) chosenPool = rareEpicLegendary;
+            } else if (rand < 0.85) {
+              const rareEpic = standardFishes.filter(f => f.rarity === 'Rare' || f.rarity === 'Epic');
+              if (rareEpic.length > 0) chosenPool = rareEpic;
             } else {
               const commonPool = standardFishes.filter(f => f.rarity === 'Common');
               if (commonPool.length > 0) chosenPool = commonPool;
@@ -4377,7 +4506,6 @@
         viewJoinedEl.innerText = `Joined in: -`;
       }
 
-      // Comprobar si ya son amigos para cambiar el botón dinámicamente
       const currentUser = auth.currentUser;
       const btnRef = document.getElementById('btn-send-friend-req-view');
       
@@ -4976,6 +5104,7 @@
     auth.onAuthStateChanged(async user => {
       const adminBtn = document.getElementById('adminBtn');
       const friendsBtn = document.getElementById('btn-friends');
+      const backpackInline = document.getElementById('backpack-badge-inline');
 
       if (user) {
         closeAllModals(); 
@@ -5060,6 +5189,7 @@
           document.getElementById('btn-logout').style.display = 'inline-flex';
           friendsBtn.style.display = 'inline-flex';
           document.getElementById('user-badge').style.display = 'flex';
+          if (backpackInline) backpackInline.style.display = 'inline-block';
           document.getElementById('user-display-name').innerText = data.username || "Player";
           if (data.photoURL) {
             document.getElementById('user-avatar').src = data.photoURL;
@@ -5081,6 +5211,7 @@
         document.getElementById('btn-logout').style.display = 'none';
         friendsBtn.style.display = 'none';
         document.getElementById('user-badge').style.display = 'none';
+        if (backpackInline) backpackInline.style.display = 'none';
         adminBtn.style.display = 'none';
         if (dailyTimerInterval) clearInterval(dailyTimerInterval);
       }
