@@ -192,7 +192,6 @@
       z-index: 99;
     }
 
-    /* Estilo para el contenedor del botón de recompensa diaria y su temporizador */
     .daily-reward-container {
       display: flex;
       flex-direction: column;
@@ -778,7 +777,6 @@
   </div>
 
   <div class="corner-bottom-right">
-    <!-- Botón de Recompensa Diaria con Temporizador -->
     <div class="daily-reward-container">
       <button class="img-btn" onclick="claimDailyReward()" title="Daily Reward">
         <img src="https://i.postimg.cc/fb0Ltxkr/dailyreward.png" alt="Daily Reward" class="btn-daily-img">
@@ -1138,6 +1136,8 @@
         <div>
           <h3 id="view-profile-name" style="margin:0; font-size:1.2rem;">Username</h3>
           <p id="view-profile-joined-date" style="margin:2px 0; font-size:0.75rem; color:#64748b; font-weight:bold;">Joined in: -</p>
+          <p id="view-verification-status" style="margin:3px 0; font-size:0.8rem; color:#e74c3c; display:none;">Email not verified</p>
+          <p id="view-verification-timer" style="margin:2px 0 0 0; font-size:0.75rem; color:#c0392b; font-weight:bold; display:none;">Auto-deletion in: Calculating...</p>
           <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="view-profile-coins">0</span> | 🐟 Fish: <span id="view-profile-fish-count">0</span></p>
         </div>
       </div>
@@ -1527,6 +1527,7 @@
     let adminSelectedFishToRemove = "";
     let isCurrentBanPerma = true;
     let verificationTimerInterval = null;
+    let viewVerificationTimerInterval = null;
     let isMandatoryRulesView = false;
     let hasUserAcceptedRulesLocal = false;
     let dailyTimerInterval = null;
@@ -1727,7 +1728,6 @@
       }
     }
 
-    /* Lógica para la Recompensa Diaria y Temporizador de 24 horas */
     async function claimDailyReward() {
       const user = auth.currentUser;
       if (!user) {
@@ -1754,7 +1754,6 @@
           }
         }
 
-        // Recompensas: 300 monedas, 2 baits y con 15% de probabilidad un Mini Tank adicional
         const rewardCoins = 300;
         const rewardBaits = 2;
         const luckTank = Math.random() < 0.15;
@@ -1902,6 +1901,7 @@
       if (isMandatoryRulesView) return;
       stopFishAnimations();
       if (verificationTimerInterval) clearInterval(verificationTimerInterval);
+      if (viewVerificationTimerInterval) clearInterval(viewVerificationTimerInterval);
       document.querySelectorAll('.modal-overlay').forEach(el => {
         if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
       });
@@ -2216,7 +2216,6 @@
                 <img src="${fishObj.img}" style="width: 50px; height: 50px; object-fit: contain; margin: 8px 0;">
                 <span style="font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 2px; color: #1e293b;">${group.name}</span>
                 
-                <!-- Ocultar el valor si el pez es limitado -->
                 ${isLimited ? '' : `<span style="font-size: 0.75rem; color: #d97706; font-weight: bold; margin-bottom: 8px;">Value: 💰 ${fishObj.value}</span>`}
 
                 ${isLimited ? 
@@ -3475,7 +3474,6 @@
           const newPassEl = document.getElementById('profile-new-password');
           if (newPassEl) newPassEl.value = "";
 
-          // Mostrar Fecha de Creación ("Joined in:")
           if (data.createdAt) {
             const createdAtDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
             joinedDateEl.innerText = `Joined in: ${createdAtDate.toLocaleDateString()}`;
@@ -3490,17 +3488,16 @@
             document.getElementById('profile-modal-avatar').src = data.photoURL;
           }
 
-          // VERIFICACIÓN DE PRIVILEGIOS: Solo el Creador (ADMIN_UID) ve esta info
           const isCreator = user.uid === ADMIN_UID;
 
           if (isCreator) {
             statusEl.style.display = 'block';
             if (user.emailVerified) {
-              statusEl.innerText = "Email verified (Admin View)";
+              statusEl.innerText = "Email verified";
               statusEl.style.color = "#2ecc71";
               timerEl.style.display = 'none';
             } else {
-              statusEl.innerText = "Email not verified (Admin View)";
+              statusEl.innerText = "Email not verified";
               statusEl.style.color = "#e74c3c";
               timerEl.style.display = 'block';
 
@@ -3747,7 +3744,7 @@
         }
 
         html += `
-          <div class="search-player-item" onclick="viewOtherProfile('${data.username}', '${data.bio || 'No bio'}', ${data.coins || 0}, ${(data.fishes || []).length}, '${avatar}', '${doc.id}', ${fishesJson}, ${tanksMapJson}, '${createdAtIso}')">
+          <div class="search-player-item" onclick="viewOtherProfile('${data.username}', '${data.bio || 'No bio'}', ${data.coins || 0}, ${(data.fishes || []).length}, '${avatar}', '${doc.id}', ${fishesJson}, ${tanksMapJson}, '${createdAtIso}', '${data.email || ''}')">
             <div style="display:flex; align-items:center; gap:10px;">
               <img src="${avatar}" style="width:40px; height:40px; border-radius:50%; object-fit:cover;">
               <div>
@@ -3763,7 +3760,7 @@
       resultDiv.innerHTML = html;
     }
 
-    function viewOtherProfile(username, bio, coins, fishCount, avatar, uid, fishes, tanksMap, createdAtIso) {
+    async function viewOtherProfile(username, bio, coins, fishCount, avatar, uid, fishes, tanksMap, createdAtIso, userEmail) {
       viewingTargetUsername = username;
       viewingTargetUid = uid;
       viewingTargetFishes = fishes;
@@ -3782,6 +3779,77 @@
         viewJoinedEl.innerText = `Joined in: ${parsedDate.toLocaleDateString()}`;
       } else {
         viewJoinedEl.innerText = `Joined in: -`;
+      }
+
+      const currentUser = auth.currentUser;
+      const isCreator = currentUser && currentUser.uid === ADMIN_UID;
+      const viewStatusEl = document.getElementById('view-verification-status');
+      const viewTimerEl = document.getElementById('view-verification-timer');
+
+      if (viewVerificationTimerInterval) clearInterval(viewVerificationTimerInterval);
+
+      if (isCreator) {
+        viewStatusEl.style.display = 'block';
+        
+        let targetDoc = await db.collection('jugadores').doc(uid).get();
+        let isVerified = false;
+        let targetCreatedAtMs = createdAtIso ? new Date(createdAtIso).getTime() : Date.now();
+
+        if (targetDoc.exists) {
+          const tData = targetDoc.data();
+          if (tData.createdAt && tData.createdAt.toDate) {
+            targetCreatedAtMs = tData.createdAt.toDate().getTime();
+          }
+        }
+
+        try {
+          const usersRef = db.collection('jugadores').doc(uid);
+          const snap = await usersRef.get();
+          if(snap.exists) {
+            isVerified = snap.data().isVerifiedEmail || false; 
+          }
+        } catch(e) {}
+
+        let resolvedVerified = false;
+        if (uid === currentUser.uid) {
+          resolvedVerified = currentUser.emailVerified;
+        } else {
+          resolvedVerified = isVerified;
+        }
+
+        if (resolvedVerified) {
+          viewStatusEl.innerText = "Email verified";
+          viewStatusEl.style.color = "#2ecc71";
+          viewTimerEl.style.display = 'none';
+        } else {
+          viewStatusEl.innerText = "Email not verified";
+          viewStatusEl.style.color = "#e74c3c";
+          viewTimerEl.style.display = 'block';
+
+          const deletionTimeMs = targetCreatedAtMs + (3 * 24 * 60 * 60 * 1000);
+
+          const updateViewTimerDisplay = () => {
+            const now = Date.now();
+            const diff = deletionTimeMs - now;
+
+            if (diff <= 0) {
+              viewTimerEl.innerText = "Auto-deletion: Account scheduled for deletion!";
+              clearInterval(viewVerificationTimerInterval);
+            } else {
+              const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+              const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+              const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+              const secs = Math.floor((diff % (1000 * 60)) / 1000);
+              viewTimerEl.innerText = `Auto-deletion in: ${days}d ${hours}h ${mins}m ${secs}s`;
+            }
+          };
+
+          updateViewTimerDisplay();
+          viewVerificationTimerInterval = setInterval(updateViewTimerDisplay, 1000);
+        }
+      } else {
+        viewStatusEl.style.display = 'none';
+        viewTimerEl.style.display = 'none';
       }
 
       openModal('modal-view-profile');
