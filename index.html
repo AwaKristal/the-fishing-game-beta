@@ -3491,14 +3491,12 @@
             document.getElementById('profile-modal-avatar').src = data.photoURL;
           }
 
-          // Permitir que el usuario vea su propio estado de verificación y el temporizador correctamente
           statusEl.style.display = 'block';
           if (user.emailVerified) {
             statusEl.innerText = "Email verified";
             statusEl.style.color = "#2ecc71";
             timerEl.style.display = 'none';
 
-            // Actualizamos Firestore automáticamente si seguía en false
             if (!data.isVerifiedEmail) {
               db.collection('jugadores').doc(user.uid).update({ isVerifiedEmail: true }).catch(() => {});
             }
