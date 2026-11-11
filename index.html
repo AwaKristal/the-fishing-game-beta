@@ -2213,7 +2213,9 @@
                 <span style="position: absolute; top: 6px; right: 8px; background: #3498db; color: white; font-size: 0.75rem; font-weight: bold; padding: 1px 6px; border-radius: 10px;">x${group.count}</span>
                 <img src="${fishObj.img}" style="width: 50px; height: 50px; object-fit: contain; margin: 8px 0;">
                 <span style="font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 2px; color: #1e293b;">${group.name}</span>
-                <span style="font-size: 0.75rem; color: #d97706; font-weight: bold; margin-bottom: 8px;">Value: 💰 ${fishObj.value}</span>
+                
+                <!-- Ocultar el valor si el pez es limitado -->
+                ${isLimited ? '' : `<span style="font-size: 0.75rem; color: #d97706; font-weight: bold; margin-bottom: 8px;">Value: 💰 ${fishObj.value}</span>`}
 
                 ${isLimited ? 
                   `<span style="font-size: 0.7rem; color: #8e44ad; font-weight: bold; background: #f3e8ff; padding: 4px 8px; border-radius: 6px; width: 100%; text-align: center;">Untradeable</span>` :
