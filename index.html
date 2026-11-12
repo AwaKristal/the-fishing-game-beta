@@ -1800,10 +1800,28 @@
 
     function onloadCallback() {
       try {
-        recaptchaLoginId = greCAPTCHA.render('recaptcha-login', { 'sitekey': RECAPTCHA_SITE_KEY });
-        recaptchaRegisterId = greCAPTCHA.render('recaptcha-register', { 'sitekey': RECAPTCHA_SITE_KEY });
+        renderRecaptchas();
       } catch (e) {
         console.error("reCAPTCHA render error:", e);
+      }
+    }
+
+    function renderRecaptchas() {
+      if (typeof grecaptcha === 'undefined' || !window.grecaptcha || !grecaptcha.render) return;
+
+      const loginContainer = document.getElementById('recaptcha-login');
+      const registerContainer = document.getElementById('recaptcha-register');
+
+      if (loginContainer && loginContainer.innerHTML.trim() === '') {
+        try {
+          recaptchaLoginId = grecaptcha.render('recaptcha-login', { 'sitekey': RECAPTCHA_SITE_KEY });
+        } catch(e) {}
+      }
+
+      if (registerContainer && registerContainer.innerHTML.trim() === '') {
+        try {
+          recaptchaRegisterId = grecaptcha.render('recaptcha-register', { 'sitekey': RECAPTCHA_SITE_KEY });
+        } catch(e) {}
       }
     }
 
@@ -1857,6 +1875,11 @@
         if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
       });
       document.getElementById(modalId).style.display = 'flex';
+      
+      if (modalId === 'modal-account') {
+        switchAuthTab('login');
+        setTimeout(renderRecaptchas, 150);
+      }
       if (modalId === 'modal-profile') {
         document.getElementById('profile-edit-section').style.display = 'none';
         loadProfileData();
@@ -4026,6 +4049,7 @@
         document.getElementById('tab-register-btn').classList.add('active');
         document.getElementById('tab-login-btn').classList.remove('active');
       }
+      setTimeout(renderRecaptchas, 100);
     }
 
     const comprimirImagen = (file) => {
