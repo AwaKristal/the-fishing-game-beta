@@ -862,6 +862,9 @@
       <button class="img-btn" onclick="openModal('modal-achievements')">
         <img src="https://i.postimg.cc/rsjR9JyD/achievements.png" alt="Achievements">
       </button>
+      <button class="img-btn" onclick="openGrillStation()" title="Cook">
+        <img src="https://i.postimg.cc/2y6St1Nb/cook-button.png" alt="Cook">
+      </button>
     </div>
   </main>
 
@@ -1490,7 +1493,7 @@
         <p id="backpack-tanks-count" style="margin: 3px 0; font-size: 0.85rem;">Mini Tanks Bought: 0</p>
         <p id="backpack-rooms-count" style="margin: 3px 0; font-size: 0.85rem;">Aquarium Rooms Owned: 1</p>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; border-top: 1px solid #cbd5e1; padding-top: 8px;">
-          <span id="backpack-baits-count" style="font-size: 0.85rem; font-weight: bold; color: #27ae60;">Baits: 0</span>
+          <span id="backpack-baits-count" style="font-size: 0.85rem; font-weight: bold; color: #27ae60;">Baits</span>
           <button type="button" class="modal-action-btn" style="width: auto; padding: 5px 12px; background: #2ecc71; font-size: 0.8rem;" onclick="toggleUseWormBait()" id="backpack-bait-toggle-btn">Equip Bait</button>
         </div>
       </div>
@@ -3181,7 +3184,7 @@
         db.collection('jugadores').doc(user.uid).get().then(doc => {
           if (doc.exists) {
             const data = doc.data();
-            renderAquarium(data.username || "My", data.fishes || [], data.aquariumTanksMap || {});
+            renderAquarium(data.username || "My", data.fishes || [], data.aquariumTanksMap || {}, data.aquariumCosmeticsMap || {});
           }
         });
       } else {
@@ -3228,9 +3231,10 @@
       } else {
         const fishObj = ALLOWED_FISH_TYPES.find(f => f.name === fishName) || ALLOWED_FISH_TYPES[0];
         slotEl.innerHTML = `
-          <div style="position: relative; width: 100%; height: 100%; background-image: url('https://i.postimg.cc/DZs0wKSx/tanque-mini.png'); background-size: contain; background-repeat: no-repeat; background-position: center; overflow: hidden;">
-            <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; pointer-events: none;">
-          ${decoration === 'Sandcastle' ? `<img src="${IMG.sandcastle}" alt="Sandcastle" style="position:absolute;right:1px;bottom:1px;width:30px;height:30px;object-fit:contain;pointer-events:none">` : ''}
+          <div style="position: relative; width: 100%; height: 100%; overflow: hidden;">
+            <img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Tank" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; pointer-events: none;">
+            ${decoration === 'Sandcastle' ? `<img src="${IMG.sandcastle}" alt="Sandcastle" style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 10%; width: 34px; height: 34px; object-fit: contain; z-index: 2; pointer-events: none;">` : ''}
+            <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; z-index: 3; pointer-events: none;">
           </div>
         `;
         startFishAnimation(shelfIndex);
@@ -3365,7 +3369,7 @@
           
           showToast(`${fishName} placed in tank!`);
           document.getElementById('modal-select-fish').style.display = 'none';
-          renderAquarium(data.username || "My", fishes, tanksMap);
+          renderAquarium(data.username || "My", fishes, tanksMap, data.aquariumCosmeticsMap || {});
         }
       } catch (err) {
         showToast("Error: " + err.message);
@@ -5201,7 +5205,7 @@
       #grill-fish-stage{position:relative;min-height:250px;background-size:100% 100%;background-position:center;background-repeat:no-repeat;border-radius:10px;overflow:hidden;touch-action:none}
       #grill-fish-stage .grill-fish{position:absolute;width:100px;height:75px;object-fit:contain;left:35%;top:38%;cursor:grab;touch-action:none;user-select:none}
       .aquarium-sandcastle{position:absolute;z-index:2;width:54px;height:54px;object-fit:contain;left:42%;bottom:5%;pointer-events:none}
-      #modal-aquarium .swimming-fish-0,#modal-aquarium .swimming-fish-1,#modal-aquarium .swimming-fish-2,#modal-aquarium .swimming-fish-3,#modal-aquarium .swimming-fish-4,#modal-aquarium .swimming-fish-5,#modal-aquarium .swimming-fish-6,#modal-aquarium .swimming-fish-7{z-index:3}
+      #modal-aquarium .swimming-fish-0,#modal-aquarium .swimming-fish-1,#modal-aquarium .swimming-fish-2,#modal-aquarium .swimming-fish-3,#modal-aquarium .swimming-fish-4,#modal-aquarium .swimming-fish-5,#modal-aquarium .swimming-fish-6,#modal-aquarium .swimming-fish-7{z-index:3 !important}
       @media(max-width:480px){.rebuild-card{padding:12px}#grill-fish-stage{min-height:205px}}
     `; document.head.appendChild(st);
   }
@@ -5280,7 +5284,7 @@
     const backpack = document.querySelector('#modal-backpack .modal-card');
     if (backpack && !document.getElementById('rebuild-backpack-actions')) {
       const box = document.createElement('div'); box.id='rebuild-backpack-actions'; box.style.cssText='margin:10px 0;padding:10px;background:#eef6ff;border-radius:9px';
-      box.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:5px"><button class="rebuild-btn alt" onclick="openCosmeticsInventory()">Cosmetics</button><button class="rebuild-btn" onclick="openGrillStation()"><img src="${IMG.cook}" alt="" style="width:22px;height:22px;object-fit:contain;vertical-align:middle"> Cook</button></div><p id="rebuild-bait-summary" style="margin:7px 0 0;font-size:.85rem"></p><p id="rebuild-cube-summary" style="margin:4px 0 0;font-size:.85rem"></p></div>`;
+      box.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:5px"><button class="rebuild-btn alt" onclick="openCosmeticsInventory()">Cosmetics</button></div><p id="rebuild-bait-summary" style="margin:7px 0 0;font-size:.85rem"></p><p id="rebuild-cube-summary" style="margin:4px 0 0;font-size:.85rem"></p></div>`;
       backpack.insertBefore(box, backpack.children[2] || null);
       const existingBaitButton=document.getElementById('backpack-bait-toggle-btn');if(existingBaitButton){existingBaitButton.textContent='Equip Bait';existingBaitButton.onclick=openBaitSelector;}
     }
@@ -5419,7 +5423,9 @@
   window.openBobTrade=openBobTrade;window.startBobTrade=startBobTrade;window.claimBobReward=claimBobReward;
 
   // Cosmetic inventory and aquarium placement.
-  async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const n=inv.Sandcastle||0;const equipped=!!d.aquariumSandcastle;document.getElementById('cosmetic-inventory').innerHTML=`<div class="rebuild-item"><img src="${IMG.sandcastle}"><strong>Sandcastle</strong><p>Owned: ${n}</p><p>${equipped?'Placed on a tank':'In inventory'}</p><small>Choose a tank in your Aquarium to place or remove this decoration.</small></div>`;document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
+  async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const n=inv.Sandcastle||0;const cMap=d.aquariumCosmeticsMap||{};const placedCount=Object.values(cMap).flat().filter(x=>x==='Sandcastle').length;document.getElementById('cosmetic-inventory').innerHTML=`<div class="rebuild-item"><img src="${IMG.sandcastle}"><strong>Sandcastle</strong><p>In bag: ${n} | Placed: ${placedCount}</p><button class="rebuild-btn" onclick="quickToggleCosmeticTank('Sandcastle')">${placedCount>0?'Unequip from Tank':'Equip in Tank'}</button><br><small>Or click any tank in your Aquarium to place/remove it per slot.</small></div>`;document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
+  async function quickToggleCosmeticTank(cosName){try{const ref=playerRef();await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');const d=snap.data()||{};const inv={...(d.cosmeticsInventory||{})};const tMap={...(d.aquariumTanksMap||{})};const cMap={...(d.aquariumCosmeticsMap||{})};let removed=false;for(const rKey of Object.keys(cMap)){const arr=[...(cMap[rKey]||[])];const idx=arr.indexOf(cosName);if(idx!==-1){arr[idx]=null;cMap[rKey]=arr;inv[cosName]=(inv[cosName]||0)+1;removed=true;break;}}if(!removed){if((inv[cosName]||0)<=0)throw Error('You do not own this cosmetic.');let placed=false;const roomKeys=Object.keys(tMap).length?Object.keys(tMap):['room_0'];for(const rKey of roomKeys){const tArr=tMap[rKey]||[];const cArr=[...(cMap[rKey]||new Array(8).fill(null))];const slotIdx=tArr.findIndex((fish,i)=>fish&&!cArr[i]);if(slotIdx!==-1){cArr[slotIdx]=cosName;cMap[rKey]=cArr;inv[cosName]-=1;placed=true;break;}}if(!placed)throw Error('Place a fish in a Mini Tank in your Aquarium first!');}tx.update(ref,{aquariumCosmeticsMap:cMap,cosmeticsInventory:inv});});showToast('Cosmetic updated!');openCosmeticsInventory();loadBackpackData();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{});}}catch(e){showToast(e.message);}}
+  window.quickToggleCosmeticTank=quickToggleCosmeticTank;
   async function toggleSandcastle(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},inv={...(d.cosmeticsInventory||{})};const equipped=!!d.aquariumSandcastle;if(!equipped&&(inv.Sandcastle||0)<=0)throw Error('You do not own a Sandcastle. Buy one in the Shop.');tx.update(ref,{aquariumSandcastle:!equipped});});showToast('Aquarium decoration updated.');if(typeof openCosmeticsInventory==='function'&&document.getElementById('modal-cosmetics').style.display==='flex')openCosmeticsInventory();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{});} }catch(e){showToast(e.message);}}
   window.openCosmeticsInventory=openCosmeticsInventory;window.toggleSandcastle=toggleSandcastle;
   async function placeSandcastleInSelectedTank(){
@@ -6012,7 +6018,7 @@
       const bait=d.equippedBait||(d.isBaitActive?'worm':'');
       document.getElementById('backpack-tanks-count').innerText=`Mini Tanks Bought: ${tanksCount}`;
       document.getElementById('backpack-rooms-count').innerText=`Aquarium Rooms Owned: ${roomsCount}`;
-      document.getElementById('backpack-baits-count').innerText=`Baits: ${baitsCount} | Cubes: ${cubesCount}`;
+      document.getElementById('backpack-baits-count').innerText='Baits';
       const toggleBtn=document.getElementById('backpack-bait-toggle-btn');
       if(toggleBtn){
         toggleBtn.innerText=bait?'Change Bait':'Equip Bait';
@@ -6061,7 +6067,7 @@
 
   // Aquarium decoration layer and custom movement per creature.
   const originalRenderAquarium=window.renderAquarium;
-  window.renderAquarium=function(username,fishes,tanksMap){if(originalRenderAquarium)originalRenderAquarium(username,fishes,tanksMap);if(isViewingMyAquarium&&auth.currentUser){db.collection('jugadores').doc(auth.currentUser.uid).get().then(s=>{if(s.exists&&s.data().aquariumSandcastle){const scene=document.querySelector('#modal-aquarium .modal-card > div[style*="aspect-ratio"]');if(scene&&!scene.querySelector('.aquarium-sandcastle')){const im=document.createElement('img');im.className='aquarium-sandcastle';im.src=IMG.sandcastle;im.alt='Sandcastle';scene.appendChild(im);}}else{document.querySelectorAll('.aquarium-sandcastle').forEach(x=>x.remove());}});}};
+  window.renderAquarium=function(username,fishes,tanksMap,cosmeticMap){if(originalRenderAquarium)originalRenderAquarium(username,fishes,tanksMap,cosmeticMap);if(isViewingMyAquarium&&auth.currentUser){db.collection('jugadores').doc(auth.currentUser.uid).get().then(s=>{if(!s.exists)return;const d=s.data()||{};if(!cosmeticMap&&d.aquariumCosmeticsMap){originalRenderAquarium(username,fishes,tanksMap,d.aquariumCosmeticsMap);}if(d.aquariumSandcastle){const scene=document.querySelector('#modal-aquarium .modal-card > div[style*="aspect-ratio"]');if(scene&&!scene.querySelector('.aquarium-sandcastle')){const im=document.createElement('img');im.className='aquarium-sandcastle';im.src=IMG.sandcastle;im.alt='Sandcastle';im.style.zIndex='2';scene.appendChild(im);}}else{document.querySelectorAll('.aquarium-sandcastle').forEach(x=>x.remove());}});}};
   const animationIntervals=[];
   window.stopFishAnimations=function(){animationIntervals.forEach(clearInterval);animationIntervals.length=0;};
   window.startFishAnimation=function(shelfIndex){const im=document.querySelector(`.swimming-fish-${shelfIndex}`);if(!im)return;const n=im.alt||'';const meta=ALLOWED_FISH_TYPES.find(f=>f.name===n);im.style.position='absolute';im.style.width=n==='Turtle'?'52px':'40px';if(meta&&meta.creatureType==='sand'){im.style.bottom='2%';im.style.top='auto';im.classList.add('creature-sand');}else if(n==='Jellyfish')im.classList.add('creature-jelly');else if(n==='Turtle')im.classList.add('creature-turtle');else if(n==='Octopus')im.classList.add('creature-octopus');else{im.style.left='25%';im.style.top='35%';im.classList.add('creature-turtle');}};
