@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game</title>
+  <title>The Fishing Game BETA</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -1370,7 +1370,7 @@
       <h3 style="margin-top:0;">Select a Fish for Tank</h3>
       <p style="font-size:0.85rem; color:#64748b;">Choose a fish from your inventory:</p>
       <div id="select-fish-list" style="max-height: 240px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 10px;"></div>
-      <button id="place-sandcastle-in-tank-btn" type="button" class="modal-action-btn" style="background:#8e44ad;margin-bottom:10px" onclick="placeSandcastleInSelectedTank()">Place / Remove Sandcastle Decoration</button>
+      <button id="place-sandcastle-in-tank-btn" type="button" class="modal-action-btn" style="background:#8e44ad;margin-bottom:10px" onclick="placeSandcastleInSelectedTank()">Place Cosmetic</button>
       <button type="button" class="modal-action-btn" style="background: #e74c3c;" onclick="removeFishFromShelf()">Remove Tank / Fish</button>
     </div>
   </div>
@@ -1436,7 +1436,7 @@
       <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 15px;">"Welcome! Redeem your promo codes or buy upgrades!"</p>
       <div id="bob-special-trade-shop-card" style="background:#fff7ed;padding:14px;border-radius:12px;margin:0 0 15px;border:2px solid #f59e0b;text-align:left;">
         <h3 style="margin:0 0 6px;color:#9a3412;text-align:center;">Bob's Special Trade</h3>
-        <p style="font-size:.9rem;color:#7c2d12;margin:0 0 10px;">Give Bob one Bluefin Tuna with <strong>both sides Cooked or Well Cooked</strong>. Wait 10 minutes and return here to claim 1 Mini Tuna Cube.</p>
+        <p style="font-size:.9rem;color:#7c2d12;margin:0 0 10px;">Give Bob one Bluefin Tuna with <strong>both sides Well Cooked (46% - 60%)</strong>. Wait 10 minutes and return here to claim 1 Mini Tuna Cube.</p>
         <button type="button" class="modal-action-btn" style="background:#d97706;" onclick="openBobTrade()">Trade a Cooked Bluefin Tuna</button>
       </div>
 
@@ -1711,6 +1711,28 @@
   <div id="toast-container"></div>
 
   <script>
+    const IMG = {
+      clam: 'https://i.postimg.cc/BQSTqp46/clam.png',
+      urchin: 'https://i.postimg.cc/15mG9Bsg/sea-urchin.png',
+      jelly: 'https://i.postimg.cc/J4rN1xMt/jellyfish.png',
+      turtle: 'https://i.postimg.cc/g0wMdW8S/turtle2.png',
+      octopus: 'https://i.postimg.cc/Qx8QXmhH/octopus.png',
+      grill: 'https://i.postimg.cc/BQSTqp4L/grill.png',
+      grillTop: 'https://i.postimg.cc/sDjYVmsW/grill-up.png',
+      cook: 'https://i.postimg.cc/2y6St1Nb/cook-button.png',
+      sandcastle: 'https://i.postimg.cc/28kQzGrh/sand-castle.png',
+      tunaCube: 'https://i.postimg.cc/TYdVR0f5/mini-tuna-cube.png'
+    };
+    window.IMG = IMG;
+    function getCookedFilter(pct) {
+      const p = Math.max(0, Math.min(100, Number(pct) || 0));
+      if (p <= 0) return 'none';
+      const brightness = (1 - (p / 100) * 0.72).toFixed(2);
+      const sepia = Math.min(0.85, (p / 100) * 0.85).toFixed(2);
+      const contrast = (1 + (p / 100) * 0.35).toFixed(2);
+      return `brightness(${brightness}) sepia(${sepia}) contrast(${contrast})`;
+    }
+    window.getCookedFilter = getCookedFilter;
     const RECAPTCHA_SITE_KEY = "6Lex8BMuAAAAAPx6P5c7RwFUNi_9dpZPX0hw_Il9";
     let recaptchaLoginId = null;
     let recaptchaRegisterId = null;
@@ -2780,22 +2802,25 @@
             return;
           }
 
-          let fishCounts = {};
+          let rawCounts = {};
+          let cookedFishes = [];
           fishes.forEach((f, idx) => {
-            if (!fishCounts[f.name]) {
-              fishCounts[f.name] = { count: 0, firstIndex: idx, name: f.name };
+            if (f.cooking) {
+              cookedFishes.push({ fish: f, idx });
+            } else {
+              if (!rawCounts[f.name]) {
+                rawCounts[f.name] = { count: 0, firstIndex: idx, name: f.name };
+              }
+              rawCounts[f.name].count++;
             }
-            fishCounts[f.name].count++;
           });
 
           let html = '';
           let hasSellableFish = false;
 
-          Object.values(fishCounts).forEach((group) => {
+          Object.values(rawCounts).forEach((group) => {
             const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === group.name) || ALLOWED_FISH_TYPES[0];
-            const isLimited = fishObj.isLimited === true;
-
-            if (isLimited) return;
+            if (fishObj.isLimited === true) return;
 
             const inTank = displayedTanksMap[group.name] || 0;
             const inMarket = marketListedMap[group.name] || 0;
@@ -2814,7 +2839,32 @@
 
                 <div style="display: flex; gap: 4px; width: 100%;">
                   <button type="button" class="modal-action-btn" style="background:#e74c3c; padding: 4px; font-size: 0.68rem; flex:1;" onclick="promptBotSell('${group.name}', ${availableCount}, ${fishObj.value})">Bot Sell</button>
-                  
+                </div>
+              </div>
+            `;
+          });
+
+          cookedFishes.forEach(({ fish: f, idx }) => {
+            const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === f.name) || ALLOWED_FISH_TYPES[0];
+            if (fishObj.isLimited === true) return;
+            hasSellableFish = true;
+            const ck = f.cooking;
+            const avgPct = Math.round(((Number(ck.side1) || 0) + (Number(ck.side2) || 0)) / 2);
+            const s1 = ck.side1 <= 0 ? 'Raw' : ck.side1 <= 45 ? 'Slightly Cooked' : ck.side1 <= 60 ? 'Well Cooked' : ck.side1 <= 85 ? 'Overcooked' : 'Burnt';
+            const s2 = ck.side2 <= 0 ? 'Raw' : ck.side2 <= 45 ? 'Slightly Cooked' : ck.side2 <= 60 ? 'Well Cooked' : ck.side2 <= 85 ? 'Overcooked' : 'Burnt';
+            const isWellCooked = s1 === 'Well Cooked' && s2 === 'Well Cooked';
+            const isGood = ['Slightly Cooked', 'Well Cooked'].includes(s1) && ['Slightly Cooked', 'Well Cooked'].includes(s2);
+            const val = isGood ? Math.round(fishObj.value * (isWellCooked ? 1.15 : 1.08)) : fishObj.value;
+            html += `
+              <div style="background: #fff7ed; border: 1px solid #fdba74; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative;">
+                <span style="position: absolute; top: 6px; left: 8px; background: #d97706; color: white; font-size: 0.62rem; font-weight: bold; padding: 1px 5px; border-radius: 6px;">Cooked</span>
+                <img src="${fishObj.img}" style="width: 50px; height: 50px; object-fit: contain; margin: 8px 0; filter: ${getCookedFilter(avgPct)};">
+                <span style="font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 2px; color: #1e293b;">${f.name}</span>
+                <span style="font-size: 0.68rem; color: #7c2d12; text-align: center; margin-bottom: 2px;">${s1} ${ck.side1}% / ${s2} ${ck.side2}%</span>
+                <span style="font-size: 0.72rem; color: #b45309; font-weight: bold; margin-bottom: 8px;">Value: 💰 ${val}</span>
+
+                <div style="display: flex; gap: 4px; width: 100%;">
+                  <button type="button" class="modal-action-btn" style="background:#e74c3c; padding: 4px; font-size: 0.68rem; flex:1;" onclick="botSellSingleCookedFish('${f.id || ''}', ${idx}, ${val})">Bot Sell</button>
                 </div>
               </div>
             `;
@@ -2906,6 +2956,35 @@
       }
     }
 
+    async function botSellSingleCookedFish(fishId, fallbackIdx, sellValue) {
+      if (!checkCooldown()) return;
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        let soldName = '';
+        await db.runTransaction(async (tx) => {
+          const doc = await tx.get(playerRef);
+          if (!doc.exists) throw new Error('Player not found');
+          const fishes = [...(doc.data().fishes || [])];
+          let idx = fishId ? fishes.findIndex(f => f.id === fishId && f.cooking) : -1;
+          if (idx < 0 && fishes[fallbackIdx] && fishes[fallbackIdx].cooking) idx = fallbackIdx;
+          if (idx < 0) throw new Error('Cooked fish is no longer in your inventory.');
+          soldName = fishes[idx].name;
+          fishes.splice(idx, 1);
+          tx.update(playerRef, {
+            coins: firebase.firestore.FieldValue.increment(sellValue),
+            fishes
+          });
+        });
+        showToast(`Bot sold cooked ${soldName} for +${sellValue} 💰!`);
+        loadMyFishesForMarket();
+        updateGameHUD();
+      } catch (err) {
+        showToast(err.message);
+      }
+    }
+    window.botSellSingleCookedFish = botSellSingleCookedFish;
     async function confirmBotSell(isSellAll = false) {
       if (!checkCooldown()) return;
       const user = auth.currentUser;
@@ -2959,9 +3038,13 @@
           if (removedFish.length !== qtyInput) throw new Error('Fish inventory changed. Please try again.');
           totalCoinsEarned = removedFish.reduce((sum, f) => {
             const c = f.cooking;
-            if (c && ['Cooked','Well Cooked'].includes(c.stage1) && ['Cooked','Well Cooked'].includes(c.stage2)) {
-              const ideal = c.side1 >= 40 && c.side1 <= 60 && c.side2 >= 40 && c.side2 <= 60;
-              return sum + Math.round(fishValue * (ideal ? 1.15 : 1.08));
+            if (c) {
+              const st1 = c.side1 <= 0 ? 'Raw' : c.side1 <= 45 ? 'Slightly Cooked' : c.side1 <= 60 ? 'Well Cooked' : c.side1 <= 85 ? 'Overcooked' : 'Burnt';
+              const st2 = c.side2 <= 0 ? 'Raw' : c.side2 <= 45 ? 'Slightly Cooked' : c.side2 <= 60 ? 'Well Cooked' : c.side2 <= 85 ? 'Overcooked' : 'Burnt';
+              if (['Slightly Cooked','Well Cooked'].includes(st1) && ['Slightly Cooked','Well Cooked'].includes(st2)) {
+                const ideal = st1 === 'Well Cooked' && st2 === 'Well Cooked';
+                return sum + Math.round(fishValue * (ideal ? 1.15 : 1.08));
+              }
             }
             return sum + fishValue;
           }, 0);
@@ -3288,11 +3371,15 @@
       } else {
         let fishCounts = {};
         fishes.forEach(f => {
+          if (f.cooking) return;
           if (!fishCounts[f.name]) fishCounts[f.name] = 0;
           fishCounts[f.name]++;
         });
 
         let html = '';
+        if (Object.keys(fishCounts).length === 0) {
+          listEl.innerHTML = '<p style="color:#64748b; text-align:center; margin:10px 0; grid-column:1/-1;">No raw fish available! Cooked fish cannot be placed in the aquarium.</p>';
+        }
         Object.entries(fishCounts).forEach(([fishName, count]) => {
           const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === fishName) || ALLOWED_FISH_TYPES[0];
           const isListed = marketListedFishes.includes(fishName);
@@ -3312,7 +3399,7 @@
         listEl.innerHTML = html;
       }
       const decoBtn=document.getElementById('place-sandcastle-in-tank-btn');
-      if(decoBtn){const data=(await db.collection('jugadores').doc(user.uid).get()).data()||{};const room=`room_${currentAquariumRoomIndex}`;const arr=(data.aquariumCosmeticsMap||{})[room]||[];decoBtn.textContent=arr[selectedShelfIndex]==='Sandcastle'?'Remove Sandcastle Decoration':`Place Sandcastle Decoration (${(data.cosmeticsInventory||{}).Sandcastle||0} owned)`;decoBtn.disabled=!arr[selectedShelfIndex]&&(!(data.cosmeticsInventory||{}).Sandcastle||0);}
+      if(decoBtn){const data=(await db.collection('jugadores').doc(user.uid).get()).data()||{};const room=`room_${currentAquariumRoomIndex}`;const arr=(data.aquariumCosmeticsMap||{})[room]||[];const ownedCount=(data.cosmeticsInventory||{}).Sandcastle||0;const isPlaced=arr[selectedShelfIndex]==='Sandcastle';decoBtn.textContent=isPlaced?'Remove Cosmetic (Sandcastle)':`Place Cosmetic (${ownedCount} owned)`;decoBtn.disabled=!isPlaced&&ownedCount<=0;}
       document.getElementById('modal-select-fish').style.display = 'flex';
     }
 
@@ -3337,7 +3424,7 @@
           let fishes = data.fishes || [];
           let tanksCount = data.miniTanksCount || 0;
 
-          let totalInInventory = fishes.filter(f => f.name === fishName).length;
+          let totalInInventory = fishes.filter(f => f.name === fishName && !f.cooking).length;
           
           let totalDisplayedAcrossAllRooms = 0;
           Object.entries(tanksMap).forEach(([rKey, rTanks]) => {
@@ -5149,24 +5236,13 @@
 /* Reconstructed systems extension: built on the supplied ORIGINAL game HTML. */
 (function () {
   'use strict';
-  const IMG = {
-    clam: 'https://i.postimg.cc/BQSTqp46/clam.png',
-    urchin: 'https://i.postimg.cc/15mG9Bsg/sea-urchin.png',
-    jelly: 'https://i.postimg.cc/J4rN1xMt/jellyfish.png',
-    turtle: 'https://i.postimg.cc/g0wMdW8S/turtle2.png',
-    octopus: 'https://i.postimg.cc/Qx8QXmhH/octopus.png',
-    grill: 'https://i.postimg.cc/BQSTqp4L/grill.png',
-    grillTop: 'https://i.postimg.cc/sDjYVmsW/grill-up.png',
-    cook: 'https://i.postimg.cc/2y6St1Nb/cook-button.png',
-    sandcastle: 'https://i.postimg.cc/28kQzGrh/sand-castle.png',
-    tunaCube: 'https://i.postimg.cc/TYdVR0f5/mini-tuna-cube.png'
-  };
+
   const playerRef = () => {
     const u = auth.currentUser;
     if (!u) throw new Error('You must be logged in.');
     return db.collection('jugadores').doc(u.uid);
   };
-  const stage = p => p >= 100 ? 'Burnt' : p >= 65 ? 'Well Cooked' : p >= 35 ? 'Cooked' : p > 0 ? 'Slightly Cooked' : 'Not Cooked';
+  const stage = p => { const n = Number(p) || 0; if (n <= 0) return 'Raw'; if (n <= 45) return 'Slightly Cooked'; if (n <= 60) return 'Well Cooked'; if (n <= 85) return 'Overcooked'; return 'Burnt'; };
   const safeInt = (v, min=1) => { const n = Number(v); return Number.isInteger(n) && n >= min ? n : null; };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let grillTimer = null, grillSaveTimer = null, grillState = null, grillHot = true;
@@ -5216,12 +5292,12 @@
     host.innerHTML = `
       <div id="modal-grill-station" class="rebuild-modal"><div class="rebuild-card">
         <button class="rebuild-btn red" style="float:right" onclick="closeGrillStation()">Close</button><h2>Grill Station</h2>
-        <div id="grill-fish-stage" style="background-image:url('${IMG.grill}')"><img src="${IMG.grillTop}" alt="Grill top" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none"><img id="grill-fish-image" class="grill-fish" style="display:none" ondblclick="flipGrillFish()"></div>
-        <p id="grill-status" style="font-size:.9rem;color:#475569">Add a fish to begin. Drag/tap to move between hot & rest areas, or press Flip Fish.</p>
+        <div id="grill-fish-stage" style="background:#f8fafc;border:1px solid #cbd5e1"><img src="${IMG.grillTop}" alt="Grill top" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none"><img id="grill-fish-image" class="grill-fish" style="display:none" ondblclick="flipGrillFish()"></div>
+        <p id="grill-status" style="font-size:.9rem;color:#475569">Add a fish to begin. Drag anywhere on the grill (left/center = hot, far right = rest), or press Flip Fish.</p>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
           <button class="rebuild-btn" onclick="openGrillFishPicker()">Add Fish</button>
-          <button id="btn-flip-grill-fish" class="rebuild-btn" style="background:#d97706" onclick="flipGrillFish()">🔄 Flip Fish</button>
-          <button class="rebuild-btn alt" onclick="finishGrilling()"><img src="${IMG.cook}" alt="Cook" style="width:28px;height:28px;object-fit:contain;vertical-align:middle"> Finish Cooking</button>
+          <button id="btn-flip-grill-fish" class="rebuild-btn" style="background:#d97706" onclick="flipGrillFish()">Flip Fish</button>
+          <button class="rebuild-btn alt" onclick="finishGrilling()">Finish Cooking</button>
         </div>
         <div id="grill-fish-picker" style="display:none;margin-top:10px"><h3>Select a fish</h3><div id="grill-fish-options" class="rebuild-grid"></div></div>
       </div></div>
@@ -5274,11 +5350,65 @@
   <p id="offer-preview" style="font-size:.85rem;color:#334155;background:#eef6ff;padding:8px;border-radius:8px;margin:6px 0 10px">Add items to preview your offer.</p>
   <button type="button" class="rebuild-btn" style="width:100%;font-size:1rem" onclick="publishOffer()">Publish Offer</button>
 </div></div>
-      <div id="modal-bob-trade" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-bob-trade')">Close</button><h2>Bob's Special Trade</h2><p>Give Bob one Bluefin Tuna with both sides Cooked or Well Cooked. He will prepare a Mini Tuna Cube in 10 minutes.</p><div id="bob-trade-status"></div><button class="rebuild-btn" onclick="startBobTrade()">Give Bluefin Tuna</button><button class="rebuild-btn alt" onclick="claimBobReward()">Claim Mini Tuna Cube</button></div></div>
+      <div id="modal-bob-trade" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-bob-trade')">Close</button><h2>Bob's Special Trade</h2><p>Give Bob one Bluefin Tuna with both sides Well Cooked (46% - 60%). He will prepare a Mini Tuna Cube in 10 minutes.</p><div id="bob-trade-status"></div><button class="rebuild-btn" onclick="startBobTrade()">Give Bluefin Tuna</button><button class="rebuild-btn alt" onclick="claimBobReward()">Claim Mini Tuna Cube</button></div></div>
       <div id="modal-shop-pages" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-shop-pages')">Close</button><h2>Shop</h2><div id="shop-page-items" class="rebuild-grid"></div><div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px"><button class="rebuild-btn alt" onclick="changeShopPage(-1)">Previous</button><span id="shop-page-label"></span><button class="rebuild-btn alt" onclick="changeShopPage(1)">Next</button></div></div></div>
       <div id="modal-cosmetics" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-cosmetics')">Close</button><h2>Cosmetics</h2><div id="cosmetic-inventory" class="rebuild-grid"></div></div></div>`;
     while (host.firstElementChild) document.body.appendChild(host.firstElementChild);
-    const grillFish=document.getElementById('grill-fish-image'),grillStage=document.getElementById('grill-fish-stage');let dragGrill=false,dragStart=null,dragMoved=false; if(grillFish&&grillStage){grillFish.addEventListener('pointerdown',e=>{dragGrill=true;dragMoved=false;dragStart={x:e.clientX,y:e.clientY};grillFish.setPointerCapture(e.pointerId);e.preventDefault();});grillFish.addEventListener('pointermove',e=>{if(!dragGrill)return;if(Math.hypot(e.clientX-dragStart.x,e.clientY-dragStart.y)>7)dragMoved=true;if(!dragMoved)return;const r=grillStage.getBoundingClientRect();const x=Math.max(0,Math.min(90,(e.clientX-r.left)/r.width*100-5));const y=Math.max(0,Math.min(80,(e.clientY-r.top)/r.height*100-8));grillFish.style.left=x+'%';grillFish.style.top=y+'%';});grillFish.addEventListener('pointerup',e=>{if(!dragGrill)return;dragGrill=false;const r=grillStage.getBoundingClientRect();if(grillState){if(dragMoved){grillState.zone=((e.clientX-r.left)/r.width)>.72?'rest':'hot';if(grillState.zone==='hot'&&grillState[grillState.activeSide===1?'side1':'side2']>=99){grillState[grillState.activeSide===1?'side1':'side2']=100;grillState.zone='rest';showToast('This side is now Burnt.');}}else if(grillState.zone==='rest'&&grillState[grillState.activeSide===1?'side1':'side2']>=99){grillState[grillState.activeSide===1?'side1':'side2']=100;showToast('This side is now Burnt.');}else{grillState.zone=grillState.zone==='hot'?'rest':'hot';}renderGrillState();saveGrillState();}});}
+    const grillFish=document.getElementById('grill-fish-image'),grillStage=document.getElementById('grill-fish-stage');
+    let dragGrill=false,dragStart=null,dragMoved=false,dragOffset={x:0,y:0};
+    window.__isDraggingGrillFish=false;
+    if(grillFish&&grillStage){
+      grillFish.addEventListener('pointerdown',e=>{
+        if(!grillState)return;
+        dragGrill=true;
+        window.__isDraggingGrillFish=true;
+        dragMoved=false;
+        dragStart={x:e.clientX,y:e.clientY};
+        const fr=grillFish.getBoundingClientRect();
+        dragOffset={x:e.clientX-fr.left,y:e.clientY-fr.top};
+        grillFish.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+      grillFish.addEventListener('pointermove',e=>{
+        if(!dragGrill||!grillState)return;
+        if(Math.hypot(e.clientX-dragStart.x,e.clientY-dragStart.y)>4)dragMoved=true;
+        const r=grillStage.getBoundingClientRect();
+        const x=Math.max(5,Math.min(82,((e.clientX-r.left-dragOffset.x)/r.width)*100));
+        const y=Math.max(8,Math.min(72,((e.clientY-r.top-dragOffset.y)/r.height)*100));
+        grillState.posX=Number(x.toFixed(1));
+        grillState.posY=Number(y.toFixed(1));
+        grillFish.style.left=grillState.posX+'%';
+        grillFish.style.top=grillState.posY+'%';
+      });
+      const endGrillDrag=(e)=>{
+        if(!dragGrill)return;
+        dragGrill=false;
+        window.__isDraggingGrillFish=false;
+        if(grillState){
+          if(dragMoved){
+            const curX=typeof grillState.posX==='number'?grillState.posX:35;
+            grillState.zone=curX>66?'rest':'hot';
+            if(grillState.zone==='hot'&&grillState[grillState.activeSide===1?'side1':'side2']>=99){
+              grillState[grillState.activeSide===1?'side1':'side2']=100;
+              grillState.zone='rest';
+              showToast('This side is now Burnt.');
+            }
+          }else{
+            if(grillState.zone==='rest'&&grillState[grillState.activeSide===1?'side1':'side2']>=99){
+              grillState[grillState.activeSide===1?'side1':'side2']=100;
+              showToast('This side is now Burnt.');
+            }else{
+              grillState.zone=grillState.zone==='hot'?'rest':'hot';
+              grillState.posX=grillState.zone==='rest'?70:35;
+            }
+          }
+          renderGrillState();
+          saveGrillState();
+        }
+      };
+      grillFish.addEventListener('pointerup',endGrillDrag);
+      grillFish.addEventListener('pointercancel',endGrillDrag);
+    }
 
     // Add access points without replacing existing menu controls.
     const backpack = document.querySelector('#modal-backpack .modal-card');
@@ -5387,24 +5517,51 @@
   }
   function renderGrillState(){
     const img=document.getElementById('grill-fish-image'),status=document.getElementById('grill-status');
-    if(!grillState){img.style.display='none';img.style.filter='none';img.style.transform='scaleX(1)';status.textContent='Add a fish to begin. The fish cooks at 1% per second in the hot area.';return;}
+    if(!grillState){img.style.display='none';img.style.filter='none';img.style.transform='scaleX(1)';status.textContent='Add a fish to begin. The fish cooks at 1% per second on the grill.';return;}
     const f=ALLOWED_FISH_TYPES.find(x=>x.name===grillState.fish.name);img.src=f?f.img:'';img.style.display='block';
-    img.style.left=grillState.zone==='rest'?'68%':'28%';
+    if(!window.__isDraggingGrillFish){
+      const leftPos=typeof grillState.posX==='number'?grillState.posX:(grillState.zone==='rest'?70:35);
+      const topPos=typeof grillState.posY==='number'?grillState.posY:38;
+      img.style.left=leftPos+'%';
+      img.style.top=topPos+'%';
+    }
     const activePct=grillState.activeSide===1?grillState.side1:grillState.side2;
     img.style.filter=getCookedFilter(activePct);
     img.style.transform=grillState.activeSide===2?'scaleX(-1) scaleY(-1)':'scaleX(1) scaleY(1)';
     status.textContent=`${grillState.fish.name} — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: ${grillState.activeSide===1?'Side 1':'Side 2'} (${grillState.zone==='rest'?'Resting':'On Fire'}).`;
   }
   async function openGrillFishPicker(){
-    const d=(await playerRef().get()).data()||{};const fishes=d.fishes||[];const displayed=Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean);
-    const market=await db.collection('marketListings').where('sellerUid','==',auth.currentUser.uid).get();const listed=market.docs.map(x=>x.data().fishId).filter(Boolean);
-    const eligible=fishes.filter(f=>{const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);return meta&&!meta.isLimited&&!['Legacy','Secret'].includes(meta.rarity)&&!displayed.includes(f.name)&&!listed.includes(f.id)&&!f.cooking;});
-    const c=document.getElementById('grill-fish-options');c.innerHTML=eligible.length?eligible.map(f=>{const m=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);return `<div class="rebuild-item"><img src="${m.img}"><strong>${esc(f.name)}</strong><button class="rebuild-btn" onclick="addFishToGrill('${esc(f.id||'')}','${esc(f.name)}','${esc(f.timestamp||'')}')">Select</button></div>`}).join(''):'<p>No eligible fish. Legacy, Secret and limited fish are protected.</p>';
+    const d=(await playerRef().get()).data()||{};const fishes=d.fishes||[];
+    const displayedCounts={};
+    Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean).forEach(n=>{displayedCounts[n]=(displayedCounts[n]||0)+1;});
+    const market=await db.collection('marketListings').where('sellerUid','==',auth.currentUser.uid).get();
+    const listed=new Set();
+    market.docs.forEach(doc=>{const x=doc.data();if(x.fishId)listed.add(x.fishId);(x.fishData||[]).forEach(f=>{if(f.id)listed.add(f.id);});(x.bundleItems||[]).forEach(b=>{(b.fishData||[]).forEach(f=>{if(f.id)listed.add(f.id);});});});
+    const skippedDisplayed={};
+    const eligible=[];
+    fishes.forEach((f,i)=>{
+      const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);
+      if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity)||(f.id&&listed.has(f.id)))return;
+      if(!f.cooking&&(skippedDisplayed[f.name]||0)<(displayedCounts[f.name]||0)){
+        skippedDisplayed[f.name]=(skippedDisplayed[f.name]||0)+1;
+        return;
+      }
+      eligible.push({fish:f,index:i});
+    });
+    const c=document.getElementById('grill-fish-options');
+    c.innerHTML=eligible.length?eligible.map(({fish:f,index:i})=>{
+      const m=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);
+      const ck=f.cooking;
+      const avgPct=ck?Math.round(((Number(ck.side1)||0)+(Number(ck.side2)||0))/2):0;
+      const s1=ck?stage(ck.side1):'Raw',s2=ck?stage(ck.side2):'Raw';
+      const badge=ck?`<span style="display:block;font-size:0.7rem;color:#b45309;">${esc(s1)} ${ck.side1}% / ${esc(s2)} ${ck.side2}%</span>`:'<span style="display:block;font-size:0.7rem;color:#64748b;">Raw (0%)</span>';
+      return `<div class="rebuild-item"><img src="${m.img}" style="filter:${getCookedFilter(avgPct)}"><strong>${esc(f.name)}</strong>${badge}<button class="rebuild-btn" onclick="addFishToGrill('${esc(f.id||'')}','${esc(f.name)}','${esc(f.timestamp||'')}',${i})">Select</button></div>`;
+    }).join(''):'<p>No eligible fish. Legacy, Secret and limited fish are protected.</p>';
     document.getElementById('grill-fish-picker').style.display='block';
   }
-  async function addFishToGrill(fishId,fishName,fishTimestamp){
+  async function addFishToGrill(fishId,fishName,fishTimestamp,fallbackIndex){
     if(grillState){showToast('Finish or remove the current fish first.');return;}
-    try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};const fs=[...(d.fishes||[])];let idx=fishId?fs.findIndex(f=>f.id===fishId):(fishTimestamp?fs.findIndex(f=>f.name===fishName&&f.timestamp===fishTimestamp&&!f.cooking):fs.findIndex(f=>f.name===fishName&&!f.cooking));if(idx<0)throw Error('Fish is no longer available.');const f=fs[idx];const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity))throw Error('This fish is protected from cooking.');fs.splice(idx,1);tx.update(ref,{fishes:fs,grillState:{fish:{...f,id:f.id||'fish-'+Date.now()},side1:0,side2:0,activeSide:1,zone:'hot',updatedAt:Date.now()}});});
+    try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};const fs=[...(d.fishes||[])];let idx=-1;if(fishId)idx=fs.findIndex(f=>f.id===fishId);if(idx<0&&fishTimestamp)idx=fs.findIndex(f=>f.name===fishName&&f.timestamp===fishTimestamp);if(idx<0&&typeof fallbackIndex==='number'&&fs[fallbackIndex]&&fs[fallbackIndex].name===fishName)idx=fallbackIndex;if(idx<0)idx=fs.findIndex(f=>f.name===fishName);if(idx<0)throw Error('Fish is no longer available.');const f=fs[idx];const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity))throw Error('This fish is protected from cooking.');const prevCk=f.cooking||{side1:0,side2:0};fs.splice(idx,1);tx.update(ref,{fishes:fs,grillState:{fish:{...f,id:f.id||'fish-'+Date.now()},side1:Number(prevCk.side1)||0,side2:Number(prevCk.side2)||0,activeSide:1,zone:'hot',posX:35,posY:38,updatedAt:Date.now()}});});
       grillState=(await ref.get()).data().grillState;document.getElementById('grill-fish-picker').style.display='none';renderGrillState();loadBackpackData();
     }catch(e){showToast('Could not add fish: '+e.message);}
   }
@@ -5418,7 +5575,7 @@
 
   // Bob trade uses exact two-side stages, a persistent 10-minute timestamp and one-time claim.
   async function openBobTrade(){try{const d=(await playerRef().get()).data()||{};const t=d.bobTrade;let msg='No trade in progress.';if(t){const remain=Math.max(0,600000-(Date.now()-t.startedAt));msg=remain?`Mini Tuna Cube ready in ${Math.ceil(remain/60000)} minute(s).`:'Your Mini Tuna Cube is ready to claim!';}document.getElementById('bob-trade-status').textContent=msg;document.getElementById('modal-bob-trade').style.display='flex';}catch(e){showToast(e.message);}}
-  async function startBobTrade(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.bobTrade&&!d.bobTrade.claimed)throw Error('You already have a Bob trade in progress.');const fs=[...(d.fishes||[])];const i=fs.findIndex(f=>f.name==='Bluefin Tuna'&&f.cooking&&['Cooked','Well Cooked'].includes(f.cooking.stage1)&&['Cooked','Well Cooked'].includes(f.cooking.stage2));if(i<0)throw Error('Bob only accepts a Bluefin Tuna with both sides Cooked or Well Cooked.');const fish=fs.splice(i,1)[0];tx.update(ref,{fishes:fs,bobTrade:{startedAt:Date.now(),fishId:fish.id||null,claimed:false}});});showToast('Bob accepted your Bluefin Tuna. Come back in 10 minutes.');openBobTrade();}catch(e){showToast(e.message);}}
+  async function startBobTrade(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.bobTrade&&!d.bobTrade.claimed)throw Error('You already have a Bob trade in progress.');const fs=[...(d.fishes||[])];const i=fs.findIndex(f=>f.name==='Bluefin Tuna'&&f.cooking&&stage(f.cooking.side1)==='Well Cooked'&&stage(f.cooking.side2)==='Well Cooked');if(i<0)throw Error('Bob only accepts a Bluefin Tuna with both sides Well Cooked (46% - 60%).');const fish=fs.splice(i,1)[0];tx.update(ref,{fishes:fs,bobTrade:{startedAt:Date.now(),fishId:fish.id||null,claimed:false}});});showToast('Bob accepted your Bluefin Tuna. Come back in 10 minutes.');openBobTrade();}catch(e){showToast(e.message);}}
   async function claimBobReward(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},t=d.bobTrade;if(!t||t.claimed)throw Error('There is no unclaimed reward.');if(Date.now()-t.startedAt<600000)throw Error('Bob is still preparing your Mini Tuna Cube.');tx.update(ref,{miniTunaCubesCount:(d.miniTunaCubesCount||0)+1,bobTrade:{...t,claimed:true,claimedAt:Date.now()},achievements:{...(d.achievements||{}),bobMaster:true}});});showToast('You received 1 Mini Tuna Cube!');openBobTrade();loadBackpackData();}catch(e){showToast(e.message);}}
   window.openBobTrade=openBobTrade;window.startBobTrade=startBobTrade;window.claimBobReward=claimBobReward;
 
@@ -5738,15 +5895,21 @@
         const items=normalizeListingItems(x);
         const first=items[0]||{kind:'fish',name:'Fish',quantity:1};
         const img=getItemIcon(first.kind,first.name);
+        const firstCooked=(first.fishData||[]).find(f=>f.cooking);
+        const firstAvgPct=firstCooked?Math.round(((Number(firstCooked.cooking.side1)||0)+(Number(firstCooked.cooking.side2)||0))/2):0;
+        const imgFilter=firstCooked?getCookedFilter(firstAvgPct):'none';
         const heading=x.offerTitle?esc(x.offerTitle):(items.length>1?`Bundle (${items.length} types)`:`${esc(first.name)} x${first.quantity||1}`);
         const details=items.map(it=>{
           const cookedList=(it.fishData||[]).filter(f=>f.cooking);
-          const cookTag=cookedList.length?` [Cooked: ${cookedList.map(f=>`${f.cooking.stage1}/${f.cooking.stage2}`).join(', ')}]`:'';
+          const cookTag=cookedList.length?` [Cooked: ${cookedList.map(f=>`${stage(f.cooking.side1)} ${f.cooking.side1}% / ${stage(f.cooking.side2)} ${f.cooking.side2}%`).join(', ')}]`:'';
           return `${it.quantity||1}x ${it.name}${cookTag}`;
         }).join(' · ');
         return `
           <div class="rebuild-item" style="display:flex;align-items:center;gap:10px;text-align:left">
-            <img src="${img}" style="width:46px;height:46px;object-fit:contain">
+            <div style="position:relative;flex-shrink:0;">
+              ${firstCooked?'<span style="position:absolute;top:-4px;left:-4px;background:#d97706;color:white;font-size:0.58rem;font-weight:bold;padding:1px 4px;border-radius:5px;z-index:2;">Cooked</span>':''}
+              <img src="${img}" style="width:46px;height:46px;object-fit:contain;filter:${imgFilter};">
+            </div>
             <div style="flex:1">
               <strong style="color:#1e3a8a">${heading}</strong>
               <p style="margin:2px 0;font-size:.82rem;color:#334155">${esc(details)}</p>
@@ -6025,8 +6188,8 @@
         toggleBtn.style.background=bait?'#2563a6':'#2ecc71';
       }
       const a=document.getElementById('rebuild-bait-summary'),c=document.getElementById('rebuild-cube-summary');
-      if(a)a.textContent=`Equipped bait: ${bait==='worm'?'Worm Bait':bait==='cube'?'Mini Tuna Cube':'None'} | Baits: ${baitsCount}`;
-      if(c)c.textContent=`Mini Tuna Cubes: ${cubesCount} | Cosmetics: ${Object.values(d.cosmeticsInventory||{}).reduce((n,v)=>n+(Number(v)||0),0)}`;
+      if(a)a.textContent=`Equipped bait: ${bait==='worm'?'Worm Bait':bait==='cube'?'Mini Tuna Cube':'None'}`;
+      if(c)c.textContent=`Cosmetics: ${Object.values(d.cosmeticsInventory||{}).reduce((n,v)=>n+(Number(v)||0),0)}`;
       const fishes=d.fishes||[];
       if(!fishes.length){if(listContainer)listContainer.innerHTML='No fish caught yet. Go fishing!';return;}
       const rawCounts={};
@@ -6049,15 +6212,16 @@
         const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name)||ALLOWED_FISH_TYPES[0];
         const base=meta?meta.value:5,ck=f.cooking;
         const avgPct=Math.round(((Number(ck.side1)||0)+(Number(ck.side2)||0))/2);
-        const ideal=ck.side1>=40&&ck.side1<=60&&ck.side2>=40&&ck.side2<=60;
-        const good=['Cooked','Well Cooked'].includes(ck.stage1)&&['Cooked','Well Cooked'].includes(ck.stage2);
+        const s1=stage(ck.side1),s2=stage(ck.side2);
+        const ideal=s1==='Well Cooked'&&s2==='Well Cooked';
+        const good=['Slightly Cooked','Well Cooked'].includes(s1)&&['Slightly Cooked','Well Cooked'].includes(s2);
         const value=good?Math.round(base*(ideal?1.15:1.08)):base;
         html+=`
           <div style="background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
             <span style="position:absolute;top:4px;left:6px;background:#d97706;color:white;font-size:0.62rem;font-weight:bold;padding:1px 5px;border-radius:6px;">Cooked</span>
             <img src="${meta.img}" alt="${esc(f.name)}" style="width:42px;height:42px;object-fit:contain;margin:4px 0;filter:${getCookedFilter(avgPct)};">
             <span style="font-size:0.8rem;font-weight:bold;text-align:center;color:#1e293b;">${esc(f.name)}</span>
-            <span style="font-size:0.68rem;color:#7c2d12;text-align:center;margin-top:2px;">${esc(ck.stage1)} ${ck.side1}% / ${esc(ck.stage2)} ${ck.side2}%</span>
+            <span style="font-size:0.68rem;color:#7c2d12;text-align:center;margin-top:2px;">${esc(s1)} ${ck.side1}% / ${esc(s2)} ${ck.side2}%</span>
             <span style="font-size:0.68rem;color:#b45309;font-weight:bold;">Bot: ${value} 💰</span>
           </div>`;
       });
