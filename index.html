@@ -825,7 +825,7 @@
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -1383,7 +1383,7 @@
       <h3 style="margin-top:0;">Select a Fish for Tank</h3>
       <p style="font-size:0.85rem; color:#64748b;">Choose a fish from your inventory:</p>
       <div id="select-fish-list" style="max-height: 240px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 10px;"></div>
-      <button type="button" class="modal-action-btn" style="background:#0d9488;margin-bottom:8px;" onclick="placeSandcastleDecoration()">🏰 Place Sandcastle Decoration</button>
+      <button type="button" class="modal-action-btn" style="background:#0d9488;margin-bottom:8px;" onclick="placeSandcastleDecoration()">Equip Cosmetic</button>
       <button type="button" class="modal-action-btn" style="background: #e74c3c;" onclick="removeFishFromShelf()">Remove Tank / Fish</button>
     </div>
   </div>
@@ -3527,37 +3527,27 @@
     }
 
     async function removeFishFromShelf() {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      try {
-        const docRef = db.collection('jugadores').doc(user.uid);
-        const doc = await docRef.get();
-        if (doc.exists) {
-          const data = doc.data();
-          let tanksMap = data.aquariumTanksMap || {};
-          const roomKey = `room_${currentAquariumRoomIndex}`;
-          let tanks = tanksMap[roomKey] || new Array(8).fill(null);
-
-          if (tanks[selectedShelfIndex]) {
-            let tanksCount = (data.miniTanksCount || 0) + 1;
-            tanks[selectedShelfIndex] = null;
-            tanksMap[roomKey] = tanks;
-
-            await docRef.update({ 
-              aquariumTanksMap: tanksMap,
-              miniTanksCount: tanksCount
-            });
-
-            showToast("Tank removed and returned to your inventory.");
-          }
-
-          document.getElementById('modal-select-fish').style.display = 'none';
-          renderAquarium(data.username || "My", data.fishes || [], tanksMap);
-        }
-      } catch (err) {
-        showToast("Error: " + err.message);
-      }
+      const user=auth.currentUser;if(!user)return;
+      try{
+        const ref=db.collection('jugadores').doc(user.uid);
+        await db.runTransaction(async tx=>{
+          const snap=await tx.get(ref);if(!snap.exists)return;
+          const data=snap.data(),key=`room_${currentAquariumRoomIndex}`;
+          const tanksMap=data.aquariumTanksMap||{},tanks=(tanksMap[key]||new Array(8).fill(null)).slice();
+          const decorations=data.aquariumDecorations||{},room=(Array.isArray(decorations[key])?decorations[key]:new Array(8).fill(false)).slice();
+          const hadTank=!!tanks[selectedShelfIndex],hadCastle=!!room[selectedShelfIndex];
+          if(!hadTank&&!hadCastle){showToast('This slot is already empty.');return;}
+          tanks[selectedShelfIndex]=null;room[selectedShelfIndex]=false;tanksMap[key]=tanks;decorations[key]=room;
+          const update={aquariumTanksMap:tanksMap,aquariumDecorations:decorations};
+          if(hadTank)update.miniTanksCount=(data.miniTanksCount||0)+1;
+          if(hadCastle)update.sandcastlesCount=(data.sandcastlesCount||0)+1;
+          tx.update(ref,update);
+        });
+        document.getElementById('modal-select-fish').style.display='none';
+        const fresh=await ref.get(),data=fresh.data();
+        showToast('Tank and its decoration removed. Items returned to your inventory.');
+        renderAquarium(data.username||'My',data.fishes||[],data.aquariumTanksMap||{});
+      }catch(err){showToast('Error: '+err.message);}
     }
 
     function startFishAnimation(shelfIndex) {
@@ -5388,16 +5378,24 @@
       const user=auth.currentUser; if(!user||!isViewingMyAquarium)return;
       try {
         const ref=db.collection('jugadores').doc(user.uid), snap=await ref.get(); if(!snap.exists)return;
-        const data=snap.data(), count=data.sandcastlesCount||0;
-        if(count<1){showToast("You don't have a Sandcastle. Buy one in Bob's Shop.");return;}
-        const decorations=data.aquariumDecorations||{}, key=`room_${currentAquariumRoomIndex}`;
+        const data=snap.data(), key=`room_${currentAquariumRoomIndex}`;
+        const tanks=(data.aquariumTanksMap||{})[key]||new Array(8).fill(null);
+        if(!tanks[selectedShelfIndex]){showToast('Place a fish in this tank before equipping a cosmetic.');return;}
+        const decorations=data.aquariumDecorations||{};
         const room=Array.isArray(decorations[key])?decorations[key].slice():new Array(8).fill(false);
-        room[selectedShelfIndex]=true; decorations[key]=room;
-        await ref.update({sandcastlesCount:count-1,aquariumDecorations:decorations});
+        if(room[selectedShelfIndex]){
+          room[selectedShelfIndex]=false; decorations[key]=room;
+          await ref.update({sandcastlesCount:(data.sandcastlesCount||0)+1,aquariumDecorations:decorations});
+          showToast('Sandcastle removed and returned to your inventory.');
+        } else {
+          if((data.sandcastlesCount||0)<1){showToast("You don't have a Sandcastle. Buy one in Bob's Shop.");return;}
+          room[selectedShelfIndex]=true; decorations[key]=room;
+          await ref.update({sandcastlesCount:(data.sandcastlesCount||0)-1,aquariumDecorations:decorations});
+          showToast('Sandcastle equipped!');
+        }
         document.getElementById('modal-select-fish').style.display='none';
-        showToast('Sandcastle placed in your aquarium!');
-        const fresh=await ref.get(); const d=fresh.data(); renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{});
-      } catch(e){showToast('Could not place Sandcastle: '+e.message);}
+        const fresh=await ref.get(),d=fresh.data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{});
+      } catch(e){showToast('Could not update cosmetic: '+e.message);}
     }
 
     // Cooking minigame: drag or tap the hot zone, rest, then flip for side two.
@@ -5462,8 +5460,34 @@
     function renderShelfSlot(slotKey,fishName,shelfIndex){
       originalRenderShelfSlot(slotKey,fishName,shelfIndex);
       const user=auth.currentUser;if(!isViewingMyAquarium||!user)return;
-      db.collection('jugadores').doc(user.uid).get().then(snap=>{if(!snap.exists)return;const d=snap.data(),room=`room_${currentAquariumRoomIndex}`,arr=(d.aquariumDecorations||{})[room]||[],el=document.getElementById(`shelf-${slotKey}`);if(el&&arr[shelfIndex]){let wrap=el.firstElementChild;if(!fishName||!wrap||!wrap.querySelector('img.swimming-fish-'+shelfIndex)){el.querySelectorAll('.aquarium-tank-layer').forEach(n=>n.remove());wrap=document.createElement('div');wrap.className='aquarium-tank-layer';wrap.style.cssText="position:relative;width:100%;height:100%;background-image:url('https://i.postimg.cc/DZs0wKSx/tanque-mini.png');background-size:contain;background-repeat:no-repeat;background-position:center;overflow:hidden;";el.innerHTML='';el.appendChild(wrap);}wrap.querySelectorAll('.aquarium-sandcastle-layer').forEach(n=>n.remove());const castle=document.createElement('img');castle.className='aquarium-sandcastle-layer';castle.src='https://i.postimg.cc/28kQzGrh/sand-castle.png';castle.alt='Sandcastle decoration';castle.style.cssText='position:absolute;left:8%;bottom:3%;width:42%;height:42%;object-fit:contain;z-index:1;pointer-events:none;';const fish=wrap.querySelector('img');if(fish)wrap.insertBefore(castle,fish);else wrap.appendChild(castle);}});
+      const el=document.getElementById(`shelf-${slotKey}`);if(!el)return;
+      db.collection('jugadores').doc(user.uid).get().then(snap=>{
+        if(!snap.exists)return;
+        const d=snap.data(),room=`room_${currentAquariumRoomIndex}`,decor=(d.aquariumDecorations||{})[room]||[];
+        // No tank/fish means no visible cosmetic; cleanup stale decoration data too.
+        if(!fishName){el.querySelectorAll('.aquarium-sandcastle-layer,.aquarium-tank-layer').forEach(n=>n.remove());return;}
+        if(!decor[shelfIndex]){el.querySelectorAll('.aquarium-sandcastle-layer').forEach(n=>n.remove());return;}
+        let wrap=el.firstElementChild;
+        if(!wrap||!wrap.querySelector('img.swimming-fish-'+shelfIndex))return;
+        wrap.querySelectorAll('.aquarium-sandcastle-layer').forEach(n=>n.remove());
+        const castle=document.createElement('img');castle.className='aquarium-sandcastle-layer';castle.src='https://i.postimg.cc/28kQzGrh/sand-castle.png';castle.alt='Sandcastle decoration';
+        castle.style.cssText='position:absolute;left:8%;bottom:3%;width:42%;height:42%;object-fit:contain;z-index:1;pointer-events:none;';
+        const fish=wrap.querySelector('img.swimming-fish-'+shelfIndex);if(fish)wrap.insertBefore(castle,fish);else wrap.appendChild(castle);
+      }).catch(e=>console.warn('Cosmetic render failed',e));
       if(fishName){const last=activeFishAnimations.pop();if(last)clearInterval(last);startFishAnimation(shelfIndex,fishName);}
+    }
+
+
+    const _openSelectFishModalCosmeticBase=openSelectFishModal;
+    async function openSelectFishModal(fishes){
+      await _openSelectFishModalCosmeticBase(fishes);
+      const btn=document.querySelector('#modal-select-fish button[onclick="placeSandcastleDecoration()"]');
+      const user=auth.currentUser;if(!btn||!user)return;
+      try{const snap=await db.collection('jugadores').doc(user.uid).get(),d=snap.data()||{},key=`room_${currentAquariumRoomIndex}`;
+        const tank=((d.aquariumTanksMap||{})[key]||[])[selectedShelfIndex];
+        const equipped=!!((((d.aquariumDecorations||{})[key]||[])[selectedShelfIndex]));
+        btn.textContent=equipped?'Unequip Cosmetic':'Equip Cosmetic';btn.disabled=!tank&&!equipped;
+      }catch(e){console.warn(e);}
     }
 
     // Admin overview stats include the newly added inventory.
