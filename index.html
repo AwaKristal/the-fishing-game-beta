@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -291,9 +291,8 @@
       object-fit: cover;
     }
 
-    /* MOCHILA PEQUEÑA JUNTO AL USUARIO EN LA ESQUINA INFERIOR IZQUIERDA */
     .backpack-badge-inline {
-      display: none; /* Se muestra al iniciar sesión */
+      display: none;
       width: 38px;
       height: auto;
       cursor: pointer;
@@ -389,7 +388,6 @@
     }
     .cast-line-btn:hover { background: #27ae60; }
 
-    /* Animación de Pez Capturado Saliendo del Agua */
     .caught-fish-popup {
       position: fixed;
       top: 50%;
@@ -721,7 +719,6 @@
       line-height: 1.4;
     }
 
-    /* Estilos del Chat DM */
     .chat-box-container {
       display: flex;
       flex-direction: column;
@@ -760,6 +757,16 @@
       color: #1f2937;
       border-bottom-left-radius: 2px;
     }
+    .chat-report-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.75rem;
+      margin-left: 6px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .chat-report-btn:hover { opacity: 1; }
 
     #toast-container {
       position: fixed;
@@ -788,9 +795,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    #modal-cooking .modal-card { border-top: 5px solid #ea580c; }
-    #cooking-fish-list button { cursor: grab; }
-    #cooking-active-fish { background: linear-gradient(135deg,#fff7ed,#f0f9ff); }
     @media (max-width: 768px) {
       header { padding: 8px 12px; }
       .version-tag { font-size: 0.8rem; padding: 4px 8px; }
@@ -820,7 +824,7 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.2</div>
+      <div class="version-tag">v.1.0.0.3</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
@@ -836,7 +840,6 @@
         <img id="user-avatar" src="https://via.placeholder.com/40" alt="Avatar">
         <span id="user-display-name">Username</span>
       </div>
-      <!-- MOCHILA PEQUEÑA COLOCADA A LA DERECHA DEL "USUARIO" EN LA ESQUINA INFERIOR IZQUIERDA -->
       <img id="backpack-badge-inline" src="https://i.postimg.cc/bNcMt94Y/backpack.png" alt="Backpack" class="backpack-badge-inline" onclick="openModal('modal-backpack')" title="Open Backpack">
     </div>
     <div style="display: flex; gap: 6px; margin-top: 4px;">
@@ -865,7 +868,6 @@
       <button class="img-btn" onclick="openModal('modal-achievements')">
         <img src="https://i.postimg.cc/rsjR9JyD/achievements.png" alt="Achievements">
       </button>
-      <button class="img-btn" onclick="openCookingModal()"><img src="https://i.postimg.cc/2y6St1Nb/cook-button.png" alt="Cook Fish"></button>
     </div>
   </main>
 
@@ -1069,7 +1071,7 @@
   <div id="modal-botsell-prompt" class="modal-overlay" style="z-index: 1050;">
     <div class="modal-card" style="max-width: 320px;">
       <button class="modal-close" onclick="document.getElementById('modal-botsell-prompt').style.display='none'">✖</button>
-      <h3>Bot Sell Stuff</h3>
+      <h3>Bot Sell Fish</h3>
       <p style="font-size:0.85rem; color:#64748b;" id="prompt-botsell-name-label">Fish: Goldfish</p>
       <div class="form-group">
         <label>Quantity to Sell (Max: <span id="prompt-botsell-max-label">1</span>)</label>
@@ -1125,7 +1127,7 @@
       
       <div class="tab-container">
         <button id="tab-market-buy-btn" class="tab-btn active" onclick="switchMarketTab('buy')">Player Market</button>
-        <button id="tab-market-sell-btn" class="tab-btn" onclick="switchMarketTab('sell')">Sell My Stuff</button>
+        <button id="tab-market-sell-btn" class="tab-btn" onclick="switchMarketTab('sell')">Sell My Fish</button>
       </div>
 
       <div id="market-buy-section">
@@ -1160,7 +1162,6 @@
       <p style="font-size:0.85rem; color:#64748b;" id="prompt-fish-name-label">Fish: Opah</p>
       <div class="form-group">
         <label>Price per unit (💰)</label>
-        <input type="number" id="market-sell-qty-input" min="1" value="1" placeholder="Quantity" autocomplete="off">
         <input type="number" id="market-sell-price-input" min="1" placeholder="e.g. 50" autocomplete="off">
       </div>
       <button type="button" class="modal-action-btn" style="background:#2ecc71;" onclick="confirmMarketSell()">Post to Market</button>
@@ -1385,8 +1386,7 @@
       <h3 style="margin-top:0;">Select a Fish for Tank</h3>
       <p style="font-size:0.85rem; color:#64748b;">Choose a fish from your inventory:</p>
       <div id="select-fish-list" style="max-height: 240px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 10px;"></div>
-      <button type="button" class="modal-action-btn" style="background:#0d9488;margin-bottom:8px;" onclick="placeSandcastleDecoration()">Equip Cosmetic</button>
-      <button type="button" class="modal-action-btn" style="background: #e74c3c;" onclick="removeFishFromShelf()">Remove Fish / Tank</button>
+      <button type="button" class="modal-action-btn" style="background: #e74c3c;" onclick="removeFishFromShelf()">Remove Tank / Fish</button>
     </div>
   </div>
 
@@ -1460,7 +1460,7 @@
         </form>
       </div>
 
-      <div data-shop-item="1" style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1;">
+      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1;">
         <div style="text-align: left; display: flex; align-items: center; gap: 10px;">
           <img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Mini Tank" style="width: 40px; height: 40px; object-fit: contain;">
           <div>
@@ -1470,7 +1470,7 @@
         <button id="buy-tank-btn" class="modal-action-btn" style="width: auto; padding: 6px 12px; background: #2ecc71;" onclick="buyMiniTank()">500 💰</button>
       </div>
 
-      <div data-shop-item="1" style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1;">
+      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1;">
         <div style="text-align: left; display: flex; align-items: center; gap: 10px;">
           <img src="https://i.postimg.cc/KYgqH6Sn/worm-bait.png" alt="Worm Bait" style="width: 40px; height: 40px; object-fit: contain;">
           <div>
@@ -1480,7 +1480,7 @@
         <button class="modal-action-btn" style="width: auto; padding: 6px 12px; background: #2ecc71;" onclick="buyWormBait()">250 💰</button>
       </div>
 
-      <div data-shop-item="1" style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1;">
+      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #cbd5e1;">
         <div style="text-align: left; display: flex; align-items: center; gap: 10px;">
           <img src="https://i.postimg.cc/qMyRXL7Z/add.png" alt="Extra Aquarium Room" style="width: 40px; height: 40px; object-fit: contain;">
           <div>
@@ -1488,22 +1488,6 @@
           </div>
         </div>
         <button class="modal-action-btn" style="width: auto; padding: 6px 12px; background: #2ecc71;" onclick="buyAquariumRoom()">2000 💰</button>
-      </div>
-
-      <div data-shop-item="1" style="background:#fff7ed; padding:12px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid #fed7aa;">
-        <div style="text-align:left; display:flex; align-items:center; gap:10px;">
-          <img src="https://i.postimg.cc/BQSTqp4L/grill.png" alt="Grill" style="width:48px;height:48px;object-fit:contain;"><div><strong>Grill</strong><br><span style="font-size:.8rem;color:#64748b;">Cook fish and try to get a perfect result</span></div>
-        </div><button class="modal-action-btn" style="width:auto;padding:6px 12px;background:#2ecc71;" onclick="buyGameItem('grillsCount',2500,'Grill')">2500 💰</button>
-      </div>
-      <div data-shop-item="1" style="background:#f0fdfa; padding:12px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid #99f6e4;">
-        <div style="text-align:left; display:flex; align-items:center; gap:10px;">
-          <img src="https://i.postimg.cc/28kQzGrh/sand-castle.png" alt="Sandcastle" style="width:48px;height:48px;object-fit:contain;"><div><strong>Sandcastle</strong><br><span style="font-size:.8rem;color:#64748b;">A decoration for your aquarium; can also be traded</span></div>
-        </div><button class="modal-action-btn" style="width:auto;padding:6px 12px;background:#2ecc71;" onclick="buyGameItem('sandcastlesCount',500,'Sandcastle')">500 💰</button>
-      </div>
-      <div id="shop-pagination" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;">
-        <button type="button" class="modal-action-btn" style="width:auto;padding:6px 12px;" onclick="changeShopPage(-1)">◀ Prev</button>
-        <strong id="shop-page-label">Page 1 / 1</strong>
-        <button type="button" class="modal-action-btn" style="width:auto;padding:6px 12px;" onclick="changeShopPage(1)">Next ▶</button>
       </div>
     </div>
   </div>
@@ -1518,14 +1502,14 @@
         <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #1e3a8a;">Items Owned</h3>
         <p id="backpack-tanks-count" style="margin: 3px 0; font-size: 0.85rem;">Mini Tanks Bought: 0</p>
         <p id="backpack-rooms-count" style="margin: 3px 0; font-size: 0.85rem;">Aquarium Rooms Owned: 1</p>
-        <p id="backpack-grills-count" style="margin:3px 0;font-size:.85rem;">Grills: 0</p>
-        <p id="backpack-sandcastles-count" style="margin:3px 0;font-size:.85rem;">Sandcastles: 0</p>
-        <p id="backpack-cubes-count" style="margin:3px 0;font-size:.85rem;display:flex;align-items:center;gap:7px;"><img src="https://i.postimg.cc/TYdVR0f5/mini-tuna-cube.png" alt="" style="width:28px;height:28px;object-fit:contain;">Mini Tuna Cubes: 0</p>
-        <div style="margin-top:8px;border-top:1px solid #cbd5e1;padding-top:8px;"><span id="backpack-baits-count" style="font-size:.85rem;font-weight:bold;color:#27ae60;">Available Baits</span></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; border-top: 1px solid #cbd5e1; padding-top: 8px;">
+          <span id="backpack-baits-count" style="font-size: 0.85rem; font-weight: bold; color: #27ae60;">Worm Baits: 0</span>
+          <button type="button" class="modal-action-btn" style="width: auto; padding: 5px 12px; background: #2ecc71; font-size: 0.8rem;" onclick="toggleUseWormBait()" id="backpack-bait-toggle-btn">Equip Bait</button>
+        </div>
       </div>
 
       <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
-        <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #27ae60;">Caught Fishes</h3>
+        <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #2ecc71;">Caught Fishes</h3>
         <div id="backpack-fish-list" style="max-height: 180px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; font-size: 0.85rem; color: #64748b; padding-top: 5px;">
           No fish caught yet. Go fishing!
         </div>
@@ -1575,12 +1559,6 @@
           </div>
           <div id="ach-divine-status" style="margin-left: auto; font-weight: bold; color: #e74c3c; font-size: 0.85rem;">Locked</div>
         </div>
-        <div id="ach-perfect-cook" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:.5;">
-          <div><h4 style="margin:0 0 3px;font-size:1rem;color:#1e3a8a;">Call me master master</h4><p style="margin:0;font-size:.85rem;">One, two FLIP!</p><p style="margin:4px 0 0;font-size:.78rem;color:#64748b;">Objective: Cook a fish.</p></div><div id="ach-perfect-cook-status" style="margin-left:auto;font-weight:bold;color:#e74c3c;font-size:.85rem;">Locked</div>
-        </div>
-        <div id="ach-bob-trade" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:.5;">
-          <div><h4 style="margin:0 0 3px;font-size:1rem;color:#1e3a8a;">That's what you get</h4><p style="margin:0;font-size:.85rem;">Hope i get a better one!</p><p style="margin:4px 0 0;font-size:.78rem;color:#64748b;">Objective: Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.</p></div><div id="ach-bob-trade-status" style="margin-left:auto;font-weight:bold;color:#e74c3c;font-size:.85rem;">Locked</div>
-        </div>
       </div>
     </div>
   </div>
@@ -1604,7 +1582,6 @@
         <span id="admin-stat-tanks">Mini Tanks: 0</span>
         <span id="admin-stat-rooms">Aquarium Rooms: 1</span>
         <span id="admin-stat-baits">Worm Baits: 0</span>
-        <span id="admin-stat-special">Grills: 0 | Sandcastles: 0 | Mini Tuna Cubes: 0</span>
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">
@@ -1641,14 +1618,19 @@
         <button type="button" class="modal-action-btn" style="background:#c0392b;" onclick="adminModifyRooms(-1)">Remove Rooms</button>
       </div>
 
-      <div class="form-group"><label>Give Baits</label><select id="admin-bait-type"><option value="worm">Worm Bait</option><option value="cube">Mini Tuna Cube</option></select><input type="number" id="admin-bait-qty" value="1" min="1"></div>
-      <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:12px;" onclick="adminGiveSelectedBait()">Give Baits</button>
-      <div class="form-group"><label>Give Cosmetics</label><select id="admin-cosmetic-type"><option value="sandcastle">Sandcastle</option></select><input type="number" id="admin-cosmetic-qty" value="1" min="1"></div>
-      <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px;" onclick="adminGiveSelectedCosmetic()">Give Cosmetics</button>
-      <hr style="border:0;border-top:1px solid #cbd5e1;margin:15px 0;">
-      <h3>Add Fish</h3>
       <div class="form-group">
-        <label>Fish Name (e.g. Sardine, Betta Fish, Swordfish, Whale Shark, Goldfish Snack)</label>
+        <label>Worm Baits Amount</label>
+        <input type="number" id="adminBaitsAmount" placeholder="Baits amount" value="1" min="1" autocomplete="off">
+      </div>
+      <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+        <button type="button" class="modal-action-btn" style="background:#27ae60;" onclick="adminModifyBaits(1)">Give Baits</button>
+        <button type="button" class="modal-action-btn" style="background:#c0392b;" onclick="adminModifyBaits(-1)">Remove Baits</button>
+      </div>
+
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3>Add Fish to User</h3>
+      <div class="form-group">
+        <label>Fish Name (e.g. Sardine, Betta Fish, Swordfish, Turtle, Sea Urchin, Octopus, Jellyfish, Clam)</label>
         <input type="text" id="adminAddFishName" placeholder="Fish name..." autocomplete="off">
       </div>
       <button type="button" class="modal-action-btn" style="background:#27ae60; margin-bottom: 15px;" onclick="adminAddFishToUser()">Add Fish</button>
@@ -1717,36 +1699,6 @@
     </div>
   </div>
 
-
-  <div id="modal-cooking" class="modal-overlay" style="z-index:2200;">
-    <div class="modal-card" style="max-width:520px;">
-      <button class="modal-close" onclick="closeCookingModal()">✖</button>
-      <h2 style="margin-top:0;color:#c2410c;">🔥 Grill Station</h2>
-      <p style="font-size:.9rem;color:#64748b;">Choose a fish, drag it to the hot zone (or tap it). Cook both sides, then rest it. Double-tap the fish to flip it.</p>
-      <button id="grill-add-fish-btn" type="button" class="modal-action-btn" style="background:#22c55e;margin:8px 0;width:100%;" onclick="openCookingFishPicker()">Add Fish</button><div id="cooking-fish-list" style="display:none"></div>
-      <div id="cooking-grill-surface" style="position:relative;width:100%;max-width:440px;margin:12px auto;aspect-ratio:16/9;background:url('https://i.postimg.cc/sDjYVmsW/grill-up.png') center/contain no-repeat;">
-        
-        <div id="cooking-active-fish" onpointerup="handleCookingFishTap()" style="position:absolute;left:8%;top:12%;width:58%;height:76%;display:flex;align-items:center;justify-content:center;gap:8px;text-align:center;touch-action:manipulation;">Select a fish to begin.</div>
-      </div>
-      
-      <div style="margin-top:12px;"><div style="font-size:.85rem;font-weight:bold;">Side 1</div><div class="progress-track"><div id="cook-side-one" class="progress-fill" style="width:0%;"></div></div><div style="font-size:.85rem;font-weight:bold;margin-top:8px;">Side 2</div><div class="progress-track"><div id="cook-side-two" class="progress-fill" style="width:0%;"></div></div></div>
-      
-      <p id="cooking-status" style="font-size:.82rem;text-align:center;color:#64748b;margin-bottom:0;">Cook both sides to 100% for a perfect result.</p>
-    </div>
-  </div>
-  <div id="modal-bob-trade" class="modal-overlay" style="z-index:2250;">
-    <div class="modal-card" style="max-width:420px;text-align:center;">
-      <button class="modal-close" onclick="closeAllModals()">✖</button>
-      <h2>Bob's Special Trade</h2><p>Give Bob a Bluefin Tuna with both sides Cooked or Well Cooked. He needs 10 minutes to prepare a Mini Tuna Cube.</p>
-      <div id="bob-trade-status" style="font-weight:bold;margin:12px 0;">Checking your cooked fish...</div>
-      <button id="bob-trade-action" class="modal-action-btn" style="background:#7c3aed;" onclick="tradePerfectBluefinWithBob()">Trade Cooked Bluefin Tuna</button>
-      <button id="bob-claim-cube" class="modal-action-btn" style="background:#16a34a;margin-top:8px;display:none;" onclick="claimMiniTunaCube()">Claim Mini Tuna Cube</button>
-    </div>
-  </div>
-  <div id="modal-ui-confirm" class="modal-overlay" style="z-index:5000;">
-    <div class="modal-card" style="max-width:360px;text-align:center;"><h3 id="ui-confirm-message">Are you sure?</h3><div style="display:flex;gap:8px;"><button class="modal-action-btn" style="background:#64748b;" onclick="resolveUIConfirm(false)">Cancel</button><button class="modal-action-btn" style="background:#dc2626;" onclick="resolveUIConfirm(true)">Confirm</button></div></div>
-  </div>
-
   <div id="toast-container"></div>
 
   <script>
@@ -1774,7 +1726,6 @@
     let dailyTimerInterval = null;
     let lastActionTimestamp = 0;
 
-    // Amigos y DM
     let activeChatFriendUid = null;
     let activeChatFriendName = "";
     let chatUnsubscribe = null;
@@ -1802,26 +1753,26 @@
       { name: "Neon Tetra", value: 22, rarity: "Rare", desc: "A glowing tropical fish with iridescent stripes.", img: "https://i.postimg.cc/TPRg8YQ2/neon-tetra.png" },
       { name: "Salmon", value: 25, rarity: "Rare", desc: "A migratory swimmer traveling upstream through rivers.", img: "https://i.postimg.cc/bvzkXNLz/salmon.png" },
       { name: "Surgeonfish", value: 28, rarity: "Rare", desc: "A bright blue marine swimmer with defensive spines.", img: "https://i.postimg.cc/BvqHWQNS/surgeonfish.png" },
+      { name: "Sea Urchin", value: 25, rarity: "Rare", desc: "A spiky marine creature found along the ocean floor.", img: "https://i.postimg.cc/15mG9Bsg/sea-urchin.png" },
+      { name: "Clam", value: 22, rarity: "Rare", desc: "A bivalve mollusk resting securely in its shell.", img: "https://i.postimg.cc/BQSTqp46/clam.png" },
       { name: "Betta Fish", value: 80, rarity: "Epic", desc: "A vibrant and elegant freshwater fish with flowing fins.", img: "https://i.postimg.cc/T2J64ynq/betta-fish.png" },
       { name: "Barreleye Fish", value: 55, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
       { name: "Electric Eel", value: 75, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
       { name: "Coelacanth", value: 120, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
       { name: "Bluefin Tuna", value: 65, rarity: "Rare", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
+      { name: "Turtle", value: 200, rarity: "Legendary", desc: "A calm aquatic reptile.", img: "https://i.postimg.cc/g0wMdW8S/turtle2.png" },
       { name: "Manta ray", value: 160, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
       { name: "Great White Shark", value: 220, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
+      { name: "Jellyfish", value: 320, rarity: "Mythic", desc: "A translucent drifting creature glowing with mysterious energy.", img: "https://i.postimg.cc/J4rN1xMt/jellyfish.png" },
       { name: "Swordfish", value: 650, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
       { name: "Whale Shark", value: 850, rarity: "Mythic", desc: "The massive yet gentle giant filter-feeder of the deep sea.", img: "https://i.postimg.cc/HW9ghJbQ/whale-shark.png" },
       { name: "Leafy Seadragon", value: 450, rarity: "Mythic", desc: "A master of camouflage adorned with leaf-like appendages.", img: "https://i.postimg.cc/rwsYSdfb/leafy-seadragon.png" },
       { name: "Megamouth Shark", value: 700, rarity: "Mythic", desc: "An elusive deep-water giant with glowing lips.", img: "https://i.postimg.cc/WbXHFmwx/megamouth-shark.png" },
+      { name: "Octopus", value: 1100, rarity: "Divine", desc: "A highly intelligent and elusive master of disguise.", img: "https://i.postimg.cc/Qx8QXmhH/octopus.png" },
       { name: "Basking Shark", value: 1200, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
       { name: "Oarfish", value: 2000, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
       { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A mysterious fish from ancient and divine waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
-      { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" },
-      { name: "Clam", value: 35, rarity: "Rare", desc: "A calm shellfish that gently opens and closes on the seabed.", img: "https://i.postimg.cc/BQSTqp46/clam.png", marineAnimal: true },
-      { name: "Sea urchin", value: 45, rarity: "Rare", desc: "A spiny sea creature that slowly rotates and drifts.", img: "https://i.postimg.cc/15mG9Bsg/sea-urchin.png", marineAnimal: true },
-      { name: "Jellyfish", value: 180, rarity: "Mythic", desc: "A translucent drifter that pulses as it floats through the water.", img: "https://i.postimg.cc/J4rN1xMt/jellyfish.png", marineAnimal: true },
-      { name: "Turtle", value: 200, rarity: "Legendary", desc: "A peaceful swimmer that cruises steadily around its tank.", img: "https://i.postimg.cc/g0wMdW8S/turtle2.png", marineAnimal: true },
-      { name: "Octopus", value: 600, rarity: "Divine", desc: "A clever cephalopod that glides and gently pulses its arms.", img: "https://i.postimg.cc/Qx8QXmhH/octopus.png", marineAnimal: true }
+      { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
 
     function checkCooldown() {
@@ -2099,7 +2050,6 @@
       }, 1000);
     }
 
-    /* SISTEMA DE AMIGOS Y CHAT DMS */
     function openFriendsModal() {
       openModal('modal-friends');
       switchFriendsTab('list');
@@ -2344,7 +2294,7 @@
     }
 
     async function removeFriend(friendUid, friendName) {
-      // Confirmation is handled by the custom modal override below.
+      if (!confirm(`Are you sure you want to remove ${friendName} from your friends list?`)) return;
       const user = auth.currentUser;
       if (!user) return;
 
@@ -2399,9 +2349,11 @@
             const bubble = document.createElement('div');
             bubble.className = `chat-bubble ${isMe ? 'sent' : 'received'}`;
             
+            let reportBtnHtml = !isMe ? `<button class="chat-report-btn" onclick="reportMessage('${doc.id}', '${msg.senderUid}', '${msg.senderName}', '${escapeHtml(msg.text)}')" title="Report message">🚩</button>` : '';
 
             bubble.innerHTML = `
               <span>${escapeHtml(msg.text)}</span>
+              ${reportBtnHtml}
             `;
             messagesArea.appendChild(bubble);
           });
@@ -2439,7 +2391,40 @@
       }
     }
 
+    async function reportMessage(msgId, senderUid, senderName, msgText) {
+      const user = auth.currentUser;
+      if (!user) return;
 
+      try {
+        const reporterDoc = await db.collection('jugadores').doc(user.uid).get();
+        const reporterName = reporterDoc.exists ? reporterDoc.data().username : "Anonymous Player";
+
+        const botReportMessage = `🚨 MESSAGE REPORTED\n• Reporter: ${reporterName} (UID: ${user.uid})\n• Author: ${senderName} (UID: ${senderUid})\n• Message: "${msgText}"`;
+
+        const chatId = getChatId(ADMIN_UID, user.uid);
+        
+        await db.collection('directChats').doc(chatId).collection('messages').add({
+          senderUid: "SYSTEM_BOT",
+          senderName: "SYSTEM BOT",
+          text: botReportMessage,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection('reports').add({
+          reporterUid: user.uid,
+          reporterName: reporterName,
+          reportedUid: senderUid,
+          reportedName: senderName,
+          messageContent: msgText,
+          messageId: msgId,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        showToast("Message reported! The System Bot sent the report to the Admin's DM.");
+      } catch (err) {
+        showToast("Error reporting message: " + err.message);
+      }
+    }
 
     function openAdminWarningPrompt() {
       const username = document.getElementById('adminTargetUsername').value.trim();
@@ -2680,7 +2665,7 @@
       }
     }
 
-    async function _baseLoadAchievementsUI() {
+    async function loadAchievementsUI() {
       const user = auth.currentUser;
       if (!user) return;
 
@@ -3038,7 +3023,9 @@
       const user = auth.currentUser;
       if (!user) return;
 
-      // Confirmation is handled by the custom modal override below.
+      if (!confirm("Are you sure you want to sell ALL available fish in your inventory? (Fish in aquariums, market listings, and limited editions are automatically excluded).")) {
+        return;
+      }
 
       try {
         const playerRef = db.collection('jugadores').doc(user.uid);
@@ -3350,7 +3337,7 @@
       }
     }
 
-    function _baseRenderShelfSlot(slotKey, fishName, shelfIndex) {
+    function renderShelfSlot(slotKey, fishName, shelfIndex) {
       const slotEl = document.getElementById(`shelf-${slotKey}`);
       if (!slotEl) return;
       
@@ -3361,7 +3348,7 @@
         const fishObj = ALLOWED_FISH_TYPES.find(f => f.name === fishName) || ALLOWED_FISH_TYPES[0];
         slotEl.innerHTML = `
           <div style="position: relative; width: 100%; height: 100%; background-image: url('https://i.postimg.cc/DZs0wKSx/tanque-mini.png'); background-size: contain; background-repeat: no-repeat; background-position: center; overflow: hidden;">
-            <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; z-index:2; width: 32px; height: auto; object-fit: contain; pointer-events: none;">
+            <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; pointer-events: none;">
           </div>
         `;
         startFishAnimation(shelfIndex);
@@ -3502,27 +3489,37 @@
     }
 
     async function removeFishFromShelf() {
-      const user=auth.currentUser;if(!user)return;
-      try{
-        const ref=db.collection('jugadores').doc(user.uid);
-        await db.runTransaction(async tx=>{
-          const snap=await tx.get(ref);if(!snap.exists)return;
-          const data=snap.data(),key=`room_${currentAquariumRoomIndex}`;
-          const tanksMap=data.aquariumTanksMap||{},tanks=(tanksMap[key]||new Array(8).fill(null)).slice();
-          const decorations=data.aquariumDecorations||{},room=(Array.isArray(decorations[key])?decorations[key]:new Array(8).fill(false)).slice();
-          const hadTank=!!tanks[selectedShelfIndex],hadCastle=!!room[selectedShelfIndex];
-          if(!hadTank&&!hadCastle){showToast('This slot is already empty.');return;}
-          tanks[selectedShelfIndex]=null;room[selectedShelfIndex]=false;tanksMap[key]=tanks;decorations[key]=room;
-          const update={aquariumTanksMap:tanksMap,aquariumDecorations:decorations};
-          if(hadTank)update.miniTanksCount=(data.miniTanksCount||0)+1;
-          if(hadCastle)update.sandcastlesCount=(data.sandcastlesCount||0)+1;
-          tx.update(ref,update);
-        });
-        document.getElementById('modal-select-fish').style.display='none';
-        const fresh=await ref.get(),data=fresh.data();
-        showToast('Tank and its decoration removed. Items returned to your inventory.');
-        renderAquarium(data.username||'My',data.fishes||[],data.aquariumTanksMap||{});
-      }catch(err){showToast('Error: '+err.message);}
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const docRef = db.collection('jugadores').doc(user.uid);
+        const doc = await docRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          let tanksMap = data.aquariumTanksMap || {};
+          const roomKey = `room_${currentAquariumRoomIndex}`;
+          let tanks = tanksMap[roomKey] || new Array(8).fill(null);
+
+          if (tanks[selectedShelfIndex]) {
+            let tanksCount = (data.miniTanksCount || 0) + 1;
+            tanks[selectedShelfIndex] = null;
+            tanksMap[roomKey] = tanks;
+
+            await docRef.update({ 
+              aquariumTanksMap: tanksMap,
+              miniTanksCount: tanksCount
+            });
+
+            showToast("Tank removed and returned to your inventory.");
+          }
+
+          document.getElementById('modal-select-fish').style.display = 'none';
+          renderAquarium(data.username || "My", data.fishes || [], tanksMap);
+        }
+      } catch (err) {
+        showToast("Error: " + err.message);
+      }
     }
 
     function startFishAnimation(shelfIndex) {
@@ -3619,7 +3616,7 @@
       }
     }
 
-    async function _baseCastLine() {
+    async function castLine() {
       const user = auth.currentUser;
       if (!user) {
         showToast("Session expired. Please log in again.");
@@ -3957,7 +3954,7 @@
       }
     }
 
-    async function _baseLoadBackpackData() {
+    async function loadBackpackData() {
       const user = auth.currentUser;
       if (!user) return;
       const listContainer = document.getElementById('backpack-fish-list');
@@ -3977,14 +3974,12 @@
           document.getElementById('backpack-baits-count').innerText = `Worm Baits: ${baitsCount}`;
           
           const toggleBtn = document.getElementById('backpack-bait-toggle-btn');
-          if (toggleBtn) {
-            if (isBaitActive) {
-              toggleBtn.innerText = "Unequip Bait";
-              toggleBtn.style.background = "#e74c3c";
-            } else {
-              toggleBtn.innerText = "Equip Bait";
-              toggleBtn.style.background = "#2ecc71";
-            }
+          if (isBaitActive) {
+            toggleBtn.innerText = "Unequip Bait";
+            toggleBtn.style.background = "#e74c3c";
+          } else {
+            toggleBtn.innerText = "Equip Bait";
+            toggleBtn.style.background = "#2ecc71";
           }
 
           const fishes = data.fishes || [];
@@ -4640,7 +4635,7 @@
       return uid;
     }
 
-    async function _baseLoadTargetUserInventoryForAdmin() {
+    async function loadTargetUserInventoryForAdmin() {
       const username = document.getElementById('adminTargetUsername').value.trim();
       const listContainer = document.getElementById('admin-target-fishes-list');
       
@@ -5237,452 +5232,6 @@
       auth.signOut();
       showToast("Logged out successfully.");
     }
-  
-
-    // ===== NEW GAME SYSTEMS (preserve existing account, fishing and aquarium systems) =====
-    let shopCurrentPage = 0;
-    let cookingSession = null;
-    let uiConfirmResolver = null;
-    let bobTimerTicker = null;
-    let lastCookingTapAt = 0;
-
-    function changeShopPage(direction) {
-      const items = Array.from(document.querySelectorAll('#modal-shop [data-shop-item="1"]'));
-      const pages = Math.max(1, Math.ceil(items.length / 4));
-      shopCurrentPage = Math.max(0, Math.min(pages - 1, shopCurrentPage + direction));
-      items.forEach((el, i) => el.style.display = (i >= shopCurrentPage * 4 && i < (shopCurrentPage + 1) * 4) ? 'flex' : 'none');
-      const label = document.getElementById('shop-page-label');
-      if (label) label.textContent = `Page ${shopCurrentPage + 1} / ${pages}`;
-      const pager = document.getElementById('shop-pagination');
-      if (pager) pager.style.display = pages > 1 ? 'flex' : 'none';
-    }
-
-    async function buyGameItem(field, cost, label) {
-      if (!checkCooldown()) return;
-      const user = auth.currentUser;
-      if (!user) { showToast('You must be logged in.'); return; }
-      try {
-        const ref = db.collection('jugadores').doc(user.uid);
-        const snap = await ref.get();
-        if (!snap.exists) return;
-        const data = snap.data();
-        if ((data.coins || 0) < cost) { showToast(`Not enough coins! You need ${cost} 💰.`); return; }
-        await ref.update({ coins: (data.coins || 0) - cost, [field]: (data[field] || 0) + 1 });
-        showToast(`${label} purchased!`);
-        updateShopCoinsDisplay(); updateGameHUD(); loadBackpackData();
-      } catch (e) { showToast(`Error buying ${label}: ${e.message}`); }
-    }
-
-    function showUIConfirm(message) {
-      const modal = document.getElementById('modal-ui-confirm');
-      document.getElementById('ui-confirm-message').textContent = message;
-      modal.style.display = 'flex';
-      return new Promise(resolve => { uiConfirmResolver = resolve; });
-    }
-    function resolveUIConfirm(answer) {
-      const modal = document.getElementById('modal-ui-confirm');
-      if (modal) modal.style.display = 'none';
-      if (uiConfirmResolver) { const resolve = uiConfirmResolver; uiConfirmResolver = null; resolve(!!answer); }
-    }
-
-    async function removeFriend(friendUid, friendName) {
-      if (!(await showUIConfirm(`Remove ${friendName} from your friends list?`))) return;
-      const user = auth.currentUser; if (!user) return;
-      try {
-        await db.collection('jugadores').doc(user.uid).update({ friends: firebase.firestore.FieldValue.arrayRemove(friendUid) });
-        await db.collection('jugadores').doc(friendUid).update({ friends: firebase.firestore.FieldValue.arrayRemove(user.uid) });
-        showToast(`Removed ${friendName} from friends.`); loadFriendsList();
-      } catch (err) { showToast('Error removing friend: ' + err.message); }
-    }
-
-    async function sellAllInventoryAction() {
-      if (!(await showUIConfirm('Sell all available fish? Aquarium fish, listed fish and Legacy/Secret fish stay protected.'))) return;
-      if (!checkCooldown()) return;
-      const user = auth.currentUser; if (!user) return;
-      try {
-        const playerRef = db.collection('jugadores').doc(user.uid);
-        let totalCoinsEarned = 0, soldCount = 0;
-        await db.runTransaction(async transaction => {
-          const snap = await transaction.get(playerRef); if (!snap.exists) throw new Error('Player not found');
-          const data = snap.data(), fishes = data.fishes || [], tanksMap = data.aquariumTanksMap || {};
-          const protectedMap = {};
-          Object.values(tanksMap).forEach(arr => { if (Array.isArray(arr)) arr.forEach(n => { if (n) protectedMap[n] = (protectedMap[n] || 0) + 1; }); });
-          const kept = [], soldMap = {};
-          const listings = await db.collection('marketListings').where('sellerUid','==',user.uid).get();
-          listings.forEach(d => { const n=d.data().fishName; if(n) protectedMap[n]=(protectedMap[n]||0)+1; });
-          fishes.forEach(f => {
-            const type = ALLOWED_FISH_TYPES.find(x => x.name === f.name);
-            if ((type && type.isLimited) || (soldMap[f.name] || 0) < (protectedMap[f.name] || 0)) { kept.push(f); soldMap[f.name]=(soldMap[f.name]||0)+1; }
-            else { totalCoinsEarned += type ? type.value : 0; soldCount++; }
-          });
-          transaction.update(playerRef,{fishes:kept,coins:(data.coins||0)+totalCoinsEarned});
-        });
-        showToast(soldCount ? `Sold ${soldCount} fish for ${totalCoinsEarned} coins.` : 'No unprotected fish available to sell.');
-        loadMyFishesForMarket(); updateGameHUD();
-      } catch(e) { showToast('Error selling inventory: '+e.message); }
-    }
-
-    // Species-specific aquarium movement. Each creature gets its own motion profile.
-    function startFishAnimation(shelfIndex, fishName) {
-      const fishImg = document.querySelector(`.swimming-fish-${shelfIndex}`); if (!fishImg) return;
-      const profiles = {
-        'Clam': {x:.06,y:.025,kind:'clam'}, 'Sea urchin':{x:.08,y:.035,kind:'urchin'},
-        'Jellyfish':{x:.045,y:.11,kind:'jelly'}, 'Turtle':{x:.24,y:.025,kind:'turtle'}, 'Octopus':{x:.12,y:.045,kind:'octopus'}
-      };
-      const profile = profiles[fishName] || {x:.22,y:.10,kind:'fish'};
-      const seabedCrawler = profile.kind==='clam' || profile.kind==='urchin';
-      // Clams and sea urchins stay on the sandy floor: only crawl horizontally.
-      let x=35+Math.random()*15, y=seabedCrawler?78:38+Math.random()*20, dx=(Math.random()>.5?1:-1)*profile.x, dy=seabedCrawler?0:(Math.random()>.5?1:-1)*profile.y, tick=0;
-      fishImg.style.transformOrigin='center';
-      const interval=setInterval(()=>{
-        tick++; x+=dx; if(!seabedCrawler)y+=dy;
-        if(x<8||x>66){dx*=-1;x=Math.max(8,Math.min(66,x));}
-        if(!seabedCrawler&&(y<18||y>72)){dy*=-1;y=Math.max(18,Math.min(72,y));}
-        fishImg.style.left=x+'%'; fishImg.style.top=y+'%';
-        if(profile.kind==='clam') fishImg.style.transform=`scaleX(${1+Math.sin(tick/9)*.16}) scaleY(${1-Math.sin(tick/9)*.08})`;
-        else if(profile.kind==='urchin') fishImg.style.transform=`rotate(${Math.sin(tick/8)*8}deg)`;
-        else if(profile.kind==='jelly') fishImg.style.transform=`scale(${1+Math.sin(tick/7)*.08})`;
-        else if(profile.kind==='turtle') fishImg.style.transform=`scaleX(${dx>=0?1:-1}) rotate(${Math.sin(tick/10)*3}deg)`;
-        else if(profile.kind==='octopus') fishImg.style.transform=`scale(${1+Math.sin(tick/8)*.05}) rotate(${Math.sin(tick/12)*5}deg)`;
-        else fishImg.style.transform=`scaleX(${dx>=0?1:-1})`;
-        if(tick%80===0){dx=(Math.random()>.5?1:-1)*profile.x;dy=(Math.random()>.5?1:-1)*profile.y;}
-      },50);
-      activeFishAnimations.push(interval);
-    }
-
-    // Decor placement is stored by room and slot, independently from fish/tanks.
-    async function placeSandcastleDecoration() {
-      const user=auth.currentUser; if(!user||!isViewingMyAquarium)return;
-      try {
-        const ref=db.collection('jugadores').doc(user.uid), snap=await ref.get(); if(!snap.exists)return;
-        const data=snap.data(), key=`room_${currentAquariumRoomIndex}`;
-        const tanks=(data.aquariumTanksMap||{})[key]||new Array(8).fill(null);
-        if(!tanks[selectedShelfIndex]){showToast('Place a fish in this tank before equipping a cosmetic.');return;}
-        const decorations=data.aquariumDecorations||{};
-        const room=Array.isArray(decorations[key])?decorations[key].slice():new Array(8).fill(false);
-        if(room[selectedShelfIndex]){
-          room[selectedShelfIndex]=false; decorations[key]=room;
-          await ref.update({sandcastlesCount:(data.sandcastlesCount||0)+1,aquariumDecorations:decorations});
-          showToast('Sandcastle removed and returned to your inventory.');
-        } else {
-          if((data.sandcastlesCount||0)<1){showToast("You don't have a Sandcastle. Buy one in Bob's Shop.");return;}
-          room[selectedShelfIndex]=true; decorations[key]=room;
-          await ref.update({sandcastlesCount:(data.sandcastlesCount||0)-1,aquariumDecorations:decorations});
-          showToast('Sandcastle equipped!');
-        }
-        document.getElementById('modal-select-fish').style.display='none';
-        const fresh=await ref.get(),d=fresh.data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{});
-      } catch(e){showToast('Could not update cosmetic: '+e.message);}
-    }
-
-    // Cooking minigame: drag or tap the hot zone, rest, then flip for side two.
-    async function openCookingModal() {
-      const user=auth.currentUser;if(!user){showToast('Log in first.');return;}
-      const snap=await db.collection('jugadores').doc(user.uid).get();if(!snap.exists)return;
-      const data=snap.data();if((data.grillsCount||0)<1){showToast("You need a Grill. Buy one in Bob's Shop for 2500 coins.");return;}
-      const marketSnap=await db.collection('marketListings').where('sellerUid','==',user.uid).get();
-      const listedCounts={};marketSnap.forEach(doc=>{const n=doc.data().fishName;if(n)listedCounts[n]=(listedCounts[n]||0)+1;});
-      const displayedCounts={};Object.values(data.aquariumTanksMap||{}).forEach(room=>{if(Array.isArray(room))room.forEach(n=>{if(n)displayedCounts[n]=(displayedCounts[n]||0)+1;});});
-      const ownedCounts={};(data.fishes||[]).forEach(f=>ownedCounts[f.name]=(ownedCounts[f.name]||0)+1);
-      const counts={};Object.entries(ownedCounts).forEach(([name,total])=>{const t=ALLOWED_FISH_TYPES.find(x=>x.name===name);const available=total-(listedCounts[name]||0)-(displayedCounts[name]||0);if((!t||!t.isLimited)&&available>0)counts[name]=available;});
-      const list=document.getElementById('cooking-fish-list');
-      list.innerHTML=Object.entries(counts).map(([name,count])=>{const f=ALLOWED_FISH_TYPES.find(x=>x.name===name);return `<button draggable="true" ondragstart="selectCookingFish('${name}')" onclick="selectCookingFish('${name}')" class="modal-action-btn" style="background:#fff7ed;color:#7c2d12;border:1px solid #fed7aa;padding:8px;display:flex;flex-direction:column;align-items:center;gap:4px;"><img src="${f.img}" style="width:42px;height:42px;object-fit:contain;"><span>${name} ×${count}</span></button>`;}).join('')||'<p>No cookable fish in your backpack.</p>';
-      cookingSession=null; document.getElementById('cooking-active-fish').textContent='Select a fish to begin.';
-      document.getElementById('cook-side-one').style.width='0%';document.getElementById('cook-side-two').style.width='0%';
-      if(document.getElementById('cooking-flip-btn'))document.getElementById('cooking-flip-btn').disabled=true;document.getElementById('cooking-status').textContent='Cook both sides to 100% for a perfect result.';
-      openModal('modal-cooking');
-    }
-    async function selectCookingFish(name){
-      const user=auth.currentUser;if(!user)return;
-      const snap=await db.collection('jugadores').doc(user.uid).get();if(!snap.exists)return;
-      const data=snap.data(),fish=(data.fishes||[]).find(f=>f.name===name);if(!fish){showToast('Fish not found in inventory.');return;}
-      const type=ALLOWED_FISH_TYPES.find(f=>f.name===name);if(type&&type.isLimited){showToast('Limited fish are protected from cooking.');return;}
-      const displayed=(Object.values(data.aquariumTanksMap||{}).reduce((n,room)=>n+(Array.isArray(room)?room.filter(x=>x===name).length:0),0));
-      const marketSnap=await db.collection('marketListings').where('sellerUid','==',user.uid).where('fishName','==',name).get();
-      const owned=(data.fishes||[]).filter(f=>f.name===name).length;
-      if(owned-displayed-marketSnap.size<=0){showToast('All copies of this fish are protected in your aquarium or on the Market.');return;}
-      cookingSession={name,side:1,one:0,two:0,rested:false};
-      document.getElementById('cooking-active-fish').innerHTML=`<img src="${type?type.img:''}" style="width:72px;height:72px;object-fit:contain;"><div><strong>${name}</strong><br>Side 1 — drag or tap the hot zone</div>`;
-      if(document.getElementById('cooking-flip-btn'))document.getElementById('cooking-flip-btn').disabled=true;document.getElementById('cooking-status').textContent='Keep cooking until the side reaches 100%, then rest and flip.';
-    }
-    function cookOnHotZone(){if(!cookingSession)return showToast('Select a fish first.');if(cookingSession.rested){showToast('Flip the fish before cooking the other side.');return;}const key=cookingSession.side===1?'one':'two';cookingSession[key]=Math.min(100,cookingSession[key]+25);document.getElementById(cookingSession.side===1?'cook-side-one':'cook-side-two').style.width=cookingSession[key]+'%';document.getElementById('cooking-status').textContent=`Side ${cookingSession.side}: ${cookingSession[key]}% cooked.`;if(cookingSession.one>=100&&cookingSession.side===1)if(document.getElementById('cooking-flip-btn'))document.getElementById('cooking-flip-btn').disabled=false;if(cookingSession.two>=100)finishCooking();}
-    function restCookingFish(){if(!cookingSession)return showToast('Select a fish first.');if(cookingSession.side!==1||cookingSession.one<100){showToast('Cook side 1 to 100% before resting.');return;}cookingSession.rested=true;document.getElementById('cooking-status').textContent='Rested! Now flip the fish to cook side 2.';if(document.getElementById('cooking-flip-btn'))document.getElementById('cooking-flip-btn').disabled=false;}
-    function flipCookingFish(){if(!cookingSession)return;if(cookingSession.side!==1||cookingSession.one<100||!cookingSession.rested){showToast('Cook side 1 fully and rest it before flipping.');return;}cookingSession.side=2;if(document.getElementById('cooking-flip-btn'))document.getElementById('cooking-flip-btn').disabled=true;document.getElementById('cooking-status').textContent='Side 2: cook it to 100%.';}
-    function handleCookingFishTap(){const now=Date.now();if(now-lastCookingTapAt<350){flipCookingFish();lastCookingTapAt=0;}else{lastCookingTapAt=now;}}
-    async function finishCooking(){if(!cookingSession||cookingSession.two<100)return;const session={...cookingSession};const perfect=session.one===100&&session.two===100;const user=auth.currentUser;if(!user)return;try{const marketSnap=await db.collection('marketListings').where('sellerUid','==',user.uid).where('fishName','==',session.name).get();const listedCount=marketSnap.size;const ref=db.collection('jugadores').doc(user.uid);await db.runTransaction(async tx=>{const snap=await tx.get(ref);const data=snap.data();const fishes=data.fishes||[];const idx=fishes.findIndex(f=>f.name===session.name);if(idx<0)throw new Error('Fish no longer in inventory.');const type=ALLOWED_FISH_TYPES.find(f=>f.name===session.name);if(type&&type.isLimited)throw new Error('Limited fish cannot be cooked.');const displayedCount=Object.values(data.aquariumTanksMap||{}).reduce((n,room)=>n+(Array.isArray(room)?room.filter(x=>x===session.name).length:0),0);const ownedCount=fishes.filter(f=>f.name===session.name).length;if(ownedCount-displayedCount-listedCount<=0)throw new Error('All copies of this fish are protected in your aquarium or on the Market.');fishes.splice(idx,1);const cooked=(data.cookedFish||[]).concat([{name:session.name,quality:perfect?'perfect':'cooked',timestamp:Date.now()}]);tx.update(ref,{fishes,cookedFish:cooked,achievements:{...(data.achievements||{}),perfectCook:true}});});showToast(perfect?`Perfect ${session.name}!`: `${session.name} cooked.`);document.getElementById('cooking-status').textContent=perfect?'✨ Perfect cook!':'Cooked!';document.getElementById('cooking-fish-list').innerHTML='';document.getElementById('cooking-active-fish').textContent='Cooking complete.';cookingSession=null;loadBackpackData();if(perfect&&session.name==='Bluefin Tuna')showToast('Bob wants to trade for that perfect Bluefin Tuna!');}catch(e){showToast('Cooking failed: '+e.message);}}
-    function closeCookingModal(){document.getElementById('modal-cooking').style.display='none';cookingSession=null;}
-
-    async function openBobTrade(){openModal('modal-bob-trade');await refreshBobTradeUI();}
-    async function refreshBobTradeUI(){if(bobTimerTicker){clearInterval(bobTimerTicker);bobTimerTicker=null;}const user=auth.currentUser;if(!user)return;const snap=await db.collection('jugadores').doc(user.uid).get();if(!snap.exists)return;const d=snap.data(), cooked=d.cookedFish||[], perfect=cooked.some(f=>f.name==='Bluefin Tuna'&&[f.sideOne,f.sideTwo].every(v=>Number.isFinite(v)&&v>=35&&v<100)), readyAt=d.bobMiniTunaReadyAt||0;const status=document.getElementById('bob-trade-status'),trade=document.getElementById('bob-trade-action'),claim=document.getElementById('bob-claim-cube');if(readyAt){if(Date.now()>=readyAt){status.textContent='Your Mini Tuna Cube is ready!';claim.style.display='block';trade.style.display='none';}else{const left=Math.ceil((readyAt-Date.now())/1000);status.textContent=`Bob is preparing it: ${Math.floor(left/60)}m ${left%60}s remaining.`;claim.style.display='none';trade.style.display='none';if(bobTimerTicker)clearInterval(bobTimerTicker);bobTimerTicker=setInterval(refreshBobTradeUI,1000);}}else{status.textContent=perfect?'You have a cooked Bluefin Tuna ready to trade.':'You need a Bluefin Tuna with both sides Cooked or Well Cooked.';trade.style.display=perfect?'block':'none';claim.style.display='none';}}
-    async function tradePerfectBluefinWithBob(){const user=auth.currentUser;if(!user)return;const ref=db.collection('jugadores').doc(user.uid);try{await db.runTransaction(async tx=>{const snap=await tx.get(ref);const d=snap.data(),cooked=d.cookedFish||[],i=cooked.findIndex(f=>f.name==='Bluefin Tuna'&&[f.sideOne,f.sideTwo].every(v=>Number.isFinite(v)&&v>=35&&v<100));if(i<0)throw new Error('Bob only accepts Bluefin Tuna with both sides Cooked or Well Cooked.');cooked.splice(i,1);tx.update(ref,{cookedFish:cooked,bobMiniTunaReadyAt:Date.now()+600000,achievements:{...(d.achievements||{}),bobTrade:true}});});showToast('Bob accepted the trade. Come back in 10 minutes!');await refreshBobTradeUI();}catch(e){showToast(e.message);}}
-    async function claimMiniTunaCube(){const user=auth.currentUser;if(!user)return;const ref=db.collection('jugadores').doc(user.uid);try{await db.runTransaction(async tx=>{const snap=await tx.get(ref);const d=snap.data();if(!d.bobMiniTunaReadyAt||Date.now()<d.bobMiniTunaReadyAt)throw new Error('Bob is not ready yet.');tx.update(ref,{miniTunaCubesCount:(d.miniTunaCubesCount||0)+1,bobMiniTunaReadyAt:null});});showToast('Mini Tuna Cube added to your backpack!');await refreshBobTradeUI();loadBackpackData();}catch(e){showToast(e.message);}}
-    async function toggleUseMiniTunaCube(){const user=auth.currentUser;if(!user)return;const ref=db.collection('jugadores').doc(user.uid);try{const snap=await ref.get(),d=snap.data(),count=d.miniTunaCubesCount||0,active=d.activeBaitType==='miniTunaCube';if(!active&&count<1){showToast('You do not have a Mini Tuna Cube.');return;}await ref.update({activeBaitType:active?'none':'miniTunaCube',isBaitActive:false});showToast(active?'Mini Tuna Cube unequipped.':'Mini Tuna Cube equipped!');loadBackpackData();}catch(e){showToast(e.message);}}
-
-    // Market support for Sandcastle cosmetics, separate from protected fish.
-    async function promptSandcastleMarketSell(){const user=auth.currentUser;if(!user)return;const snap=await db.collection('jugadores').doc(user.uid).get();const n=snap.exists?(snap.data().sandcastlesCount||0):0;if(n<1){showToast('You have no Sandcastles to list.');return;}selectedFishToMarket={cosmetic:true,name:'Sandcastle'};document.getElementById('prompt-fish-name-label').textContent='Item: Sandcastle';document.getElementById('market-sell-price-input').value='';document.getElementById('modal-market-price-prompt').style.display='flex';}
-    async function confirmMarketSell(){if(!checkCooldown())return;const user=auth.currentUser;if(!user||!selectedFishToMarket)return;const price=parseInt(document.getElementById('market-sell-price-input').value);if(!Number.isFinite(price)||price<1){showToast('Enter a valid price.');return;}try{const ref=db.collection('jugadores').doc(user.uid);if(selectedFishToMarket.cosmetic){const snap=await ref.get(),d=snap.data()||{};if((d.sandcastlesCount||0)<1)throw new Error('No Sandcastle available.');await ref.update({sandcastlesCount:d.sandcastlesCount-1});await db.collection('marketListings').add({sellerUid:user.uid,sellerName:d.username||'Player',itemType:'cosmetic',itemName:'Sandcastle',fishName:'Sandcastle',price,createdAt:firebase.firestore.FieldValue.serverTimestamp()});}else{const snap=await ref.get(),d=snap.data()||{},fishes=d.fishes||[],idx=selectedFishToMarket.index,name=selectedFishToMarket.name,type=ALLOWED_FISH_TYPES.find(f=>f.name===name);if(type&&type.isLimited)throw new Error('Legacy and Secret fish cannot be listed.');if(!fishes[idx]||fishes[idx].name!==name)throw new Error('Fish no longer exists.');let shown=0;Object.values(d.aquariumTanksMap||{}).forEach(a=>{if(Array.isArray(a))shown+=a.filter(x=>x===name).length;});if(fishes.filter(x=>x.name===name).length<=shown)throw new Error('Aquarium fish are protected.');fishes.splice(idx,1);await ref.update({fishes});await db.collection('marketListings').add({sellerUid:user.uid,sellerName:d.username||'Player',fishName:name,price,createdAt:firebase.firestore.FieldValue.serverTimestamp()});}showToast(`${selectedFishToMarket.name} listed for ${price} coins.`);document.getElementById('modal-market-price-prompt').style.display='none';loadMyActiveListings();loadMyFishesForMarket();}catch(e){showToast('Market error: '+e.message);}}
-    async function loadMarketListings(){const container=document.getElementById('market-listings-container');container.innerHTML='Loading market offers...';try{const snap=await db.collection('marketListings').orderBy('createdAt','desc').get();if(snap.empty){container.innerHTML='No player offers right now.';return;}let html='';snap.forEach(doc=>{const d=doc.data(),mine=auth.currentUser&&d.sellerUid===auth.currentUser.uid,isCos=d.itemType==='cosmetic',name=isCos?(d.itemName||'Sandcastle'):d.fishName,fish=ALLOWED_FISH_TYPES.find(f=>f.name===name);html+=`<div style="background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;"><div style="display:flex;align-items:center;gap:10px;"><div style="font-size:28px;">${isCos?'🏰':`<img src="${fish?fish.img:''}" style="width:35px;height:35px;object-fit:contain;">`}</div><div><strong>${name}</strong><br><span style="font-size:.75rem;color:#64748b;">Seller: ${d.sellerName||'Player'} | 💰 ${d.price}</span></div></div>${mine?'<b>Your Listing</b>':`<button class="modal-action-btn" style="width:auto;padding:6px 12px;" onclick="buyMarketItem('${doc.id}','${d.sellerUid}',${d.price},'${name}')">Buy (${d.price})</button>`}</div>`;});container.innerHTML=html;}catch(e){container.innerHTML='Error loading market.';}}
-    async function loadMyActiveListings(){const user=auth.currentUser;if(!user)return;const c=document.getElementById('market-my-active-listings');try{const snap=await db.collection('marketListings').where('sellerUid','==',user.uid).get();if(snap.empty){c.innerHTML='You have no active market offers.';return;}let html='';snap.forEach(doc=>{const d=doc.data(),cos=d.itemType==='cosmetic',name=cos?(d.itemName||'Sandcastle'):d.fishName,f=ALLOWED_FISH_TYPES.find(x=>x.name===name);html+=`<div style="background:#f8fafc;padding:8px;border-radius:6px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;"><span>${cos?'🏰':'🐟'} <strong>${name}</strong> - 💰 ${d.price}</span><button class="modal-action-btn" style="background:#c0392b;width:auto;padding:4px 8px;font-size:.75rem;" onclick="cancelMarketListing('${doc.id}','${name}')">Cancel & Retrieve</button></div>`;});c.innerHTML=html;}catch(e){c.innerHTML='Error loading listings.';}}
-    async function cancelMarketListing(id,name){if(!checkCooldown())return;const user=auth.currentUser;if(!user)return;try{const lr=db.collection('marketListings').doc(id),pr=db.collection('jugadores').doc(user.uid);await db.runTransaction(async tx=>{const ls=await tx.get(lr),ps=await tx.get(pr);if(!ls.exists||!ps.exists)throw new Error('Listing not found.');const d=ls.data();if(d.sellerUid!==user.uid)throw new Error('Not authorized.');if(d.itemType==='cosmetic')tx.update(pr,{sandcastlesCount:(ps.data().sandcastlesCount||0)+1});else tx.update(pr,{fishes:firebase.firestore.FieldValue.arrayUnion({name:d.fishName||name,timestamp:new Date().toISOString()})});tx.delete(lr);});showToast(`${name} returned to your backpack.`);loadMyActiveListings();loadMyFishesForMarket();loadBackpackData();}catch(e){showToast(e.message);}}
-    async function buyMarketItem(id,sellerUid,price,name){if(!checkCooldown())return;const user=auth.currentUser;if(!user||user.uid===sellerUid){showToast('You cannot buy your own listing.');return;}try{const buyer=db.collection('jugadores').doc(user.uid),seller=db.collection('jugadores').doc(sellerUid),listing=db.collection('marketListings').doc(id);await db.runTransaction(async tx=>{const bs=await tx.get(buyer),ss=await tx.get(seller),ls=await tx.get(listing);if(!ls.exists||!bs.exists)throw new Error('Listing unavailable.');const d=ls.data(),b=bs.data();if((b.coins||0)<price)throw new Error('Not enough coins.');if(d.itemType==='cosmetic')tx.update(buyer,{coins:(b.coins||0)-price,sandcastlesCount:(b.sandcastlesCount||0)+1});else{const fish=ALLOWED_FISH_TYPES.find(f=>f.name===d.fishName);if(fish&&fish.isLimited)throw new Error('Protected fish cannot be traded.');tx.update(buyer,{coins:(b.coins||0)-price,fishes:firebase.firestore.FieldValue.arrayUnion({name:d.fishName||name,timestamp:new Date().toISOString()})});}if(ss.exists)tx.update(seller,{coins:(ss.data().coins||0)+price});tx.delete(listing);});showToast(`Purchased ${name} for ${price} coins!`);loadMarketListings();updateGameHUD();loadBackpackData();}catch(e){showToast('Purchase error: '+e.message);}}
-
-    async function adminModifySpecial(field,multiplier){const username=document.getElementById('adminTargetUsername').value.trim(),amount=parseInt(document.getElementById('adminSpecialAmount').value);if(!username||!Number.isInteger(amount)||amount<1){showToast('Enter a username and a valid amount.');return;}try{const uid=await getUidByUsername(username);if(!uid){showToast('User not found.');return;}const ref=db.collection('jugadores').doc(uid),snap=await ref.get();if(!snap.exists)return;const val=Math.max(0,(snap.data()[field]||0)+amount*multiplier);await ref.update({[field]:val});showToast(`${field} updated for ${username}: ${val}`);loadTargetUserInventoryForAdmin();}catch(e){showToast('Admin update failed: '+e.message);}}
-
-    // Extend backpack rendering with all new inventory fields.
-    const originalLoadBackpackData = _baseLoadBackpackData;
-    async function loadBackpackData(){await originalLoadBackpackData();const user=auth.currentUser;if(!user)return;try{const snap=await db.collection('jugadores').doc(user.uid).get();if(!snap.exists)return;const d=snap.data();const set=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};set('backpack-grills-count',`Grills: ${d.grillsCount||0}`);set('backpack-sandcastles-count',`Sandcastles: ${d.sandcastlesCount||0}`);set('backpack-cubes-count',`Mini Tuna Cubes: ${d.miniTunaCubesCount||0}`);set('backpack-cube-status',d.activeBaitType==='miniTunaCube'?'Mini Tuna Cube: equipped':'Mini Tuna Cube: unequipped');const b=document.getElementById('backpack-cube-toggle-btn');if(b)b.textContent=d.activeBaitType==='miniTunaCube'?'Unequip Cube':'Equip Cube';}catch(e){console.error(e);}}
-
-    // Aquarium render wrapper adds sandcastle props and passes the species name to its animation.
-    const originalRenderShelfSlot = _baseRenderShelfSlot;
-    function renderShelfSlot(slotKey,fishName,shelfIndex){
-      originalRenderShelfSlot(slotKey,fishName,shelfIndex);
-      const user=auth.currentUser;if(!isViewingMyAquarium||!user)return;
-      const el=document.getElementById(`shelf-${slotKey}`);if(!el)return;
-      db.collection('jugadores').doc(user.uid).get().then(snap=>{
-        if(!snap.exists)return;
-        const d=snap.data(),room=`room_${currentAquariumRoomIndex}`,decor=(d.aquariumDecorations||{})[room]||[];
-        // No tank/fish means no visible cosmetic; cleanup stale decoration data too.
-        if(!fishName){el.querySelectorAll('.aquarium-sandcastle-layer,.aquarium-tank-layer').forEach(n=>n.remove());return;}
-        if(!decor[shelfIndex]){el.querySelectorAll('.aquarium-sandcastle-layer').forEach(n=>n.remove());return;}
-        let wrap=el.firstElementChild;
-        if(!wrap||!wrap.querySelector('img.swimming-fish-'+shelfIndex))return;
-        wrap.querySelectorAll('.aquarium-sandcastle-layer').forEach(n=>n.remove());
-        const castle=document.createElement('img');castle.className='aquarium-sandcastle-layer';castle.src='https://i.postimg.cc/28kQzGrh/sand-castle.png';castle.alt='Sandcastle decoration';
-        castle.style.cssText='position:absolute;left:29%;bottom:12%;width:42%;height:48%;object-fit:contain;z-index:1;pointer-events:none;';
-        const fish=wrap.querySelector('img.swimming-fish-'+shelfIndex);if(fish)wrap.insertBefore(castle,fish);else wrap.appendChild(castle);
-      }).catch(e=>console.warn('Cosmetic render failed',e));
-      if(fishName){const last=activeFishAnimations.pop();if(last)clearInterval(last);startFishAnimation(shelfIndex,fishName);}
-    }
-
-
-    const _openSelectFishModalCosmeticBase=openSelectFishModal;
-    async function openSelectFishModal(fishes){
-      await _openSelectFishModalCosmeticBase(fishes);
-      const btn=document.querySelector('#modal-select-fish button[onclick="placeSandcastleDecoration()"]');
-      const user=auth.currentUser;if(!btn||!user)return;
-      try{const snap=await db.collection('jugadores').doc(user.uid).get(),d=snap.data()||{},key=`room_${currentAquariumRoomIndex}`;
-        const tank=((d.aquariumTanksMap||{})[key]||[])[selectedShelfIndex];
-        const equipped=!!((((d.aquariumDecorations||{})[key]||[])[selectedShelfIndex]));
-        btn.textContent=equipped?'Unequip Cosmetic':'Equip Cosmetic';btn.disabled=!tank&&!equipped;
-      }catch(e){console.warn(e);}
-    }
-
-    // Admin overview stats include the newly added inventory.
-    const originalAdminInventoryLoader=_baseLoadTargetUserInventoryForAdmin;
-    async function loadTargetUserInventoryForAdmin(){await originalAdminInventoryLoader();const username=document.getElementById('adminTargetUsername').value.trim();if(!username)return;try{const uid=await getUidByUsername(username);if(!uid)return;const snap=await db.collection('jugadores').doc(uid).get();if(!snap.exists)return;const d=snap.data(),el=document.getElementById('admin-stat-special');if(el)el.textContent=`Grills: ${d.grillsCount||0} | Sandcastles: ${d.sandcastlesCount||0} | Mini Tuna Cubes: ${d.miniTunaCubesCount||0}`;}catch(e){}}
-
-    // New animal movement and cooking achievement display.
-    const originalLoadAchievementsUI=_baseLoadAchievementsUI;
-    async function loadAchievementsUI(){await originalLoadAchievementsUI();const user=auth.currentUser;if(!user)return;try{const snap=await db.collection('jugadores').doc(user.uid).get();if(!snap.exists)return;const a=snap.data().achievements||{};[['perfectCook','ach-perfect-cook','ach-perfect-cook-status'],['bobTrade','ach-bob-trade','ach-bob-trade-status']].forEach(([key,itemId,statusId])=>{const item=document.getElementById(itemId),status=document.getElementById(statusId);if(item&&status&&a[key]){item.style.opacity='1';item.style.borderColor='#2ecc71';status.textContent='Completed';status.style.color='#2ecc71';}});}catch(e){}}
-
-    // Use separate bait odds without changing the original fishing minigame lifecycle.
-    const originalCastLine=_baseCastLine;
-    async function castLine(){const user=auth.currentUser;if(!user)return originalCastLine();try{const ref=db.collection('jugadores').doc(user.uid),snap=await ref.get(),d=snap.data()||{};if(d.activeBaitType==='miniTunaCube'&&(d.miniTunaCubesCount||0)>0){await ref.update({miniTunaCubesCount:d.miniTunaCubesCount-1,activeBaitType:'none'});usedBaitThisCast=true;const btn=document.getElementById('cast-btn');btn.disabled=true;btn.textContent='Waiting for bite...';showToast('Mini Tuna Cube consumed!');setTimeout(()=>{btn.disabled=false;btn.textContent='Cast Line!';const pool=ALLOWED_FISH_TYPES.filter(f=>!f.isLimited);const roll=Math.random();let rarity=roll<.70?['Legendary','Mythic','Divine']:(roll<.98?['Rare','Epic']:['Common']);let chosen=pool.filter(f=>rarity.includes(f.rarity));if(!chosen.length)chosen=pool;pendingCaughtFish=chosen[Math.floor(Math.random()*chosen.length)];startFishingMinigame();},2000+Math.random()*1200);loadBackpackData();return;}}catch(e){showToast('Bait error: '+e.message);return;}return originalCastLine();}
-
-    // Add the Bob trade entry point to the shop.
-    const bobEntry=document.createElement('button');
-    bobEntry.type='button';bobEntry.className='modal-action-btn';bobEntry.style.cssText='background:#7c3aed;margin-top:10px;';bobEntry.textContent='🤝 Bob Special Trade';bobEntry.onclick=openBobTrade;
-    const shopModalCard=document.querySelector('#modal-shop .modal-card');if(shopModalCard)shopModalCard.appendChild(bobEntry);
-
-    // Allow placing a decoration on an empty shelf even when the player has no spare Mini Tank.
-    function handleShelfClick(shelfIndex){
-      if(!isViewingMyAquarium)return;
-      selectedShelfIndex=shelfIndex;
-      const user=auth.currentUser;if(!user)return;
-      db.collection('jugadores').doc(user.uid).get().then(async snap=>{
-        if(!snap.exists)return;
-        const d=snap.data(),room=`room_${currentAquariumRoomIndex}`,tanks=(d.aquariumTanksMap||{})[room]||new Array(8).fill(null);
-        if(tanks[shelfIndex]){openSelectFishModal(d.fishes||[]);return;}
-        if((d.miniTanksCount||0)<=0&&(d.sandcastlesCount||0)<=0){showToast('You need a Mini Tank or a Sandcastle to use this shelf.');return;}
-        openSelectFishModal(d.fishes||[]);
-      }).catch(e=>showToast('Could not open shelf: '+e.message));
-    }
-
-    // Initial pagination after the DOM has been parsed (script is at the end of body).
-    changeShopPage(0);
-
-</script>
-
-<script>
-// ===== Fishing game redesign patch v5 =====
-let grillTick=null, grillPointer=null, grillLastTap=0, grillInsideHot=false, grillFishEl=null;
-let cookingSession=null;
-function cookingStage(p){return p<=0?'Not Cooked':p<35?'Slightly Cooked':p<65?'Cooked':p<100?'Well Cooked':'Burnt';}
-function cookingMultiplier(a,b){const score=(Math.max(0,1-Math.abs(a-50)/75)+Math.max(0,1-Math.abs(b-50)/75))/2;return Math.max(.55,Math.min(1.13,.55+score*.58));}
-function updateGrillUI(){if(!cookingSession)return;['one','two'].forEach(k=>{let n=k==='one'?1:2,p=cookingSession[k],bar=document.getElementById(n===1?'cook-side-one':'cook-side-two'),lab=document.getElementById(n===1?'cook-side-one-label':'cook-side-two-label');if(bar){bar.style.width=p+'%';bar.style.background=p>=100?'#171717':p>=65?'#7c2d12':p>=35?'#b45309':'#22c55e';}if(lab)lab.textContent=p+'%';});const img=grillFishEl;if(img){const p=cookingSession.side===1?cookingSession.one:cookingSession.two;img.style.filter=`brightness(${Math.max(.12,1-p/125)}) ${cookingSession.flipped?'':'none'}`;img.style.transform=cookingSession.flipped?'scaleX(-1)':'scaleX(1)';}}
-async function openCookingModal(){const user=auth.currentUser;if(!user)return;const snap=await db.collection('jugadores').doc(user.uid).get(),d=snap.data()||{};if((d.grillsCount||0)<1){showToast('You need a Grill. Buy one in Bob\'s Shop.');return;}cookingSession=null;document.getElementById('cooking-active-fish').innerHTML='';document.getElementById('cooking-fish-list').innerHTML='';document.getElementById('modal-cooking').style.display='flex';document.getElementById('cooking-status').textContent='Add a fish to begin.';if(grillTick)clearInterval(grillTick);}
-async function openCookingFishPicker(){const user=auth.currentUser;if(!user)return;const snap=await db.collection('jugadores').doc(user.uid).get(),d=snap.data()||{},fishes=d.fishes||[];let listed={};const ls=await db.collection('marketListings').where('sellerUid','==',user.uid).get();ls.forEach(x=>{const z=x.data();if(z.fishName)listed[z.fishName]=(listed[z.fishName]||0)+1;});let shown={};Object.values(d.aquariumTanksMap||{}).forEach(a=>(Array.isArray(a)?a:[]).forEach(n=>{if(n)shown[n]=(shown[n]||0)+1;}));let counts={};fishes.forEach((f,i)=>{const t=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(t&&t.isLimited)return;counts[f.name]??=[];counts[f.name].push(i);});const el=document.getElementById('cooking-fish-list');el.innerHTML='';Object.entries(counts).forEach(([name,indices])=>{const available=indices.length-(listed[name]||0)-(shown[name]||0);if(available<=0)return;const fish=ALLOWED_FISH_TYPES.find(x=>x.name===name);const card=document.createElement('button');card.className='fish-select-card';card.style.cssText='border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:8px;';card.innerHTML=`<img src="${fish?.img||''}" style="width:48px;height:48px;object-fit:contain"><br><b>${name} ×${available}</b><br><small>Select</small>`;card.onclick=()=>addFishToGrill(name,indices[0]);el.appendChild(card);});if(!el.children.length)el.textContent='No eligible fish available. Limited, aquarium and market-listed fish are protected.';}
-async function addFishToGrill(name,index){const fish=ALLOWED_FISH_TYPES.find(x=>x.name===name);if(fish&&fish.isLimited){showToast('Limited fish cannot be cooked.');return;}cookingSession={name,index,one:0,two:0,side:1,flipped:false,inside:false,started:false};const active=document.getElementById('cooking-active-fish');active.innerHTML=`<img id="grill-fish-image" src="${fish?.img||''}" alt="${name}" style="width:100%;height:100%;object-fit:contain;pointer-events:none;">`;grillFishEl=active.querySelector('img');active.style.left='18%';active.style.top='35%';active.style.width='28%';active.style.height='34%';active.style.cursor='grab';active.onpointerdown=grillPointerDown;active.ondblclick=flipGrillFish;active.ontouchstart=null;active.onpointerup=grillPointerUp;document.getElementById('cooking-status').textContent=`${name}: Side 1 — hold and drag onto the grill.`;document.getElementById('cooking-fish-list').innerHTML='';updateGrillUI();}
-function grillPointerDown(e){if(!cookingSession)return;grillPointer={id:e.pointerId,x:e.clientX,y:e.clientY,ox:e.currentTarget.offsetLeft,oy:e.currentTarget.offsetTop,moved:false};e.currentTarget.setPointerCapture(e.pointerId);e.currentTarget.style.cursor='grabbing';e.currentTarget.onpointermove=grillPointerMove;}
-function grillPointerMove(e){if(!grillPointer||!cookingSession)return;const surface=document.getElementById('cooking-grill-surface'),r=surface.getBoundingClientRect(),active=document.getElementById('cooking-active-fish');let x=grillPointer.ox+(e.clientX-grillPointer.x),y=grillPointer.oy+(e.clientY-grillPointer.y);active.style.left=Math.max(0,Math.min(surface.clientWidth-active.offsetWidth,x))+'px';active.style.top=Math.max(0,Math.min(surface.clientHeight-active.offsetHeight,y))+'px';grillPointer.moved=true;const ar=active.getBoundingClientRect(),cx=ar.left+ar.width/2,cy=ar.top+ar.height/2;grillInsideHot=cx<r.left+r.width*.70&&cx>r.left+r.width*.04&&cy>r.top+r.height*.12&&cy<r.top+r.height*.88;cookingSession.inside=grillInsideHot;document.getElementById('cooking-status').textContent=grillInsideHot?`Cooking side ${cookingSession.side}...`:'Paused — move the fish onto the hot grill to cook.';}
-function grillPointerUp(e){const active=document.getElementById('cooking-active-fish');if(active)active.style.cursor='grab';if(grillPointer){const moved=grillPointer.moved;grillPointer=null;if(!moved){const now=Date.now();if(now-grillLastTap<350)flipGrillFish();grillLastTap=now;}}}
-function flipGrillFish(){if(!cookingSession)return;cookingSession.side=cookingSession.side===1?2:1;cookingSession.flipped=!cookingSession.flipped;grillInsideHot=false;cookingSession.inside=false;document.getElementById('cooking-status').textContent=`Flipped! Side ${cookingSession.side} is now facing up. Place it on the hot zone to cook.`;updateGrillUI();}
-function grillCookingLoop(){if(grillTick)clearInterval(grillTick);grillTick=setInterval(()=>{if(!cookingSession||!cookingSession.inside)return;const key=cookingSession.side===1?'one':'two';cookingSession[key]=Math.min(100,cookingSession[key]+1);updateGrillUI();const p=cookingSession[key];document.getElementById('cooking-status').textContent=`Side ${cookingSession.side}: ${p}% — ${cookingStage(p)}.`;if(cookingSession.one===100&&cookingSession.two===100)finishGrillCooking();},1000);}
-// The interval is started once and only progresses while the dragged fish is over the hot section.
-async function closeCookingModal(){if(grillTick)clearInterval(grillTick);grillTick=null;if(cookingSession&&(cookingSession.one>0||cookingSession.two>0)){await finishGrillCooking();}else cookingSession=null;grillInsideHot=false;document.getElementById('modal-cooking').style.display='none';}
-async function finishGrillCooking(){if(!cookingSession||(!cookingSession.one&&!cookingSession.two))return;const sess={...cookingSession};if(grillTick)clearInterval(grillTick);grillTick=null;const user=auth.currentUser;if(!user)return;try{const ref=db.collection('jugadores').doc(user.uid);await db.runTransaction(async tx=>{const snap=await tx.get(ref),d=snap.data()||{},fishes=(d.fishes||[]).slice(),i=fishes.findIndex((f,idx)=>idx===sess.index&&f.name===sess.name);if(i<0)throw new Error('Fish no longer available.');const type=ALLOWED_FISH_TYPES.find(f=>f.name===sess.name);if(type?.isLimited)throw new Error('Limited fish cannot be cooked.');fishes.splice(i,1);const cooked=(d.cookedFish||[]).concat([{name:sess.name,sideOne:sess.one,sideTwo:sess.two,quality:(sess.one===50&&sess.two===50)?'perfect':'cooked',timestamp:Date.now()}]);tx.update(ref,{fishes,cookedFish:cooked,achievements:{...(d.achievements||{}),perfectCook:true}});});showToast(`${sess.name} cooked: Side 1 ${sess.one}%, Side 2 ${sess.two}%.`);cookingSession=null;grillInsideHot=false;document.getElementById('cooking-active-fish').innerHTML='';document.getElementById('cooking-status').textContent='Cooking complete. Add another fish.';loadBackpackData();}catch(e){showToast('Cooking failed: '+e.message);}}
-// initialize the grill timer lazily
-const _v5OpenCookingModal=openCookingModal;openCookingModal=async function(){await _v5OpenCookingModal();if(document.getElementById('modal-cooking').style.display==='flex')grillCookingLoop();};
-
-// Single bait selector, matching fish selection cards.
-async function openBaitPicker(){const user=auth.currentUser;if(!user)return;const snap=await db.collection('jugadores').doc(user.uid).get(),d=snap.data()||{},wrap=document.createElement('div');wrap.className='modal-overlay';wrap.id='bait-picker-modal';wrap.style.cssText='display:flex;z-index:3000;';wrap.innerHTML='<div class="modal-card" style="max-width:420px"><button class="modal-close" onclick="document.getElementById(\'bait-picker-modal\').remove()">✕</button><h3>Select a Bait</h3><div id="bait-picker-list" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div></div>';document.body.appendChild(wrap);const list=wrap.querySelector('#bait-picker-list'),items=[{key:'worm',name:'Worm Bait',count:d.wormBaitsCount||0,img:'https://i.postimg.cc/2y6St1Nb/cook-button.png'},{key:'cube',name:'Mini Tuna Cube',count:d.miniTunaCubesCount||0,img:'https://i.postimg.cc/TYdVR0f5/mini-tuna-cube.png'}];items.forEach(it=>{const b=document.createElement('button');b.className='fish-select-card';b.style.cssText='padding:12px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc';b.innerHTML=`<img src="${it.img}" style="width:54px;height:54px;object-fit:contain"><br><b>${it.name}</b><br><small>×${it.count}</small><br><span>${(d.activeBaitType===it.key||(it.key==='worm'&&d.isBaitActive))?'Equipped':'Select'}</span>`;b.disabled=it.count<1;b.onclick=async()=>{await db.collection('jugadores').doc(user.uid).update({activeBaitType:it.key,isBaitActive:it.key==='worm'});wrap.remove();showToast(`${it.name} equipped.`);loadBackpackData();};list.appendChild(b);});}
-async function buyGameItem(field,cost,label){if(!checkCooldown())return;const user=auth.currentUser;if(!user)return;const ref=db.collection('jugadores').doc(user.uid);try{await db.runTransaction(async tx=>{const snap=await tx.get(ref),d=snap.data()||{};if((d.coins||0)<cost)throw new Error('Not enough coins.');if(field==='grillsCount'&&(d.grillsCount||0)>=1)throw new Error('You can only own one Grill.');tx.update(ref,{coins:(d.coins||0)-cost,[field]:(d[field]||0)+1});});showToast(`${label} purchased!`);updateShopCoinsDisplay();updateGameHUD();loadBackpackData();}catch(e){showToast(e.message);}}
-
-// Admin compact Give Baits / Give Cosmetics tools.
-async function adminGiveSelectedBait(){const username=document.getElementById('adminTargetUsername').value.trim(),qty=Math.max(1,parseInt(document.getElementById('admin-bait-qty').value)||1),type=document.getElementById('admin-bait-type').value;if(!username)return showToast('Enter a username.');try{const uid=await getUidByUsername(username);if(!uid)return showToast('User not found.');const field=type==='worm'?'wormBaitsCount':'miniTunaCubesCount';await db.collection('jugadores').doc(uid).update({[field]:firebase.firestore.FieldValue.increment(qty)});showToast(`Gave ${qty} ${type==='worm'?'Worm Bait':'Mini Tuna Cube'}(s).`);loadTargetUserInventoryForAdmin();}catch(e){showToast(e.message);}}
-async function adminGiveSelectedCosmetic(){const username=document.getElementById('adminTargetUsername').value.trim(),qty=Math.max(1,parseInt(document.getElementById('admin-cosmetic-qty').value)||1);if(!username)return showToast('Enter a username.');try{const uid=await getUidByUsername(username);if(!uid)return showToast('User not found.');await db.collection('jugadores').doc(uid).update({sandcastlesCount:firebase.firestore.FieldValue.increment(qty)});showToast(`Gave ${qty} Sandcastle(s).`);loadTargetUserInventoryForAdmin();}catch(e){showToast(e.message);}}
-// Remove obsolete admin widgets and legacy backpack toggles at runtime.
-document.addEventListener('DOMContentLoaded',()=>{const card=document.querySelector('#modal-admin .modal-card');if(card){card.querySelectorAll('button[onclick*="adminModifySpecial"],#adminSpecialAmount').forEach(x=>x.remove());card.querySelectorAll('label').forEach(l=>{if(/Worm Baits Amount/i.test(l.textContent)){const p=l.closest('.form-group');if(p)p.remove();}});const h=Array.from(card.querySelectorAll('h3')).find(x=>/Add Fish \/ Marine Animal/i.test(x.textContent));if(h)h.textContent='Add Fish';}const cube=document.getElementById('backpack-cube-toggle-btn'),worm=document.getElementById('backpack-bait-toggle-btn');if(cube)cube.remove();if(worm)worm.remove();const cook=document.querySelector('#modal-backpack button[onclick="openCookingModal()"]');if(cook)cook.remove();const sell=document.querySelector('#modal-backpack button[onclick="promptSandcastleMarketSell()"]');if(sell)sell.remove();const surface=document.getElementById('cooking-grill-surface');if(surface){surface.style.aspectRatio='16 / 9';surface.style.backgroundSize='contain';surface.innerHTML='<div id="cooking-active-fish" style="position:absolute;left:18%;top:35%;width:28%;height:34%;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;z-index:5;"></div>';}['cooking-hot-zone','cooking-rest-zone','cooking-flip-btn'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});const modal=document.querySelector('#modal-cooking .modal-card');if(modal){Array.from(modal.querySelectorAll('button')).forEach(b=>{if(/HOT ZONE|REST ZONE|Flip Fish/i.test(b.textContent))b.remove();});const para=modal.querySelector('p');if(para)para.textContent='Add a fish, hold and drag it onto the hot grill, and double-tap to flip it. Cooking pauses when you move it off the hot zone.';const list=document.getElementById('cooking-fish-list');if(list&&!document.getElementById('grill-add-fish-btn')){const b=document.createElement('button');b.id='grill-add-fish-btn';b.className='modal-action-btn';b.style.cssText='background:#22c55e;margin:8px 0;width:100%';b.textContent='Add Fish';b.onclick=openCookingFishPicker;list.parentNode.insertBefore(b,list);}const bars=modal.querySelectorAll('.progress-track');if(bars.length>=2){bars[0].previousElementSibling.textContent='Side 1';bars[1].previousElementSibling.textContent='Side 2';}}});
-// Fix aquarium selection flow: preserve existing tank, allow add/remove reliably and return cosmetic on removal.
-async function handleShelfClick(shelfIndex){
-  if(!isViewingMyAquarium)return;
-  selectedShelfIndex=Number(shelfIndex);
-  const user=auth.currentUser;if(!user)return;
-  try{
-    const snap=await db.collection('jugadores').doc(user.uid).get();
-    if(!snap.exists)throw new Error('Player profile not found.');
-    const d=snap.data()||{};
-    const key=`room_${currentAquariumRoomIndex}`;
-    const roomMap=d.aquariumTanksMap||{};
-    const tanks=Array.isArray(roomMap[key])?roomMap[key]:new Array(8).fill(null);
-    if(!tanks[selectedShelfIndex]&&(d.miniTanksCount||0)<1){
-      showToast("You need a Mini Tank to add a fish. Buy one in Bob's Shop.");return;
-    }
-    await openSelectFishModal(d.fishes||[]);
-  }catch(e){showToast('Could not open aquarium slot: '+e.message);}
-}
-
-async function assignFishToShelf(fishName){
-  const user=auth.currentUser;if(!user)return;
-  const ref=db.collection('jugadores').doc(user.uid);
-  try{
-    // Firestore does not allow a normal collection query from inside a transaction.
-    // Check active listings first, then keep the inventory/tank update atomic.
-    const listed=await db.collection('marketListings')
-      .where('sellerUid','==',user.uid).where('fishName','==',fishName).get();
-    if(!listed.empty)throw new Error('This fish is listed on the Market. Cancel the offer before placing it in a tank.');
-
-    await db.runTransaction(async tx=>{
-      const snap=await tx.get(ref);
-      if(!snap.exists)throw new Error('Player profile not found.');
-      const d=snap.data()||{};
-      const fishes=Array.isArray(d.fishes)?d.fishes:[];
-      const map={...(d.aquariumTanksMap||{})};
-      const key=`room_${currentAquariumRoomIndex}`;
-      const tanks=(Array.isArray(map[key])?map[key]:new Array(8).fill(null)).slice(0,8);
-      while(tanks.length<8)tanks.push(null);
-      if(!Number.isInteger(selectedShelfIndex)||selectedShelfIndex<0||selectedShelfIndex>7)throw new Error('Invalid aquarium slot.');
-      if(!fishes.some(f=>f&&f.name===fishName))throw new Error(`You do not have ${fishName} in your backpack.`);
-
-      let displayedElsewhere=0;
-      Object.entries(map).forEach(([roomKey,arr])=>{
-        if(!Array.isArray(arr))return;
-        arr.forEach((name,index)=>{
-          if(name===fishName&&!(roomKey===key&&index===selectedShelfIndex))displayedElsewhere++;
-        });
-      });
-      const owned=fishes.filter(f=>f&&f.name===fishName).length;
-      if(displayedElsewhere>=owned)throw new Error(`All your ${fishName} are already displayed in your aquarium.`);
-
-      const replacing=!!tanks[selectedShelfIndex];
-      if(!replacing&&(d.miniTanksCount||0)<1)throw new Error('Not enough Mini Tanks in your inventory.');
-      tanks[selectedShelfIndex]=fishName;
-      map[key]=tanks;
-      const update={aquariumTanksMap:map};
-      if(!replacing)update.miniTanksCount=(d.miniTanksCount||0)-1;
-      tx.update(ref,update);
-    });
-
-    const fresh=await ref.get();
-    if(!fresh.exists)throw new Error('Could not reload your aquarium.');
-    const d=fresh.data()||{};
-    const modal=document.getElementById('modal-select-fish');if(modal)modal.style.display='none';
-    renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{});
-    if(typeof loadBackpackData==='function')loadBackpackData();
-    showToast(`${fishName} added to tank ${selectedShelfIndex+1}!`);
-  }catch(e){showToast('Could not add fish: '+(e&&e.message?e.message:String(e)));}
-}
-
-// Ensure cosmetic layer disappears when tank is removed and returned to inventory (existing transaction retained).
-
-// Market supports quantity listings and cooked fish with per-side doneness.
-async function loadMyFishesForMarket(){const user=auth.currentUser;if(!user)return;const c=document.getElementById('market-my-fishes-container');c.innerHTML='';try{const snap=await db.collection('jugadores').doc(user.uid).get(),d=snap.data()||{},fishes=d.fishes||[],cooked=d.cookedFish||[],tanks=d.aquariumTanksMap||{},listed=await db.collection('marketListings').where('sellerUid','==',user.uid).get(),locked={};listed.forEach(x=>{const z=x.data();if(z.fishName)locked[z.fishName]=(locked[z.fishName]||0)+(z.quantity||1);});const displayed={};Object.values(tanks).forEach(a=>(Array.isArray(a)?a:[]).forEach(n=>{if(n)displayed[n]=(displayed[n]||0)+1;}));let groups={};fishes.forEach((f,i)=>{const t=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(t?.isLimited)return;groups[f.name]??=[];groups[f.name].push(i);});Object.entries(groups).forEach(([name,ids])=>{const count=Math.max(0,ids.length-(displayed[name]||0)-(locked[name]||0));if(!count)return;const f=ALLOWED_FISH_TYPES.find(x=>x.name===name);const b=document.createElement('button');b.className='fish-select-card';b.style.cssText='padding:8px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc';b.innerHTML=`<img src="${f?.img||''}" style="width:48px;height:48px;object-fit:contain"><br><b>${name}</b><br><small>Available ×${count}</small><br><small>Sell selection</small>`;b.onclick=()=>{selectedFishToMarket={index:ids[0],name,quantityMax:count};document.getElementById('prompt-fish-name-label').textContent=`${name} — up to ${count}`;document.getElementById('market-sell-qty-input').value=1;document.getElementById('market-sell-qty-input').max=count;document.getElementById('market-sell-price-input').value='';document.getElementById('modal-market-price-prompt').style.display='flex';};c.appendChild(b);});cooked.forEach((f,i)=>{const b=document.createElement('button');b.className='fish-select-card';b.style.cssText='padding:8px;border:1px solid #fed7aa;border-radius:10px;background:#fff7ed';b.innerHTML=`<b>${f.name}</b><br><small>Side 1: ${f.sideOne??0}% (${cookingStage(f.sideOne??0)})</small><br><small>Side 2: ${f.sideTwo??0}% (${cookingStage(f.sideTwo??0)})</small><br><small>Sell cooked fish</small>`;b.onclick=()=>{selectedFishToMarket={cooked:true,index:i,name:f.name,quantityMax:1};document.getElementById('prompt-fish-name-label').textContent=`${f.name} — ${f.sideOne??0}% / ${f.sideTwo??0}%`;document.getElementById('market-sell-qty-input').value=1;document.getElementById('market-sell-qty-input').max=1;const base=(ALLOWED_FISH_TYPES.find(x=>x.name===f.name)?.value)||50;document.getElementById('market-sell-price-input').value=Math.max(1,Math.round(base*cookingMultiplier(f.sideOne??0,f.sideTwo??0)));document.getElementById('modal-market-price-prompt').style.display='flex';};c.appendChild(b);});const n=d.sandcastlesCount||0;if(n){const b=document.createElement('button');b.className='fish-select-card';b.innerHTML=`<img src="https://i.postimg.cc/28kQzGrh/sand-castle.png" style="width:48px;height:48px;object-fit:contain"><br><b>Sandcastle ×${n}</b><br><small>Sell cosmetic</small>`;b.onclick=()=>{selectedFishToMarket={cosmetic:true,name:'Sandcastle',quantityMax:n};document.getElementById('prompt-fish-name-label').textContent=`Sandcastle — up to ${n}`;document.getElementById('market-sell-qty-input').value=1;document.getElementById('market-sell-qty-input').max=n;document.getElementById('market-sell-price-input').value='';document.getElementById('modal-market-price-prompt').style.display='flex';};c.appendChild(b);}if(!c.children.length)c.innerHTML='<p style="grid-column:1/-1;text-align:center;color:#64748b">No eligible items to sell.</p>';}catch(e){c.textContent='Could not load inventory: '+e.message;}}
-async function confirmMarketSell(){if(!checkCooldown())return;const user=auth.currentUser;if(!user||!selectedFishToMarket)return;const qty=Math.max(1,parseInt(document.getElementById('market-sell-qty-input')?.value)||1),price=parseInt(document.getElementById('market-sell-price-input').value);if(!Number.isInteger(price)||price<1)return showToast('Enter a valid price.');if(qty>(selectedFishToMarket.quantityMax||1))return showToast('Quantity exceeds available amount.');const ref=db.collection('jugadores').doc(user.uid);try{await db.runTransaction(async tx=>{const snap=await tx.get(ref),d=snap.data()||{};if(selectedFishToMarket.cosmetic){if((d.sandcastlesCount||0)<qty)throw new Error('Not enough Sandcastles.');tx.update(ref,{sandcastlesCount:(d.sandcastlesCount||0)-qty});tx.set(db.collection('marketListings').doc(),{sellerUid:user.uid,sellerName:d.username||'Player',itemType:'cosmetic',itemName:'Sandcastle',fishName:'Sandcastle',quantity:qty,price,createdAt:firebase.firestore.FieldValue.serverTimestamp()});}else if(selectedFishToMarket.cooked){const arr=(d.cookedFish||[]).slice(),f=arr[selectedFishToMarket.index];if(!f)throw new Error('Cooked fish no longer exists.');arr.splice(selectedFishToMarket.index,1);tx.update(ref,{cookedFish:arr});tx.set(db.collection('marketListings').doc(),{sellerUid:user.uid,sellerName:d.username||'Player',itemType:'cooked',fishName:f.name,cookedFish:f,quantity:1,price,createdAt:firebase.firestore.FieldValue.serverTimestamp()});}else{const arr=(d.fishes||[]).slice(),name=selectedFishToMarket.name,idx=arr.findIndex(f=>f.name===name);const type=ALLOWED_FISH_TYPES.find(f=>f.name===name);if(type?.isLimited)throw new Error('Limited fish cannot be listed.');let display=0;Object.values(d.aquariumTanksMap||{}).forEach(a=>{if(Array.isArray(a))display+=a.filter(x=>x===name).length;});const available=arr.filter(f=>f.name===name).length-display;if(available<qty)throw new Error('Some copies are protected in your aquarium.');for(let n=0;n<qty;n++){const i=arr.findIndex(f=>f.name===name);if(i>=0)arr.splice(i,1);}tx.update(ref,{fishes:arr});tx.set(db.collection('marketListings').doc(),{sellerUid:user.uid,sellerName:d.username||'Player',fishName:name,quantity:qty,price,createdAt:firebase.firestore.FieldValue.serverTimestamp()});}});showToast(`${qty} × ${selectedFishToMarket.name} listed.`);document.getElementById('modal-market-price-prompt').style.display='none';loadMyActiveListings();loadMyFishesForMarket();loadBackpackData();}catch(e){showToast('Market error: '+e.message);}}
-async function buyMarketItem(id,sellerUid,price,name){if(!checkCooldown())return;const user=auth.currentUser;if(!user||user.uid===sellerUid)return showToast('You cannot buy your own listing.');const buyer=db.collection('jugadores').doc(user.uid),seller=db.collection('jugadores').doc(sellerUid),listing=db.collection('marketListings').doc(id);try{await db.runTransaction(async tx=>{const bs=await tx.get(buyer),ss=await tx.get(seller),ls=await tx.get(listing);if(!ls.exists||!bs.exists)throw new Error('Listing unavailable.');const d=ls.data(),b=bs.data(),qty=d.quantity||1,total=price*qty;if((b.coins||0)<total)throw new Error('Not enough coins.');const update={coins:(b.coins||0)-total};if(d.itemType==='cosmetic')update.sandcastlesCount=(b.sandcastlesCount||0)+qty;else if(d.itemType==='cooked')update.cookedFish=(b.cookedFish||[]).concat([d.cookedFish||{name:d.fishName,sideOne:0,sideTwo:0}]);else{const type=ALLOWED_FISH_TYPES.find(f=>f.name===d.fishName);if(type?.isLimited)throw new Error('Protected fish cannot be traded.');update.fishes=(b.fishes||[]).concat(Array.from({length:qty},()=>({name:d.fishName||name,timestamp:new Date().toISOString()})));}tx.update(buyer,update);if(ss.exists)tx.update(seller,{coins:(ss.data().coins||0)+total});tx.delete(listing);});showToast(`Purchased ${name} ×${(await listing.get()).data()?.quantity||1}.`);loadMarketListings();loadMyFishesForMarket();updateGameHUD();loadBackpackData();}catch(e){showToast('Purchase error: '+e.message);}}
-
-async function loadMarketListings(){const c=document.getElementById('market-listings-container');c.innerHTML='Loading market offers...';try{const snap=await db.collection('marketListings').orderBy('createdAt','desc').get();if(snap.empty){c.innerHTML='No player offers right now.';return;}let html='';snap.forEach(doc=>{const d=doc.data(),mine=auth.currentUser&&d.sellerUid===auth.currentUser.uid,cos=d.itemType==='cosmetic',cooked=d.itemType==='cooked',name=cos?(d.itemName||'Sandcastle'):d.fishName,qty=d.quantity||1,fish=ALLOWED_FISH_TYPES.find(f=>f.name===name),cf=d.cookedFish||{};let detail=cooked?`Side 1 ${cf.sideOne??0}% (${cookingStage(cf.sideOne??0)}) · Side 2 ${cf.sideTwo??0}% (${cookingStage(cf.sideTwo??0)})`:'';html+=`<div style="background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;"><div style="display:flex;align-items:center;gap:10px;"><img src="${cos?'https://i.postimg.cc/28kQzGrh/sand-castle.png':(fish?.img||'')}" style="width:42px;height:42px;object-fit:contain"><div><strong>${name} ×${qty}</strong><br><span style="font-size:.75rem;color:#64748b">${detail} ${detail?'<br>':''}Seller: ${d.sellerName||'Player'} · ${d.price} coins each</span></div></div>${mine?'<b>Your Listing</b>':`<button class="modal-action-btn" style="width:auto;padding:6px 12px" onclick="buyMarketItem('${doc.id}','${d.sellerUid}',${d.price},'${name}')">Buy · ${d.price*qty} coins</button>`}</div>`;});c.innerHTML=html;}catch(e){c.textContent='Error loading market: '+e.message;}}
-async function cancelMarketListing(id,name){if(!checkCooldown())return;const user=auth.currentUser;if(!user)return;const listing=db.collection('marketListings').doc(id),ref=db.collection('jugadores').doc(user.uid);try{await db.runTransaction(async tx=>{const ls=await tx.get(listing),ps=await tx.get(ref);if(!ls.exists||!ps.exists)throw new Error('Listing not found.');const d=ls.data(),p=ps.data()||{},qty=d.quantity||1;if(d.sellerUid!==user.uid)throw new Error('Not authorized.');if(d.itemType==='cosmetic')tx.update(ref,{sandcastlesCount:(p.sandcastlesCount||0)+qty});else if(d.itemType==='cooked')tx.update(ref,{cookedFish:(p.cookedFish||[]).concat([d.cookedFish||{name:d.fishName,sideOne:0,sideTwo:0}])});else tx.update(ref,{fishes:(p.fishes||[]).concat(Array.from({length:qty},()=>({name:d.fishName||name,timestamp:new Date().toISOString()})))});tx.delete(listing);});showToast(`${name} returned to your inventory.`);loadMyActiveListings();loadMyFishesForMarket();loadBackpackData();}catch(e){showToast(e.message);}}
-async function loadMyActiveListings(){const user=auth.currentUser;if(!user)return;const c=document.getElementById('market-my-active-listings');try{const snap=await db.collection('marketListings').where('sellerUid','==',user.uid).get();if(snap.empty){c.innerHTML='You have no active market offers.';return;}let html='';snap.forEach(doc=>{const d=doc.data(),name=d.itemType==='cosmetic'?'Sandcastle':d.fishName,qty=d.quantity||1;html+=`<div style="background:#f8fafc;padding:8px;border-radius:6px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center"><span><strong>${name} ×${qty}</strong> · ${d.price} each</span><button class="modal-action-btn" style="background:#c0392b;width:auto;padding:4px 8px;font-size:.75rem" onclick="cancelMarketListing('${doc.id}','${name}')">Cancel & Retrieve</button></div>`;});c.innerHTML=html;}catch(e){c.textContent='Error loading listings.';}}
-
-
-// --- UI and inventory fixes requested ---
-async function openCookingFishPicker(){
-  const user=auth.currentUser;if(!user)return;
-  const snap=await db.collection('jugadores').doc(user.uid).get();if(!snap.exists)return;
-  const d=snap.data()||{},listed=await db.collection('marketListings').where('sellerUid','==',user.uid).get(),locked={};
-  listed.forEach(x=>{const n=x.data().fishName;if(n)locked[n]=(locked[n]||0)+(x.data().quantity||1);});
-  const shown={};Object.values(d.aquariumTanksMap||{}).forEach(a=>(Array.isArray(a)?a:[]).forEach(n=>{if(n)shown[n]=(shown[n]||0)+1;}));
-  const counts={};(d.fishes||[]).forEach(f=>{const t=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!t?.isLimited)counts[f.name]=(counts[f.name]||0)+1;});
-  const choices=Object.entries(counts).filter(([n,c])=>c-(shown[n]||0)-(locked[n]||0)>0);
-  let modal=document.getElementById('grill-fish-picker');if(modal)modal.remove();
-  modal=document.createElement('div');modal.id='grill-fish-picker';modal.className='modal-overlay';modal.style.cssText='display:flex;z-index:2400;';
-  modal.innerHTML='<div class="modal-card" style="max-width:430px"><button class="modal-close" onclick="document.getElementById(\'grill-fish-picker\').remove()">✕</button><h3>Add Fish</h3><div id="grill-fish-picker-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;max-height:55vh;overflow:auto"></div></div>';
-  document.body.appendChild(modal);const list=modal.querySelector('#grill-fish-picker-list');
-  if(!choices.length){list.innerHTML='<p>No cookable fish available. Remove a fish from a tank or cancel its market offer first.</p>';return;}
-  choices.forEach(([name,count])=>{const f=ALLOWED_FISH_TYPES.find(x=>x.name===name),b=document.createElement('button');b.className='fish-select-card';b.innerHTML=`<img src="${f?.img||''}" style="width:48px;height:48px;object-fit:contain"><br><b>${name}</b><br>×${count}`;b.onclick=()=>{modal.remove();selectCookingFish(name);};list.appendChild(b);});
-}
-
-// A slot can always be emptied; fish stays in inventory and the Mini Tank/cosmetic are returned.
-async function removeFishFromShelf(){
-  const user=auth.currentUser;if(!user||!isViewingMyAquarium)return;
-  const ref=db.collection('jugadores').doc(user.uid);
-  try{await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw new Error('Player profile not found.');const d=snap.data()||{},key=`room_${currentAquariumRoomIndex}`,map={...(d.aquariumTanksMap||{})},tanks=(map[key]||new Array(8).fill(null)).slice(),decor={...(d.aquariumDecorations||{})},room=(Array.isArray(decor[key])?decor[key]:new Array(8).fill(false)).slice();const hadTank=!!tanks[selectedShelfIndex],hadCastle=!!room[selectedShelfIndex];if(!hadTank&&!hadCastle)throw new Error('This slot is already empty.');tanks[selectedShelfIndex]=null;room[selectedShelfIndex]=false;map[key]=tanks;decor[key]=room;const update={aquariumTanksMap:map,aquariumDecorations:decor};if(hadTank)update.miniTanksCount=(d.miniTanksCount||0)+1;if(hadCastle)update.sandcastlesCount=(d.sandcastlesCount||0)+1;tx.update(ref,update);});
-  document.getElementById('modal-select-fish').style.display='none';const fresh=await ref.get(),d=fresh.data()||{};renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{});loadBackpackData();showToast('Fish removed from the display. Your fish and items are back in your inventory.');
-  }catch(e){showToast('Could not remove fish: '+e.message);}
-}
-
-// One Make Offer flow for fish, cooked fish and cosmetics; quantity and price are chosen in the offer editor.
-async function loadMyFishesForMarket(){
- const user=auth.currentUser;if(!user)return;const c=document.getElementById('market-my-fishes-container');if(!c)return;
- c.innerHTML='';const old=document.getElementById('market-make-offer-btn');if(old)old.remove();
- const btn=document.createElement('button');btn.id='market-make-offer-btn';btn.className='modal-action-btn';btn.style.cssText='background:#2563eb;width:100%;font-size:1.05rem;padding:14px;margin:0 0 12px';btn.textContent='Make Offer';btn.onclick=openMakeOfferPicker;
- c.parentNode.insertBefore(btn,c);
- c.innerHTML='<p style="grid-column:1/-1;color:#64748b;text-align:center">Choose Make Offer to select fish or cosmetics and set quantities.</p>';
-}
-async function openMakeOfferPicker(){
- const user=auth.currentUser;if(!user)return;const snap=await db.collection('jugadores').doc(user.uid).get();if(!snap.exists)return;const d=snap.data()||{},fishes=d.fishes||[],cooked=d.cookedFish||[],tanks=d.aquariumTanksMap||{},listed=await db.collection('marketListings').where('sellerUid','==',user.uid).get(),locked={};listed.forEach(x=>{const z=x.data();if(z.fishName)locked[z.fishName]=(locked[z.fishName]||0)+(z.quantity||1);});const displayed={};Object.values(tanks).forEach(a=>(Array.isArray(a)?a:[]).forEach(n=>{if(n)displayed[n]=(displayed[n]||0)+1;}));
- let m=document.getElementById('make-offer-picker');if(m)m.remove();m=document.createElement('div');m.id='make-offer-picker';m.className='modal-overlay';m.style.cssText='display:flex;z-index:2300';m.innerHTML='<div class="modal-card" style="max-width:500px"><button class="modal-close" onclick="document.getElementById(\'make-offer-picker\').remove()">✕</button><h3>Make Offer</h3><p style="color:#64748b;font-size:.85rem">Select an item. You can set its quantity and price next.</p><div id="make-offer-items" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:55vh;overflow:auto"></div></div>';document.body.appendChild(m);const list=m.querySelector('#make-offer-items');
- const add=(name,img,max,meta={})=>{if(max<1)return;const b=document.createElement('button');b.className='fish-select-card';b.innerHTML=`${img?`<img src="${img}" style="width:48px;height:48px;object-fit:contain"><br>`:''}<b>${name}</b><br><small>Available ×${max}</small>`;b.onclick=()=>{selectedFishToMarket={name,quantityMax:max,...meta};document.getElementById('prompt-fish-name-label').textContent=`${name} — up to ${max}`;const q=document.getElementById('market-sell-qty-input');q.value=1;q.max=max;document.getElementById('market-sell-price-input').value='';m.remove();document.getElementById('modal-market-price-prompt').style.display='flex';};list.appendChild(b);};
- const groups={};fishes.forEach(f=>{const t=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(t?.isLimited)return;groups[f.name]=(groups[f.name]||0)+1;});Object.entries(groups).forEach(([n,c])=>add(n,ALLOWED_FISH_TYPES.find(x=>x.name===n)?.img,c-(displayed[n]||0)-(locked[n]||0)));
- cooked.forEach((f,i)=>add(`${f.name} (Cooked)`,ALLOWED_FISH_TYPES.find(x=>x.name===f.name)?.img,1,{cooked:true,index:i}));
- add('Sandcastle','https://i.postimg.cc/28kQzGrh/sand-castle.png',d.sandcastlesCount||0,{cosmetic:true});
- if(!list.children.length)list.innerHTML='<p>No eligible fish or cosmetics available to offer.</p>';
-}
-
-// Reliable admin inventory grants: resolve exact username, verify the admin account, and update the target profile.
-async function adminGrantTarget(){const actor=auth.currentUser;if(!actor||actor.uid!==ADMIN_UID)throw new Error('Admin permission required.');const username=document.getElementById('adminTargetUsername').value.trim();if(!username)throw new Error('Enter a username.');const uid=await getUidByUsername(username);if(!uid)throw new Error('User not found. Check the exact username.');return db.collection('jugadores').doc(uid);}
-async function adminGiveSelectedBait(){try{const ref=await adminGrantTarget(),qty=Math.max(1,parseInt(document.getElementById('admin-bait-qty').value)||1),type=document.getElementById('admin-bait-type').value,field=type==='worm'?'wormBaitsCount':'miniTunaCubesCount';await ref.update({[field]:firebase.firestore.FieldValue.increment(qty)});showToast(`Gave ${qty} ${type==='worm'?'Worm Bait':'Mini Tuna Cube'}(s).`);await loadTargetUserInventoryForAdmin();}catch(e){showToast('Admin grant failed: '+e.message);}}
-async function adminGiveSelectedCosmetic(){try{const ref=await adminGrantTarget(),qty=Math.max(1,parseInt(document.getElementById('admin-cosmetic-qty').value)||1),type=document.getElementById('admin-cosmetic-type')?.value||'sandcastle',field=type==='sandcastle'?'sandcastlesCount':null;if(!field)throw new Error('Unknown cosmetic type.');await ref.update({[field]:firebase.firestore.FieldValue.increment(qty)});showToast(`Gave ${qty} Sandcastle(s).`);await loadTargetUserInventoryForAdmin();}catch(e){showToast('Admin grant failed: '+e.message);}}
-
-// Keep one Equip Bait button that opens the picker for either owned bait type.
-document.addEventListener('DOMContentLoaded',()=>{
- const baitArea=document.getElementById('backpack-baits-count');
- if(baitArea && !document.getElementById('backpack-equip-bait-btn')){
-   const btn=document.createElement('button');btn.id='backpack-equip-bait-btn';btn.type='button';btn.className='modal-action-btn';btn.textContent='Equip Bait';btn.style.cssText='display:block;width:100%;margin-top:8px;background:#22c55e';btn.onclick=openBaitPicker;
-   baitArea.parentElement.appendChild(btn);
- }
- const oldWormToggle=document.getElementById('backpack-bait-toggle-btn');if(oldWormToggle)oldWormToggle.remove();
- const grill=document.getElementById('cooking-grill-surface');if(grill){grill.style.width='100%';grill.style.maxWidth='100%';grill.style.height='230px';grill.style.aspectRatio='auto';grill.style.backgroundSize='100% 100%';grill.style.backgroundPosition='center';grill.style.backgroundRepeat='no-repeat';grill.onclick=()=>cookOnHotZone();grill.ondragover=e=>e.preventDefault();grill.ondrop=e=>{e.preventDefault();cookOnHotZone();};}
- const active=document.getElementById('cooking-active-fish');if(active){active.style.left='8%';active.style.top='18%';active.style.width='62%';active.style.height='64%';active.style.zIndex='5';active.style.cursor='grab';}
- const modal=document.getElementById('modal-cooking');if(modal){modal.querySelectorAll('#cooking-hot-zone,#cooking-rest-zone,#cooking-flip-btn').forEach(x=>x.remove());const card=modal.querySelector('.modal-card');if(card){card.querySelectorAll('button').forEach(b=>{if(/HOT ZONE|REST ZONE|Flip Fish/i.test(b.textContent))b.remove();});}}
-});
-
-
-function cookOnHotZone(){if(!cookingSession)return showToast('Tap Add Fish first.');if(cookingSession.side===1&&cookingSession.one>=100){cookingSession.rested=true;showToast('Side 1 rested. Double-tap the fish to flip it.');return;}if(cookingSession.side===2&&cookingSession.two>=100)return;const key=cookingSession.side===1?'one':'two';cookingSession[key]=Math.min(100,cookingSession[key]+10);const bar=document.getElementById(cookingSession.side===1?'cook-side-one':'cook-side-two');if(bar)bar.style.width=cookingSession[key]+'%';const status=document.getElementById('cooking-status');if(cookingSession[key]>=100&&cookingSession.side===1){cookingSession.rested=true;if(status)status.textContent='Side 1 is ready. Double-tap the fish to flip it.';}else if(status)status.textContent=`Side ${cookingSession.side}: ${cookingSession[key]}% cooked.`;if(cookingSession.side===2&&cookingSession.two>=100)finishCooking();}
-function flipCookingFish(){if(!cookingSession)return;if(cookingSession.side===1){if(cookingSession.one<100){showToast('Cook side 1 fully before flipping.');return;}cookingSession.rested=true;cookingSession.side=2;const status=document.getElementById('cooking-status');if(status)status.textContent='Side 2: tap the grill to cook.';return;}showToast('You are already cooking side 2.');}
-function handleCookingFishTap(){const now=Date.now();if(now-lastCookingTapAt<350){flipCookingFish();lastCookingTapAt=0;}else{lastCookingTapAt=now;}}
-
-</script>
-
+  </script>
 </body>
 </html>
