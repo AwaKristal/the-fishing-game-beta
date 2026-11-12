@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -1605,14 +1605,31 @@
         <button type="button" class="modal-action-btn" style="background:#c0392b;" onclick="adminModifyRooms(-1)">Remove Rooms</button>
       </div>
 
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3>User Baits (Give / Remove)</h3>
+      <div id="admin-target-baits-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
+        <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view baits...</p>
+      </div>
       <div class="form-group">
-        <label>Bait Name (e.g. Worm Bait or Mini Tuna Cube)</label>
-        <input type="text" id="adminBaitName" placeholder="Type bait name..." autocomplete="off">
+        <label>Give Bait (e.g. Worm Bait or Mini Tuna Cube)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="adminBaitName" placeholder="Bait name..." autocomplete="off" style="flex:2;">
+          <input type="number" id="adminBaitQty" placeholder="Qty" value="1" min="1" autocomplete="off" style="flex:1;">
+        </div>
       </div>
       <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('bait')">Give Baits</button>
+
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3>User Cosmetics (Give / Remove)</h3>
+      <div id="admin-target-cosmetics-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
+        <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view cosmetics...</p>
+      </div>
       <div class="form-group">
-        <label>Cosmetic Name (type the exact name)</label>
-        <input type="text" id="adminCosmeticName" placeholder="e.g. Sandcastle" autocomplete="off">
+        <label>Give Cosmetic (type the exact name)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="adminCosmeticName" placeholder="e.g. Sandcastle" autocomplete="off" style="flex:2;">
+          <input type="number" id="adminCosmeticQty" placeholder="Qty" value="1" min="1" autocomplete="off" style="flex:1;">
+        </div>
       </div>
       <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('cosmetic')">Give Cosmetics</button>
 
@@ -4521,8 +4538,12 @@
       const statRooms = document.getElementById('admin-stat-rooms');
       const statBaits = document.getElementById('admin-stat-baits');
 
+      const baitsListEl = document.getElementById('admin-target-baits-list');
+      const cosListEl = document.getElementById('admin-target-cosmetics-list');
       if (!username) {
         listContainer.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view fishes...</p>';
+        if (baitsListEl) baitsListEl.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view baits...</p>';
+        if (cosListEl) cosListEl.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view cosmetics...</p>';
         statCoins.innerText = '💰 Coins: 0';
         statTanks.innerText = 'Mini Tanks: 0';
         statRooms.innerText = 'Aquarium Rooms: 1';
@@ -4534,6 +4555,8 @@
         const targetUid = await getUidByUsername(username);
         if (!targetUid) {
           listContainer.innerHTML = '<p style="font-size:0.8rem; color:#e74c3c; text-align:center; margin:10px 0;">User not found.</p>';
+          if (baitsListEl) baitsListEl.innerHTML = '<p style="font-size:0.8rem; color:#e74c3c; text-align:center; margin:10px 0;">User not found.</p>';
+          if (cosListEl) cosListEl.innerHTML = '<p style="font-size:0.8rem; color:#e74c3c; text-align:center; margin:10px 0;">User not found.</p>';
           statCoins.innerText = '💰 Coins: 0';
           statTanks.innerText = 'Mini Tanks: 0';
           statRooms.innerText = 'Aquarium Rooms: 1';
@@ -5189,14 +5212,64 @@
     host.innerHTML = `
       <div id="modal-grill-station" class="rebuild-modal"><div class="rebuild-card">
         <button class="rebuild-btn red" style="float:right" onclick="closeGrillStation()">Close</button><h2>Grill Station</h2>
-        <div id="grill-fish-stage" style="background-image:none"><img src="${IMG.grillTop}" alt="Grill top" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none"><img id="grill-fish-image" class="grill-fish" style="display:none" ondblclick="flipGrillFish()"></div>
-        <p id="grill-status" style="font-size:.9rem;color:#475569">Add a fish to begin. Tap the fish to move it between cooking positions; double-tap to flip.</p>
-        <button class="rebuild-btn" onclick="openGrillFishPicker()">Add Fish</button>
-        <button class="rebuild-btn alt" onclick="finishGrilling()"><img src="${IMG.cook}" alt="Cook" style="width:28px;height:28px;object-fit:contain;vertical-align:middle"> Finish Cooking</button>
+        <div id="grill-fish-stage" style="background-image:url('${IMG.grill}')"><img src="${IMG.grillTop}" alt="Grill top" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none"><img id="grill-fish-image" class="grill-fish" style="display:none" ondblclick="flipGrillFish()"></div>
+        <p id="grill-status" style="font-size:.9rem;color:#475569">Add a fish to begin. Drag/tap to move between hot & rest areas, or press Flip Fish.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+          <button class="rebuild-btn" onclick="openGrillFishPicker()">Add Fish</button>
+          <button id="btn-flip-grill-fish" class="rebuild-btn" style="background:#d97706" onclick="flipGrillFish()">🔄 Flip Fish</button>
+          <button class="rebuild-btn alt" onclick="finishGrilling()"><img src="${IMG.cook}" alt="Cook" style="width:28px;height:28px;object-fit:contain;vertical-align:middle"> Finish Cooking</button>
+        </div>
         <div id="grill-fish-picker" style="display:none;margin-top:10px"><h3>Select a fish</h3><div id="grill-fish-options" class="rebuild-grid"></div></div>
       </div></div>
       <div id="modal-equip-bait" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-equip-bait')">Close</button><h2>Equip Bait</h2><div id="bait-options" class="rebuild-grid"></div></div></div>
-      <div id="modal-make-offer" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-make-offer')">Close</button><h2>Make Offer</h2><label>Item type</label><select id="offer-kind" class="rebuild-field" onchange="refreshOfferItems()"><option value="fish">Fish</option><option value="cosmetic">Cosmetics</option></select><label>Item</label><select id="offer-item" class="rebuild-field" onchange="previewOffer()"></select><label>Quantity</label><input id="offer-quantity" class="rebuild-field" type="number" min="1" value="1" oninput="previewOffer()"><label>Total price (Coins)</label><input id="offer-price" class="rebuild-field" type="number" min="1" value="1" oninput="previewOffer()"><p id="offer-preview">Choose an item to preview your offer.</p><button class="rebuild-btn" onclick="publishOffer()">Publish Offer</button></div></div>
+      <div id="modal-make-offer" class="rebuild-modal"><div class="rebuild-card" style="max-width:560px">
+  <button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-make-offer')">Close</button>
+  <h2 style="margin-top:0">Make Custom Offer</h2>
+  <p style="font-size:.85rem;color:#64748b;margin:0 0 10px">Mix different fish types (raw or cooked), cosmetics, or baits into a single bundle offer!</p>
+  
+  <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:10px;margin-bottom:10px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <div style="flex:1;min-width:120px">
+        <label style="font-size:.8rem;font-weight:bold">Category</label>
+        <select id="offer-kind" class="rebuild-field" style="margin:2px 0" onchange="refreshOfferItems()">
+          <option value="fish">Fish</option>
+          <option value="cosmetic">Cosmetics</option>
+          <option value="bait">Baits</option>
+        </select>
+      </div>
+      <div style="flex:2;min-width:160px">
+        <label style="font-size:.8rem;font-weight:bold">Select Item</label>
+        <select id="offer-item" class="rebuild-field" style="margin:2px 0" onchange="onOfferItemSelectChange()"></select>
+      </div>
+      <div style="flex:0 0 80px">
+        <label style="font-size:.8rem;font-weight:bold">Qty</label>
+        <input id="offer-quantity" class="rebuild-field" style="margin:2px 0" type="number" min="1" value="1">
+      </div>
+    </div>
+    <button type="button" class="rebuild-btn alt" style="width:100%;margin:8px 0 0" onclick="addOfferBundleItem()">+ Add Item to Bundle</button>
+  </div>
+
+  <div style="margin-bottom:10px">
+    <label style="font-size:.85rem;font-weight:bold;color:#1e3a8a">Items in Your Offer Bundle (<span id="offer-bundle-count">0</span>):</label>
+    <div id="offer-bundle-list" style="max-height:150px;overflow-y:auto;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:8px;margin-top:4px">
+      <p style="font-size:.8rem;color:#64748b;text-align:center;margin:8px 0">No items added yet. Add one or more items above!</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div style="flex:2;min-width:160px">
+      <label style="font-size:.8rem;font-weight:bold">Offer Title / Note (Optional)</label>
+      <input id="offer-title" class="rebuild-field" type="text" maxlength="40" placeholder="e.g. Rare Shark + Cooked Tuna Pack!" oninput="previewOffer()">
+    </div>
+    <div style="flex:1;min-width:120px">
+      <label style="font-size:.8rem;font-weight:bold">Total Price (Coins)</label>
+      <input id="offer-price" class="rebuild-field" type="number" min="1" value="50" oninput="previewOffer()">
+    </div>
+  </div>
+
+  <p id="offer-preview" style="font-size:.85rem;color:#334155;background:#eef6ff;padding:8px;border-radius:8px;margin:6px 0 10px">Add items to preview your offer.</p>
+  <button type="button" class="rebuild-btn" style="width:100%;font-size:1rem" onclick="publishOffer()">Publish Offer</button>
+</div></div>
       <div id="modal-bob-trade" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-bob-trade')">Close</button><h2>Bob's Special Trade</h2><p>Give Bob one Bluefin Tuna with both sides Cooked or Well Cooked. He will prepare a Mini Tuna Cube in 10 minutes.</p><div id="bob-trade-status"></div><button class="rebuild-btn" onclick="startBobTrade()">Give Bluefin Tuna</button><button class="rebuild-btn alt" onclick="claimBobReward()">Claim Mini Tuna Cube</button></div></div>
       <div id="modal-shop-pages" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-shop-pages')">Close</button><h2>Shop</h2><div id="shop-page-items" class="rebuild-grid"></div><div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px"><button class="rebuild-btn alt" onclick="changeShopPage(-1)">Previous</button><span id="shop-page-label"></span><button class="rebuild-btn alt" onclick="changeShopPage(1)">Next</button></div></div></div>
       <div id="modal-cosmetics" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-cosmetics')">Close</button><h2>Cosmetics</h2><div id="cosmetic-inventory" class="rebuild-grid"></div></div></div>`;
@@ -5235,8 +5308,7 @@
     if (admin && !document.getElementById('admin-give-rebuild')) {
       const sec=document.createElement('section'); sec.id='admin-give-rebuild'; sec.style.cssText='border:1px solid #cbd5e1;padding:10px;border-radius:9px;margin:12px 0';
       const overview=document.getElementById('admin-user-stats-box');if(overview&&!document.getElementById('admin-stat-rebuild-items')){const extra=document.createElement('div');extra.id='admin-stat-rebuild-items';extra.innerHTML='<span id="admin-stat-cubes">Mini Tuna Cubes: 0</span><span id="admin-stat-cosmetics">Cosmetics: 0</span>';overview.appendChild(extra);}
-      sec.innerHTML=`<h3>Give Bait / Cosmetic</h3><label>Bait name</label><input id="admin-rebuild-bait-name" class="rebuild-field" type="text" placeholder="e.g. Worm Bait or Mini Tuna Cube"><button class="rebuild-btn" onclick="adminGiveRebuildItem('bait')">Give Bait</button><label style="display:block;margin-top:10px">Cosmetic name</label><input id="admin-rebuild-cosmetic-name" class="rebuild-field" type="text" placeholder="e.g. Sandcastle"><button class="rebuild-btn alt" onclick="adminGiveRebuildItem('cosmetic')">Give Cosmetic</button>`;
-      admin.appendChild(sec);
+      /* Removed duplicated bottom Give Bait/Cosmetic section */
     }
   }
 
@@ -5301,11 +5373,23 @@
       grillState=d.grillState||null;renderGrillState();document.getElementById('modal-grill-station').style.display='flex';startGrillTicker();
     }catch(e){showToast(e.message);}
   }
+  function getCookedFilter(pct){
+    const p=Math.max(0,Math.min(100,Number(pct)||0));
+    if(p<=0)return 'none';
+    const brightness=(1-(p/100)*0.72).toFixed(2);
+    const sepia=Math.min(0.85,(p/100)*0.85).toFixed(2);
+    const contrast=(1+(p/100)*0.35).toFixed(2);
+    return `brightness(${brightness}) sepia(${sepia}) contrast(${contrast})`;
+  }
   function renderGrillState(){
     const img=document.getElementById('grill-fish-image'),status=document.getElementById('grill-status');
-    if(!grillState){img.style.display='none';status.textContent='Add a fish to begin. The fish cooks at 1% per second in the hot area.';return;}
-    const f=ALLOWED_FISH_TYPES.find(x=>x.name===grillState.fish.name);img.src=f?f.img:'';img.style.display='block';img.style.left=grillState.zone==='rest'?'70%':'30%';
-    status.textContent=`${grillState.fish.name} — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). ${grillState.activeSide===1?'Side 1':'Side 2'} facing up.`;
+    if(!grillState){img.style.display='none';img.style.filter='none';img.style.transform='scaleX(1)';status.textContent='Add a fish to begin. The fish cooks at 1% per second in the hot area.';return;}
+    const f=ALLOWED_FISH_TYPES.find(x=>x.name===grillState.fish.name);img.src=f?f.img:'';img.style.display='block';
+    img.style.left=grillState.zone==='rest'?'68%':'28%';
+    const activePct=grillState.activeSide===1?grillState.side1:grillState.side2;
+    img.style.filter=getCookedFilter(activePct);
+    img.style.transform=grillState.activeSide===2?'scaleX(-1) scaleY(-1)':'scaleX(1) scaleY(1)';
+    status.textContent=`${grillState.fish.name} — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: ${grillState.activeSide===1?'Side 1':'Side 2'} (${grillState.zone==='rest'?'Resting':'On Fire'}).`;
   }
   async function openGrillFishPicker(){
     const d=(await playerRef().get()).data()||{};const fishes=d.fishes||[];const displayed=Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean);
@@ -5323,7 +5407,7 @@
   function startGrillTicker(){if(grillTimer)clearInterval(grillTimer);grillTimer=setInterval(()=>{if(!grillState||grillState.zone!=='hot')return;const key=grillState.activeSide===1?'side1':'side2';if(grillState[key]>=100)return;grillState[key]=Math.min(99,grillState[key]+1);if(grillState[key]>=99){grillState.zone='rest';showToast('Cooking paused at 99% (Well Cooked). Move the fish back to the hot area only if you want to risk burning it.');}renderGrillState();},1000);if(grillSaveTimer)clearInterval(grillSaveTimer);grillSaveTimer=setInterval(saveGrillState,5000);}
   async function saveGrillState(){if(!auth.currentUser||!grillState)return;try{await playerRef().update({grillState:grillState});}catch(e){console.error('Grill save failed',e);}}
   function toggleGrillZone(){if(!grillState)return;grillState.zone=grillState.zone==='hot'?'rest':'hot';renderGrillState();saveGrillState();}
-  function flipGrillFish(){if(!grillState)return;if(grillState.zone==='rest'&&grillState[grillState.activeSide===1?'side1':'side2']>=99){grillState.zone='hot';}grillState.activeSide=grillState.activeSide===1?2:1;const im=document.getElementById('grill-fish-image');im.style.transform=im.style.transform==='scaleX(-1)'?'scaleX(1)':'scaleX(-1)';renderGrillState();saveGrillState();}
+  function flipGrillFish(){if(!grillState){showToast('Add a fish to the grill first.');return;}grillState.activeSide=grillState.activeSide===1?2:1;const nextPct=grillState[grillState.activeSide===1?'side1':'side2'];if(grillState.zone==='rest'&&nextPct<99){grillState.zone='hot';}renderGrillState();saveGrillState();showToast(`Flipped to Side ${grillState.activeSide}!`);}
   async function finishGrilling(){if(!grillState)return;try{const done={...grillState.fish,cooking:{side1:grillState.side1,side2:grillState.side2,stage1:stage(grillState.side1),stage2:stage(grillState.side2),cookedAt:Date.now()}};const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists)throw Error('Player profile missing.');const d=s.data()||{};if(!d.grillState)throw Error('No fish is on the Grill.');tx.update(ref,{fishes:[...(d.fishes||[]),done],grillState:null,achievements:{...(d.achievements||{}),cookMaster:true}});});grillState=null;renderGrillState();showToast('Cooked fish returned to your Backpack.');loadBackpackData();}catch(e){showToast('Could not finish cooking: '+e.message);}}
   async function closeGrillStation(){await saveGrillState();if(grillTimer)clearInterval(grillTimer);if(grillSaveTimer)clearInterval(grillSaveTimer);grillTimer=grillSaveTimer=null;closeRebuildModal('modal-grill-station');}
   window.openGrillStation=openGrillStation;window.openGrillFishPicker=openGrillFishPicker;window.addFishToGrill=addFishToGrill;window.toggleGrillZone=toggleGrillZone;window.flipGrillFish=flipGrillFish;window.finishGrilling=finishGrilling;window.closeGrillStation=closeGrillStation;
@@ -5362,35 +5446,445 @@
   }
   window.placeSandcastleInSelectedTank=placeSandcastleInSelectedTank;
 
-  // Market Make Offer supports individual fish IDs and Sandcastle quantities.
-  async function openMakeOffer(){selectedOffer=null;document.getElementById('modal-make-offer').style.display='flex';await refreshOfferItems();}
+  // Customizable Multi-Item Bundle Make Offer & Functional Market Buy
+  let offerBundle = [];
+
+  async function openMakeOffer(){
+    offerBundle = [];
+    const titleEl = document.getElementById('offer-title');
+    if (titleEl) titleEl.value = '';
+    const priceEl = document.getElementById('offer-price');
+    if (priceEl) priceEl.value = 50;
+    document.getElementById('modal-make-offer').style.display='flex';
+    renderOfferBundle();
+    await refreshOfferItems();
+  }
+
+  function getItemIcon(kind, name){
+    if(kind==='cosmetic') return IMG.sandcastle;
+    if(kind==='bait') return /^mini tuna cube$/i.test(name)?IMG.tunaCube:'https://i.postimg.cc/KYgqH6Sn/worm-bait.png';
+    const meta=ALLOWED_FISH_TYPES.find(f=>f.name===name);
+    return meta?meta.img:'';
+  }
+
   async function refreshOfferItems(){
     const kind=document.getElementById('offer-kind').value,sel=document.getElementById('offer-item');
-    try{const d=(await playerRef().get()).data()||{};let opts=[];
+    try{
+      const d=(await playerRef().get()).data()||{};
+      let opts=[];
       if(kind==='fish'){
-        const fs=d.fishes||[], displayed=Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean);
+        const fs=d.fishes||[];
+        const displayedCounts={};
+        Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean).forEach(n=>{displayedCounts[n]=(displayedCounts[n]||0)+1;});
         const snap=await db.collection('marketListings').where('sellerUid','==',auth.currentUser.uid).get();
-        const reserved=new Set();snap.forEach(doc=>{const x=doc.data();(x.fishData||[]).forEach(f=>{if(f.id)reserved.add(f.id);});if(x.fishId)reserved.add(x.fishId);});
-        const groups={};fs.forEach(f=>{const m=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!m||m.isLimited||['Legacy','Secret'].includes(m.rarity)||displayed.includes(f.name)||(f.id&&reserved.has(f.id)))return;const cook=f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw';const k=`${f.name}::${cook}`;(groups[k]||(groups[k]={name:f.name,cook,fishes:[]})).fishes.push(f);});
-        opts=Object.entries(groups).map(([key,g])=>({value:encodeURIComponent(key),key,name:g.name,cook:g.cook,available:g.fishes.length,label:`${g.name}${g.cook==='raw'?'':` (${g.cook}% cooked)`}`}));
-      } else {const q=(d.cosmeticsInventory||{}).Sandcastle||0;if(q>0&&!d.aquariumSandcastle)opts=[{value:'Sandcastle',label:'Sandcastle',name:'Sandcastle',available:q}];}
-      sel.innerHTML=opts.length?opts.map(o=>`<option value="${esc(o.value)}">${esc(o.label)} — x${o.available}</option>`).join(''):'<option value="">No available items</option>';sel.dataset.options=JSON.stringify(opts);document.getElementById('offer-quantity').max=opts[0]?.available||1;document.getElementById('offer-quantity').value=1;previewOffer();
+        const reserved=new Set();
+        snap.forEach(doc=>{
+          const x=doc.data();
+          (x.fishData||[]).forEach(f=>{if(f.id)reserved.add(f.id);});
+          (x.bundleItems||[]).forEach(b=>{(b.fishData||[]).forEach(f=>{if(f.id)reserved.add(f.id);});});
+          if(x.fishId)reserved.add(x.fishId);
+        });
+        const groups={};
+        const skippedDisplayed={};
+        fs.forEach(f=>{
+          const m=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);
+          if(!m||m.isLimited||['Legacy','Secret'].includes(m.rarity)||(f.id&&reserved.has(f.id)))return;
+          if((skippedDisplayed[f.name]||0)<(displayedCounts[f.name]||0)){
+            skippedDisplayed[f.name]=(skippedDisplayed[f.name]||0)+1;
+            return;
+          }
+          const cook=f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw';
+          const k=`${f.name}::${cook}`;
+          (groups[k]||(groups[k]={name:f.name,cook,fishes:[],baseValue:m.value})).fishes.push(f);
+        });
+        opts=Object.entries(groups).map(([key,g])=>{
+          const alreadyInBundle=offerBundle.filter(b=>b.kind==='fish'&&b.key===key).reduce((s,b)=>s+b.quantity,0);
+          const avail=Math.max(0,g.fishes.length-alreadyInBundle);
+          return {
+            kind:'fish',
+            value:encodeURIComponent(key),
+            key,
+            name:g.name,
+            cook:g.cook,
+            baseValue:g.baseValue,
+            available:avail,
+            label:`${g.name}${g.cook==='raw'?'':` (${g.cook}% cooked)`}`
+          };
+        }).filter(o=>o.available>0);
+      } else if(kind==='cosmetic'){
+        const inv=d.cosmeticsInventory||{};
+        Object.entries(inv).forEach(([cName,count])=>{
+          const n=Number(count)||0;
+          const alreadyInBundle=offerBundle.filter(b=>b.kind==='cosmetic'&&b.name===cName).reduce((s,b)=>s+b.quantity,0);
+          const avail=Math.max(0,n-alreadyInBundle);
+          if(avail>0){
+            opts.push({kind:'cosmetic',value:cName,key:cName,name:cName,baseValue:500,available:avail,label:cName});
+          }
+        });
+      } else if(kind==='bait'){
+        const baits=[
+          {name:'Worm Bait',count:d.wormBaitsCount||0,baseValue:250},
+          {name:'Mini Tuna Cube',count:d.miniTunaCubesCount||0,baseValue:400}
+        ];
+        baits.forEach(b=>{
+          const alreadyInBundle=offerBundle.filter(x=>x.kind==='bait'&&x.name===b.name).reduce((s,x)=>s+x.quantity,0);
+          const avail=Math.max(0,b.count-alreadyInBundle);
+          if(avail>0){
+            opts.push({kind:'bait',value:b.name,key:b.name,name:b.name,baseValue:b.baseValue,available:avail,label:b.name});
+          }
+        });
+      }
+      sel.innerHTML=opts.length?opts.map(o=>`<option value="${esc(o.value)}">${esc(o.label)} (Available: ${o.available})</option>`).join(''):'<option value="">No available items</option>';
+      sel.dataset.options=JSON.stringify(opts);
+      onOfferItemSelectChange();
     }catch(e){showToast(e.message);}
   }
-  async function previewOffer(){const q=safeInt(document.getElementById('offer-quantity').value),p=safeInt(document.getElementById('offer-price').value);const sel=document.getElementById('offer-item');const opt=JSON.parse(sel.dataset.options||'[]').find(x=>x.value===sel.value);const available=opt?.available||0;document.getElementById('offer-quantity').max=available||1;document.getElementById('offer-preview').textContent=opt?`Selected: ${opt.label}. Available: ${available}. Quantity: ${q||'—'}. Total price: ${p||'—'} Coins.`:'No eligible item available.';}
-  async function publishOffer(){if(!checkCooldown())return;const kind=document.getElementById('offer-kind').value,sel=document.getElementById('offer-item'),opts=JSON.parse(sel.dataset.options||'[]'),o=opts.find(x=>x.value===sel.value),qty=safeInt(document.getElementById('offer-quantity').value),price=safeInt(document.getElementById('offer-price').value);if(!o||!qty||!price||qty>o.available){showToast('Choose a valid item and a quantity within your available inventory.');return;}
-    try{const ref=playerRef(),listingRef=db.collection('marketListings').doc();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(kind==='fish'){const fs=[...(d.fishes||[])],key=decodeURIComponent(o.value);const chosen=fs.filter(f=>`${f.name}::${f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw'}`===key);if(chosen.length<qty)throw Error('Not enough matching fish remain in your inventory.');const take=chosen.slice(0,qty);const ids=new Set(take);const remaining=fs.filter(f=>!ids.has(f));tx.update(ref,{fishes:remaining});tx.set(listingRef,{sellerUid:auth.currentUser.uid,sellerName:d.username||'Player',itemType:'fish',fishData:take,fishName:o.name,price,quantity:qty,createdAt:firebase.firestore.FieldValue.serverTimestamp()});}else{const inv={...(d.cosmeticsInventory||{})};if((inv.Sandcastle||0)<qty||d.aquariumSandcastle)throw Error('Not enough unplaced Sandcastles.');inv.Sandcastle-=qty;tx.update(ref,{cosmeticsInventory:inv});tx.set(listingRef,{sellerUid:auth.currentUser.uid,sellerName:d.username||'Player',itemType:'cosmetic',cosmeticName:'Sandcastle',quantity:qty,price,createdAt:firebase.firestore.FieldValue.serverTimestamp()});}});
-      showToast('Offer published.');closeRebuildModal('modal-make-offer');loadMarketListings();loadMyActiveListings();loadBackpackData();
-    }catch(e){showToast('Offer failed: '+e.message);}}
-  window.openMakeOffer=openMakeOffer;window.refreshOfferItems=refreshOfferItems;window.previewOffer=previewOffer;window.publishOffer=publishOffer;
 
-  // Listing display and cancellation support both legacy fish listings and the new offer schema.
-  window.loadMarketListings=async function(){const c=document.getElementById('market-listings-container');if(!c)return;c.innerHTML='<p>Loading offers...</p>';try{const snap=await db.collection('marketListings').orderBy('createdAt','desc').get();if(snap.empty){c.innerHTML='<p>No player offers right now.</p>';return;}c.innerHTML=snap.docs.map(doc=>{const x=doc.data(),mine=auth.currentUser&&x.sellerUid===auth.currentUser.uid;const isCos=x.itemType==='cosmetic';const name=isCos?(x.cosmeticName||'Cosmetic'):(x.fishName||((x.fishData||[])[0]||{}).name||'Fish');const meta=ALLOWED_FISH_TYPES.find(f=>f.name===name);const img=isCos?IMG.sandcastle:(meta?meta.img:'');const cooked=(x.fishData||[]).some(f=>f.cooking);const statuses=(x.fishData||[]).filter(f=>f.cooking).map(f=>`${f.name}: ${f.cooking.stage1}/${f.cooking.stage2}`).join(', ');return `<div class="rebuild-item" style="display:flex;align-items:center;gap:10px;text-align:left"><img src="${img}"><div style="flex:1"><strong>${esc(name)} x${x.quantity||1}</strong><p>Seller: ${esc(x.sellerName||'Player')} · ${x.price} Coins</p>${cooked?`<small>${esc(statuses)}</small>`:''}</div>${mine?'<strong>Your offer</strong>':'<button class="rebuild-btn alt" disabled title="Purchases need secure server-side settlement under the supplied Firestore rules">Buy unavailable</button>'}</div>`;}).join('');}catch(e){c.innerHTML=`<p>Could not load offers: ${esc(e.message)}</p>`;}};
-  window.loadMyActiveListings=async function(){const c=document.getElementById('market-my-active-listings');if(!c||!auth.currentUser)return;try{const snap=await db.collection('marketListings').where('sellerUid','==',auth.currentUser.uid).get();if(snap.empty){c.innerHTML='<p>You have no active offers.</p>';return;}c.innerHTML=snap.docs.map(doc=>{const x=doc.data(),cos=x.itemType==='cosmetic',name=cos?(x.cosmeticName||'Cosmetic'):(x.fishName||'Fish'),meta=ALLOWED_FISH_TYPES.find(f=>f.name===name);return `<div class="rebuild-item" style="display:flex;align-items:center;gap:8px"><img src="${cos?IMG.sandcastle:(meta?meta.img:'')}" style="width:35px;height:35px;object-fit:contain"><span style="flex:1"><strong>${esc(name)} x${x.quantity||1}</strong> · ${x.price} Coins</span><button class="rebuild-btn red" onclick="cancelMarketListing('${doc.id}')">Cancel & Retrieve</button></div>`;}).join('');}catch(e){c.textContent='Error loading active offers: '+e.message;}};
-  window.cancelMarketListing=async function(listingId){if(!checkCooldown())return;try{const ref=playerRef(),lr=db.collection('marketListings').doc(listingId);await db.runTransaction(async tx=>{const ls=await tx.get(lr),ps=await tx.get(ref);if(!ls.exists||!ps.exists)throw Error('Offer or player profile no longer exists.');const x=ls.data();if(x.sellerUid!==auth.currentUser.uid)throw Error('Not authorized.');const d=ps.data()||{};if(x.itemType==='cosmetic'){const inv={...(d.cosmeticsInventory||{})};const n=x.cosmeticName||'Sandcastle';inv[n]=(inv[n]||0)+(x.quantity||1);tx.update(ref,{cosmeticsInventory:inv});}else{const arr=Array.isArray(x.fishData)?x.fishData:(x.fishName?[{name:x.fishName,timestamp:new Date().toISOString()}]:[]);tx.update(ref,{fishes:[...(d.fishes||[]),...arr]});}tx.delete(lr);});showToast('Offer cancelled; all items returned.');loadMyActiveListings();loadMyFishesForMarket();loadBackpackData();}catch(e){showToast('Cancel failed: '+e.message);}};
+  function onOfferItemSelectChange(){
+    const sel=document.getElementById('offer-item');
+    const qtyEl=document.getElementById('offer-quantity');
+    if(!sel||!qtyEl)return;
+    const opts=JSON.parse(sel.dataset.options||'[]');
+    const opt=opts.find(x=>x.value===sel.value);
+    qtyEl.max=opt?.available||1;
+    qtyEl.value=1;
+  }
+
+  function addOfferBundleItem(){
+    const sel=document.getElementById('offer-item');
+    const opts=JSON.parse(sel.dataset.options||'[]');
+    const opt=opts.find(x=>x.value===sel.value);
+    const qty=safeInt(document.getElementById('offer-quantity').value);
+    if(!opt||!qty||qty>opt.available){
+      showToast('Select a valid item and quantity within your available amount.');
+      return;
+    }
+    const existing=offerBundle.find(b=>b.kind===opt.kind&&b.key===opt.key);
+    if(existing){
+      existing.quantity+=qty;
+    } else {
+      offerBundle.push({
+        kind:opt.kind,
+        key:opt.key,
+        name:opt.name,
+        cook:opt.cook||'raw',
+        label:opt.label,
+        baseValue:opt.baseValue||10,
+        quantity:qty
+      });
+    }
+    const suggestedPrice=offerBundle.reduce((sum,b)=>sum+(b.baseValue*b.quantity),0);
+    const priceEl=document.getElementById('offer-price');
+    if(priceEl) priceEl.value=Math.max(1,suggestedPrice);
+    renderOfferBundle();
+    refreshOfferItems();
+  }
+
+  function removeOfferBundleItem(index){
+    offerBundle.splice(index,1);
+    renderOfferBundle();
+    refreshOfferItems();
+  }
+
+  function renderOfferBundle(){
+    const listEl=document.getElementById('offer-bundle-list');
+    const countEl=document.getElementById('offer-bundle-count');
+    const totalCount=offerBundle.reduce((s,b)=>s+b.quantity,0);
+    if(countEl) countEl.textContent=totalCount;
+    if(listEl){
+      if(!offerBundle.length){
+        listEl.innerHTML='<p style="font-size:.8rem;color:#64748b;text-align:center;margin:8px 0">No items added yet. Add one or more items above!</p>';
+      } else {
+        listEl.innerHTML=offerBundle.map((b,idx)=>`
+          <div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:5px 8px;margin-bottom:5px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <img src="${getItemIcon(b.kind,b.name)}" style="width:28px;height:28px;object-fit:contain">
+              <span style="font-size:.82rem"><strong>${esc(b.label)}</strong> x${b.quantity} <small style="color:#64748b">(${esc(b.kind)})</small></span>
+            </div>
+            <button type="button" class="rebuild-btn red" style="padding:2px 7px;font-size:.72rem;margin:0" onclick="removeOfferBundleItem(${idx})">Remove</button>
+          </div>
+        `).join('');
+      }
+    }
+    previewOffer();
+  }
+
+  function previewOffer(){
+    const p=safeInt(document.getElementById('offer-price')?.value);
+    const title=(document.getElementById('offer-title')?.value||'').trim();
+    const previewEl=document.getElementById('offer-preview');
+    if(!previewEl)return;
+    if(!offerBundle.length){
+      previewEl.textContent='Add at least one item to your bundle to preview your offer.';
+      return;
+    }
+    const summary=offerBundle.map(b=>`${b.quantity}x ${b.label}`).join(', ');
+    previewEl.innerHTML=`${title?`<strong>"${esc(title)}"</strong> — `:''}Bundle: <strong>${esc(summary)}</strong> · Total Price: <strong>${p||'—'} Coins</strong>`;
+  }
+
+  async function publishOffer(){
+    if(!checkCooldown())return;
+    if(!offerBundle.length){showToast('Add at least one item to your offer bundle.');return;}
+    const price=safeInt(document.getElementById('offer-price').value);
+    if(!price){showToast('Enter a valid price in Coins.');return;}
+    const title=(document.getElementById('offer-title')?.value||'').trim();
+    try{
+      const ref=playerRef(),listingRef=db.collection('marketListings').doc();
+      await db.runTransaction(async tx=>{
+        const s=await tx.get(ref);
+        if(!s.exists)throw Error('Player not found.');
+        const d=s.data()||{};
+        let fs=[...(d.fishes||[])];
+        let inv={...(d.cosmeticsInventory||{})};
+        let wormCount=d.wormBaitsCount||0;
+        let cubeCount=d.miniTunaCubesCount||0;
+        const resolvedBundle=[];
+        const allTakenFishes=[];
+
+        for(const item of offerBundle){
+          if(item.kind==='fish'){
+            const chosen=fs.filter(f=>`${f.name}::${f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw'}`===item.key);
+            if(chosen.length<item.quantity)throw Error(`Not enough ${item.label} in your inventory.`);
+            const take=chosen.slice(0,item.quantity);
+            const takenSet=new Set(take);
+            fs=fs.filter(f=>!takenSet.has(f));
+            allTakenFishes.push(...take);
+            resolvedBundle.push({kind:'fish',name:item.name,label:item.label,quantity:item.quantity,fishData:take});
+          } else if(item.kind==='cosmetic'){
+            if((inv[item.name]||0)<item.quantity)throw Error(`Not enough ${item.name} in your inventory.`);
+            inv[item.name]-=item.quantity;
+            resolvedBundle.push({kind:'cosmetic',name:item.name,label:item.label,quantity:item.quantity});
+          } else if(item.kind==='bait'){
+            if(/^worm bait$/i.test(item.name)){
+              if(wormCount<item.quantity)throw Error('Not enough Worm Baits.');
+              wormCount-=item.quantity;
+            } else {
+              if(cubeCount<item.quantity)throw Error('Not enough Mini Tuna Cubes.');
+              cubeCount-=item.quantity;
+            }
+            resolvedBundle.push({kind:'bait',name:item.name,label:item.label,quantity:item.quantity});
+          }
+        }
+
+        tx.update(ref,{
+          fishes:fs,
+          cosmeticsInventory:inv,
+          wormBaitsCount:wormCount,
+          miniTunaCubesCount:cubeCount
+        });
+
+        const first=resolvedBundle[0];
+        const totalQty=resolvedBundle.reduce((s,b)=>s+b.quantity,0);
+        tx.set(listingRef,{
+          sellerUid:auth.currentUser.uid,
+          sellerName:d.username||'Player',
+          offerTitle:title||null,
+          itemType:resolvedBundle.length>1?'bundle':first.kind,
+          bundleItems:resolvedBundle,
+          fishData:allTakenFishes,
+          fishName:first.kind==='fish'?first.name:null,
+          cosmeticName:first.kind==='cosmetic'?first.name:null,
+          price,
+          quantity:totalQty,
+          createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+      offerBundle=[];
+      showToast('Custom offer published to the Market!');
+      closeRebuildModal('modal-make-offer');
+      loadMarketListings();
+      loadMyActiveListings();
+      loadBackpackData();
+    }catch(e){showToast('Offer failed: '+e.message);}
+  }
+
+  window.openMakeOffer=openMakeOffer;
+  window.refreshOfferItems=refreshOfferItems;
+  window.onOfferItemSelectChange=onOfferItemSelectChange;
+  window.addOfferBundleItem=addOfferBundleItem;
+  window.removeOfferBundleItem=removeOfferBundleItem;
+  window.previewOffer=previewOffer;
+  window.publishOffer=publishOffer;
+
+  function normalizeListingItems(x){
+    if(Array.isArray(x.bundleItems)&&x.bundleItems.length) return x.bundleItems;
+    if(x.itemType==='cosmetic'){
+      return [{kind:'cosmetic',name:x.cosmeticName||'Sandcastle',label:x.cosmeticName||'Sandcastle',quantity:x.quantity||1}];
+    }
+    if(x.itemType==='bait'){
+      return [{kind:'bait',name:x.fishName||'Worm Bait',label:x.fishName||'Worm Bait',quantity:x.quantity||1}];
+    }
+    const fArr=Array.isArray(x.fishData)&&x.fishData.length?x.fishData:(x.fishName?[{name:x.fishName,timestamp:new Date().toISOString()}]:[]);
+    const fName=x.fishName||(fArr[0]&&fArr[0].name)||'Fish';
+    return [{kind:'fish',name:fName,label:fName,quantity:x.quantity||fArr.length||1,fishData:fArr}];
+  }
+
+  window.loadMarketListings=async function(){
+    const c=document.getElementById('market-listings-container');
+    if(!c)return;
+    c.innerHTML='<p style="color:#64748b;text-align:center;">Loading offers...</p>';
+    try{
+      const snap=await db.collection('marketListings').orderBy('createdAt','desc').get();
+      if(snap.empty){c.innerHTML='<p style="color:#64748b;text-align:center;">No player offers right now.</p>';return;}
+      c.innerHTML=snap.docs.map(doc=>{
+        const x=doc.data();
+        const mine=auth.currentUser&&x.sellerUid===auth.currentUser.uid;
+        const items=normalizeListingItems(x);
+        const first=items[0]||{kind:'fish',name:'Fish',quantity:1};
+        const img=getItemIcon(first.kind,first.name);
+        const heading=x.offerTitle?esc(x.offerTitle):(items.length>1?`Bundle (${items.length} types)`:`${esc(first.name)} x${first.quantity||1}`);
+        const details=items.map(it=>{
+          const cookedList=(it.fishData||[]).filter(f=>f.cooking);
+          const cookTag=cookedList.length?` [Cooked: ${cookedList.map(f=>`${f.cooking.stage1}/${f.cooking.stage2}`).join(', ')}]`:'';
+          return `${it.quantity||1}x ${it.name}${cookTag}`;
+        }).join(' · ');
+        return `
+          <div class="rebuild-item" style="display:flex;align-items:center;gap:10px;text-align:left">
+            <img src="${img}" style="width:46px;height:46px;object-fit:contain">
+            <div style="flex:1">
+              <strong style="color:#1e3a8a">${heading}</strong>
+              <p style="margin:2px 0;font-size:.82rem;color:#334155">${esc(details)}</p>
+              <small style="color:#64748b">Seller: <strong>${esc(x.sellerName||'Player')}</strong> · Price: <strong>${x.price} 💰</strong></small>
+            </div>
+            ${mine?'<span style="font-size:.78rem;color:#d97706;font-weight:bold">Your offer</span>':`<button type="button" class="rebuild-btn" style="background:#27ae60" onclick="buyMarketOffer('${doc.id}')">Buy (${x.price} 💰)</button>`}
+          </div>`;
+      }).join('');
+    }catch(e){c.innerHTML=`<p style="color:#e74c3c;text-align:center;">Could not load offers: ${esc(e.message)}</p>`;}
+  };
+
+  window.buyMarketOffer=async function(listingId){
+    if(!checkCooldown())return;
+    const user=auth.currentUser;
+    if(!user){showToast('You must be logged in to buy.');return;}
+    try{
+      const buyerRef=db.collection('jugadores').doc(user.uid);
+      const listingRef=db.collection('marketListings').doc(listingId);
+      let boughtSummary='';
+      let paidPrice=0;
+      await db.runTransaction(async tx=>{
+        const listingSnap=await tx.get(listingRef);
+        const buyerSnap=await tx.get(buyerRef);
+        if(!listingSnap.exists)throw Error('This offer was already sold or cancelled!');
+        if(!buyerSnap.exists)throw Error('Buyer profile not found.');
+        const x=listingSnap.data();
+        if(x.sellerUid===user.uid)throw Error('You cannot buy your own offer!');
+        const sellerRef=db.collection('jugadores').doc(x.sellerUid);
+        const sellerSnap=await tx.get(sellerRef);
+        const buyerData=buyerSnap.data()||{};
+        const price=Number(x.price)||0;
+        if((buyerData.coins||0)<price)throw Error(`Not enough coins! You need ${price} 💰.`);
+
+        const items=normalizeListingItems(x);
+        let newFishes=[...(buyerData.fishes||[])];
+        let newCosmetics={...(buyerData.cosmeticsInventory||{})};
+        let newWorms=buyerData.wormBaitsCount||0;
+        let newCubes=buyerData.miniTunaCubesCount||0;
+
+        for(const it of items){
+          if(it.kind==='fish'){
+            const fArr=Array.isArray(it.fishData)&&it.fishData.length?it.fishData:Array.from({length:it.quantity||1},()=>({id:'fish-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name:it.name,timestamp:new Date().toISOString()}));
+            newFishes.push(...fArr);
+          } else if(it.kind==='cosmetic'){
+            const cName=it.name||'Sandcastle';
+            newCosmetics[cName]=(newCosmetics[cName]||0)+(it.quantity||1);
+          } else if(it.kind==='bait'){
+            if(/^mini tuna cube$/i.test(it.name)) newCubes+=(it.quantity||1);
+            else newWorms+=(it.quantity||1);
+          }
+        }
+
+        tx.update(buyerRef,{
+          coins:(buyerData.coins||0)-price,
+          fishes:newFishes,
+          cosmeticsInventory:newCosmetics,
+          wormBaitsCount:newWorms,
+          miniTunaCubesCount:newCubes
+        });
+
+        if(sellerSnap.exists){
+          tx.update(sellerRef,{
+            coins:((sellerSnap.data()||{}).coins||0)+price
+          });
+        }
+
+        tx.delete(listingRef);
+        paidPrice=price;
+        boughtSummary=items.map(it=>`${it.quantity||1}x ${it.name}`).join(', ');
+      });
+      showToast(`Purchased ${boughtSummary} for ${paidPrice} 💰!`);
+      loadMarketListings();
+      loadBackpackData();
+      updateGameHUD();
+    }catch(e){showToast('Purchase failed: '+e.message);}
+  };
+
+  window.loadMyActiveListings=async function(){
+    const c=document.getElementById('market-my-active-listings');
+    if(!c||!auth.currentUser)return;
+    try{
+      const snap=await db.collection('marketListings').where('sellerUid','==',auth.currentUser.uid).get();
+      if(snap.empty){c.innerHTML='<p style="font-size:.8rem;color:#64748b;text-align:center;">You have no active offers.</p>';return;}
+      c.innerHTML=snap.docs.map(doc=>{
+        const x=doc.data();
+        const items=normalizeListingItems(x);
+        const first=items[0]||{kind:'fish',name:'Fish',quantity:1};
+        const label=x.offerTitle?`${x.offerTitle} (${items.map(i=>`${i.quantity}x ${i.name}`).join(', ')})`:items.map(i=>`${i.quantity||1}x ${i.name}`).join(', ');
+        return `
+          <div class="rebuild-item" style="display:flex;align-items:center;gap:8px;text-align:left">
+            <img src="${getItemIcon(first.kind,first.name)}" style="width:35px;height:35px;object-fit:contain">
+            <span style="flex:1;font-size:.82rem"><strong>${esc(label)}</strong> · ${x.price} 💰</span>
+            <button type="button" class="rebuild-btn red" style="padding:4px 8px;font-size:.75rem" onclick="cancelMarketListing('${doc.id}')">Cancel & Retrieve</button>
+          </div>`;
+      }).join('');
+    }catch(e){c.textContent='Error loading active offers: '+e.message;}
+  };
+
+  window.cancelMarketListing=async function(listingId){
+    if(!checkCooldown())return;
+    try{
+      const ref=playerRef(),lr=db.collection('marketListings').doc(listingId);
+      await db.runTransaction(async tx=>{
+        const ls=await tx.get(lr),ps=await tx.get(ref);
+        if(!ls.exists||!ps.exists)throw Error('Offer or player profile no longer exists.');
+        const x=ls.data();
+        if(x.sellerUid!==auth.currentUser.uid)throw Error('Not authorized.');
+        const d=ps.data()||{};
+        const items=normalizeListingItems(x);
+        let newFishes=[...(d.fishes||[])];
+        let newCosmetics={...(d.cosmeticsInventory||{})};
+        let newWorms=d.wormBaitsCount||0;
+        let newCubes=d.miniTunaCubesCount||0;
+
+        for(const it of items){
+          if(it.kind==='fish'){
+            const fArr=Array.isArray(it.fishData)&&it.fishData.length?it.fishData:Array.from({length:it.quantity||1},()=>({id:'fish-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),name:it.name,timestamp:new Date().toISOString()}));
+            newFishes.push(...fArr);
+          } else if(it.kind==='cosmetic'){
+            const cName=it.name||'Sandcastle';
+            newCosmetics[cName]=(newCosmetics[cName]||0)+(it.quantity||1);
+          } else if(it.kind==='bait'){
+            if(/^mini tuna cube$/i.test(it.name)) newCubes+=(it.quantity||1);
+            else newWorms+=(it.quantity||1);
+          }
+        }
+
+        tx.update(ref,{
+          fishes:newFishes,
+          cosmeticsInventory:newCosmetics,
+          wormBaitsCount:newWorms,
+          miniTunaCubesCount:newCubes
+        });
+        tx.delete(lr);
+      });
+      showToast('Offer cancelled; all items returned.');
+      loadMyActiveListings();
+      loadMyFishesForMarket();
+      loadBackpackData();
+    }catch(e){showToast('Cancel failed: '+e.message);}
+  };
 
   const originalTargetInventoryLoader=window.loadTargetUserInventoryForAdmin;
-  window.loadTargetUserInventoryForAdmin=async function(){if(originalTargetInventoryLoader)await originalTargetInventoryLoader();try{const username=document.getElementById('adminTargetUsername')?.value.trim();if(!username)return;const uid=await getUidByUsername(username);if(!uid)return;const d=(await db.collection('jugadores').doc(uid).get()).data()||{};const cubes=document.getElementById('admin-stat-cubes'),cos=document.getElementById('admin-stat-cosmetics');if(cubes)cubes.textContent=`Mini Tuna Cubes: ${d.miniTunaCubesCount||0}`;if(cos)cos.textContent=`Cosmetics: ${Object.entries(d.cosmeticsInventory||{}).map(([k,v])=>`${k} x${v}`).join(', ')||'None'}`;}catch(e){console.warn('Admin inventory stats unavailable',e);}};
+  window.loadTargetUserInventoryForAdmin=async function(){if(originalTargetInventoryLoader)await originalTargetInventoryLoader();try{const username=document.getElementById('adminTargetUsername')?.value.trim();if(!username)return;const uid=await getUidByUsername(username);if(!uid)return;const d=(await db.collection('jugadores').doc(uid).get()).data()||{};const cubes=document.getElementById('admin-stat-cubes'),cos=document.getElementById('admin-stat-cosmetics');if(cubes){cubes.style.display='block';cubes.textContent=`Mini Tuna Cubes: ${d.miniTunaCubesCount||0}`;}if(cos){cos.style.display='block';cos.textContent=`Cosmetics: ${Object.entries(d.cosmeticsInventory||{}).filter(([,v])=>v>0).map(([k,v])=>`${k} x${v}`).join(', ')||'None'}`;}renderAdminBaitsAndCosmeticsLists(d);}catch(e){console.warn('Admin inventory stats unavailable',e);}};
 
   // Promo codes can grant both bait types and cosmetics; redemption is atomic and one-time.
   window.adminCreateCode=async function(){try{if(!auth.currentUser||auth.currentUser.uid!==ADMIN_UID)throw Error('Admin only.');const code=document.getElementById('adminPromoCode').value.trim().toUpperCase();const rewardNumber=id=>{const raw=document.getElementById(id)?.value||'0',n=Number(raw);if(!Number.isInteger(n)||n<0)throw Error('Rewards must be non-negative whole numbers.');return n;};const coins=rewardNumber('adminPromoCoins');const baitName=(document.getElementById('adminPromoBaitName')?.value||'').trim();const baitQuantity=rewardNumber('adminPromoBaitQty');const fishInput=document.getElementById('adminPromoFish').value.trim();const cosmeticName=(document.getElementById('adminPromoCosmetic')?.value||'').trim();const cosmeticQuantity=rewardNumber('adminPromoCosmeticQty');if(!code)throw Error('Enter a code name.');if([coins,baitQuantity,cosmeticQuantity].some(n=>!Number.isInteger(n)||n<0))throw Error('Rewards must be non-negative whole numbers.');if(cosmeticName&&!cosmeticQuantity)throw Error('Enter a cosmetic quantity.');if(!cosmeticName&&cosmeticQuantity)throw Error('Type a cosmetic name.');if(baitName&&!baitQuantity)throw Error('Enter a bait quantity.');if(!baitName&&baitQuantity)throw Error('Type a bait name.');let bonusFish=null;if(fishInput){const m=ALLOWED_FISH_TYPES.find(f=>f.name.toLowerCase()===fishInput.toLowerCase());if(!m)throw Error('That fish does not exist.');bonusFish=m.name;}if(coins+baitQuantity+cosmeticQuantity+(bonusFish?1:0)===0)throw Error('Add at least one reward.');const ref=db.collection('codes').doc(code);if((await ref.get()).exists)throw Error('That code already exists.');await ref.set({coins,baitName:baitName||null,baitQuantity:baitName?baitQuantity:0,bonusFish,cosmeticName:cosmeticName||null,cosmeticQuantity:cosmeticName?cosmeticQuantity:0,createdAt:firebase.firestore.FieldValue.serverTimestamp()});['adminPromoCode','adminPromoCoins','adminPromoBaitName','adminPromoBaitQty','adminPromoFish','adminPromoCosmeticQty'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const c=document.getElementById('adminPromoCosmetic');if(c)c.value='';showToast(`Promo code ${code} created.`);loadAdminCodes();}catch(e){showToast('Could not create code: '+e.message);}};
@@ -5400,10 +5894,65 @@
   // Admin grant: rules must explicitly permit the admin UID to update other players (see note in delivery).
   async function adminGiveRebuildItem(kind){const username=document.getElementById('adminTargetUsername').value.trim(),amount=safeInt(document.getElementById('admin-rebuild-amount').value);if(!username||!amount){showToast('Enter a recipient username and valid amount.');return;}try{const uid=await getUidByUsername(username);if(!uid)throw Error('Player not found.');const ref=db.collection('jugadores').doc(uid);await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists)throw Error('Player profile not found.');const d=s.data()||{},u={};if(kind==='worm')u.wormBaitsCount=(d.wormBaitsCount||0)+amount;else if(kind==='cube')u.miniTunaCubesCount=(d.miniTunaCubesCount||0)+amount;else{const inv={...(d.cosmeticsInventory||{})};inv.Sandcastle=(inv.Sandcastle||0)+amount;u.cosmeticsInventory=inv;}tx.update(ref,u);});showToast(`Granted ${amount} ${kind==='worm'?'Worm Bait':kind==='cube'?'Mini Tuna Cube':'Sandcastle'} to ${username}.`);loadTargetUserInventoryForAdmin();}catch(e){showToast('Admin grant failed: '+e.message+' (check Firestore admin update rules).');}}
   window.adminGiveRebuildItem=adminGiveRebuildItem;
+  function renderAdminBaitsAndCosmeticsLists(d){
+    const baitsEl=document.getElementById('admin-target-baits-list');
+    const cosEl=document.getElementById('admin-target-cosmetics-list');
+    if(baitsEl){
+      const baits=[
+        {name:'Worm Bait',count:d.wormBaitsCount||0},
+        {name:'Mini Tuna Cube',count:d.miniTunaCubesCount||0}
+      ].filter(b=>b.count>0);
+      baitsEl.innerHTML=baits.length?baits.map(b=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#ffffff;padding:6px 10px;border-radius:6px;margin-bottom:5px;border:1px solid #cbd5e1;">
+          <span style="font-size:0.85rem;"><strong>${esc(b.name)}</strong> (x${b.count})</span>
+          <button type="button" class="modal-action-btn" style="background:#e74c3c;padding:3px 8px;font-size:0.75rem;width:auto;" onclick="adminRemoveBaitOrCosmetic('bait','${esc(b.name)}',${b.count})">Delete</button>
+        </div>`).join(''):'<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">User has no baits.</p>';
+    }
+    if(cosEl){
+      const inv=d.cosmeticsInventory||{};
+      const items=Object.entries(inv).filter(([,v])=>v>0);
+      cosEl.innerHTML=items.length?items.map(([k,v])=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;background:#ffffff;padding:6px 10px;border-radius:6px;margin-bottom:5px;border:1px solid #cbd5e1;">
+          <span style="font-size:0.85rem;"><strong>${esc(k)}</strong> (x${v})</span>
+          <button type="button" class="modal-action-btn" style="background:#e74c3c;padding:3px 8px;font-size:0.75rem;width:auto;" onclick="adminRemoveBaitOrCosmetic('cosmetic','${esc(k)}',${v})">Delete</button>
+        </div>`).join(''):'<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">User has no cosmetics.</p>';
+    }
+  }
+  window.renderAdminBaitsAndCosmeticsLists=renderAdminBaitsAndCosmeticsLists;
+
+  window.adminRemoveBaitOrCosmetic=async function(kind,name,maxCount){
+    const username=document.getElementById('adminTargetUsername').value.trim();
+    if(!username)return;
+    const raw=prompt(`How many "${name}" to remove from ${username}? (Max: ${maxCount})`, '1');
+    if(raw===null)return;
+    const qty=parseInt(raw,10);
+    if(isNaN(qty)||qty<=0){showToast('Enter a valid quantity.');return;}
+    try{
+      const uid=await getUidByUsername(username);if(!uid)throw Error('Player not found.');
+      const ref=db.collection('jugadores').doc(uid);
+      await db.runTransaction(async tx=>{
+        const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');
+        const d=snap.data()||{},u={};
+        if(kind==='bait'){
+          const key=/^worm bait$/i.test(name)?'wormBaitsCount':'miniTunaCubesCount';
+          u[key]=Math.max(0,(d[key]||0)-qty);
+        }else{
+          const inv={...(d.cosmeticsInventory||{})};
+          inv[name]=Math.max(0,(inv[name]||0)-qty);
+          u.cosmeticsInventory=inv;
+        }
+        tx.update(ref,u);
+      });
+      showToast(`Removed ${qty} ${name} from ${username}.`);
+      loadTargetUserInventoryForAdmin();
+    }catch(e){showToast('Error removing item: '+e.message);}
+  };
+
   window.adminGiveNamedItem=async function(kind){
     try{
       const username=document.getElementById('adminTargetUsername').value.trim();
       const name=(document.getElementById(kind==='bait'?'adminBaitName':'adminCosmeticName')?.value||'').trim();
+      const qty=safeInt(document.getElementById(kind==='bait'?'adminBaitQty':'adminCosmeticQty')?.value||'1')||1;
       if(!username||!name)throw Error('Enter the target username and item name.');
       const uid=await getUidByUsername(username);if(!uid)throw Error('Player not found.');
       const ref=db.collection('jugadores').doc(uid);
@@ -5413,13 +5962,13 @@
         if(kind==='bait'){
           const key=/^worm bait$/i.test(name)?'wormBaitsCount':/^mini tuna cube$/i.test(name)?'miniTunaCubesCount':null;
           if(!key)throw Error('Unknown bait. Use Worm Bait or Mini Tuna Cube.');
-          u[key]=(d[key]||0)+1;
+          u[key]=(d[key]||0)+qty;
         }else{
-          const inv={...(d.cosmeticsInventory||{})};inv[name]=(inv[name]||0)+1;u.cosmeticsInventory=inv;
+          const inv={...(d.cosmeticsInventory||{})};inv[name]=(inv[name]||0)+qty;u.cosmeticsInventory=inv;
         }
         tx.update(ref,u);
       });
-      showToast(`Gave 1 ${name} to ${username}.`);
+      showToast(`Gave ${qty} ${name} to ${username}.`);
       document.getElementById(kind==='bait'?'adminBaitName':'adminCosmeticName').value='';
       loadTargetUserInventoryForAdmin();
     }catch(e){showToast('Admin grant failed: '+e.message+' (check Firestore admin update rules).');}
@@ -5448,8 +5997,67 @@
   };
 
   // Backpack refresh adds inventory counts, cooking details and cosmetics without removing original fields.
-  const originalLoadBackpackData=window.loadBackpackData;
-  window.loadBackpackData=async function(){if(originalLoadBackpackData)await originalLoadBackpackData();try{const d=(await playerRef().get()).data()||{};const bait=d.equippedBait||'';const a=document.getElementById('rebuild-bait-summary'),c=document.getElementById('rebuild-cube-summary');if(a)a.textContent=`Equipped bait: ${bait==='worm'?'Worm Bait':bait==='cube'?'Mini Tuna Cube':'None'} | Baits: ${d.wormBaitsCount||0}`;if(c)c.textContent=`Mini Tuna Cubes: ${d.miniTunaCubesCount||0} | Cosmetics: ${Object.values(d.cosmeticsInventory||{}).reduce((n,v)=>n+(Number(v)||0),0)}`;const list=document.getElementById('backpack-fish-list');if(list){const cooked=(d.fishes||[]).filter(f=>f.cooking);if(cooked.length){const html=cooked.map(f=>{const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name),base=meta?meta.value:5,c=f.cooking,ideal=c.side1>=40&&c.side1<=60&&c.side2>=40&&c.side2<=60,good=['Cooked','Well Cooked'].includes(c.stage1)&&['Cooked','Well Cooked'].includes(c.stage2),value=good?Math.round(base*(ideal?1.15:1.08)):base;return `<div class="rebuild-item"><strong>${esc(f.name)}</strong><p>${f.cooking.stage1} ${f.cooking.side1}% / ${f.cooking.stage2} ${f.cooking.side2}%</p><small>Bot value: ${value} Coins</small></div>`;}).join('');list.insertAdjacentHTML('beforeend',html);}}}catch(e){console.warn(e);}};
+  window.loadBackpackData=async function(){
+    const user=auth.currentUser;if(!user)return;
+    const listContainer=document.getElementById('backpack-fish-list');
+    if(listContainer)listContainer.innerHTML='Loading items...';
+    try{
+      const doc=await db.collection('jugadores').doc(user.uid).get();
+      if(!doc.exists)return;
+      const d=doc.data()||{};
+      const tanksCount=d.miniTanksCount||0;
+      const roomsCount=d.aquariumRoomsOwned||1;
+      const baitsCount=d.wormBaitsCount||0;
+      const cubesCount=d.miniTunaCubesCount||0;
+      const bait=d.equippedBait||(d.isBaitActive?'worm':'');
+      document.getElementById('backpack-tanks-count').innerText=`Mini Tanks Bought: ${tanksCount}`;
+      document.getElementById('backpack-rooms-count').innerText=`Aquarium Rooms Owned: ${roomsCount}`;
+      document.getElementById('backpack-baits-count').innerText=`Baits: ${baitsCount} | Cubes: ${cubesCount}`;
+      const toggleBtn=document.getElementById('backpack-bait-toggle-btn');
+      if(toggleBtn){
+        toggleBtn.innerText=bait?'Change Bait':'Equip Bait';
+        toggleBtn.style.background=bait?'#2563a6':'#2ecc71';
+      }
+      const a=document.getElementById('rebuild-bait-summary'),c=document.getElementById('rebuild-cube-summary');
+      if(a)a.textContent=`Equipped bait: ${bait==='worm'?'Worm Bait':bait==='cube'?'Mini Tuna Cube':'None'} | Baits: ${baitsCount}`;
+      if(c)c.textContent=`Mini Tuna Cubes: ${cubesCount} | Cosmetics: ${Object.values(d.cosmeticsInventory||{}).reduce((n,v)=>n+(Number(v)||0),0)}`;
+      const fishes=d.fishes||[];
+      if(!fishes.length){if(listContainer)listContainer.innerHTML='No fish caught yet. Go fishing!';return;}
+      const rawCounts={};
+      const cookedList=[];
+      fishes.forEach(f=>{
+        if(f.cooking){cookedList.push(f);}
+        else{rawCounts[f.name]=(rawCounts[f.name]||0)+1;}
+      });
+      let html='';
+      Object.entries(rawCounts).forEach(([fishName,count])=>{
+        const fishObj=ALLOWED_FISH_TYPES.find(item=>item.name===fishName)||ALLOWED_FISH_TYPES[0];
+        html+=`
+          <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
+            <span style="position:absolute;top:4px;right:6px;background:#3498db;color:white;font-size:0.7rem;font-weight:bold;padding:1px 5px;border-radius:8px;">x${count}</span>
+            <img src="${fishObj.img}" alt="${esc(fishName)}" style="width:42px;height:42px;object-fit:contain;margin:4px 0;">
+            <span style="font-size:0.8rem;font-weight:bold;text-align:center;color:#1e293b;">${esc(fishName)}</span>
+          </div>`;
+      });
+      cookedList.forEach(f=>{
+        const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name)||ALLOWED_FISH_TYPES[0];
+        const base=meta?meta.value:5,ck=f.cooking;
+        const avgPct=Math.round(((Number(ck.side1)||0)+(Number(ck.side2)||0))/2);
+        const ideal=ck.side1>=40&&ck.side1<=60&&ck.side2>=40&&ck.side2<=60;
+        const good=['Cooked','Well Cooked'].includes(ck.stage1)&&['Cooked','Well Cooked'].includes(ck.stage2);
+        const value=good?Math.round(base*(ideal?1.15:1.08)):base;
+        html+=`
+          <div style="background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
+            <span style="position:absolute;top:4px;left:6px;background:#d97706;color:white;font-size:0.62rem;font-weight:bold;padding:1px 5px;border-radius:6px;">Cooked</span>
+            <img src="${meta.img}" alt="${esc(f.name)}" style="width:42px;height:42px;object-fit:contain;margin:4px 0;filter:${getCookedFilter(avgPct)};">
+            <span style="font-size:0.8rem;font-weight:bold;text-align:center;color:#1e293b;">${esc(f.name)}</span>
+            <span style="font-size:0.68rem;color:#7c2d12;text-align:center;margin-top:2px;">${esc(ck.stage1)} ${ck.side1}% / ${esc(ck.stage2)} ${ck.side2}%</span>
+            <span style="font-size:0.68rem;color:#b45309;font-weight:bold;">Bot: ${value} 💰</span>
+          </div>`;
+      });
+      if(listContainer)listContainer.innerHTML=html;
+    }catch(e){console.warn(e);if(listContainer)listContainer.innerHTML='Error loading backpack.';}
+  };
 
   // Aquarium decoration layer and custom movement per creature.
   const originalRenderAquarium=window.renderAquarium;
@@ -5459,10 +6067,23 @@
   window.startFishAnimation=function(shelfIndex){const im=document.querySelector(`.swimming-fish-${shelfIndex}`);if(!im)return;const n=im.alt||'';const meta=ALLOWED_FISH_TYPES.find(f=>f.name===n);im.style.position='absolute';im.style.width=n==='Turtle'?'52px':'40px';if(meta&&meta.creatureType==='sand'){im.style.bottom='2%';im.style.top='auto';im.classList.add('creature-sand');}else if(n==='Jellyfish')im.classList.add('creature-jelly');else if(n==='Turtle')im.classList.add('creature-turtle');else if(n==='Octopus')im.classList.add('creature-octopus');else{im.style.left='25%';im.style.top='35%';im.classList.add('creature-turtle');}};
 
   // New achievement UI and existing achievement loader augmentation.
-  function addSpecialAchievements(){const list=document.getElementById('achievements-list');if(!list||document.getElementById('ach-cook-master'))return;[['cook-master','Call me master master','One, two FLIP!','Cook a fish'],['bob-master',"That's what you get",'Hope i get a better one!','Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.']].forEach(([id,name,desc,obj])=>{const el=document.createElement('div');el.id='ach-'+id;el.style.cssText='background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px';el.innerHTML=`<h4>${esc(name)}</h4><p>${esc(desc)}</p><span>${esc(obj)}</span><strong id="status-${id}" style="float:right">Locked</strong>`;list.appendChild(el);});}
+  function addSpecialAchievements(){
+    const list=document.getElementById('achievements-list');
+    if(!list||document.getElementById('ach-cook-master'))return;
+    [
+      ['cook-master','Call me master master','One, two FLIP!','Cook a fish.'],
+      ['bob-master',"That's what you get",'Hope i get a better one!','Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.']
+    ].forEach(([id,name,desc,obj])=>{
+      const el=document.createElement('div');
+      el.id='ach-'+id;
+      el.style.cssText='background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:0.5;';
+      el.innerHTML=`<div><h4 style="margin:0 0 3px 0;font-size:1rem;color:#1e3a8a;">${esc(name)}</h4><p style="margin:0 0 3px 0;font-size:0.85rem;color:#1f2937;font-weight:bold;">${esc(desc)}</p><span style="font-size:0.75rem;color:#64748b;">${esc(obj)}</span></div><div id="status-${id}" style="margin-left:auto;font-weight:bold;color:#e74c3c;font-size:0.85rem;">Locked</div>`;
+      list.appendChild(el);
+    });
+  }
   let recaptchaReady=false;
   function renderVisibleRecaptcha(){if(!recaptchaReady||!window.grecaptcha||typeof grecaptcha.render!=='function')return;const modal=document.getElementById('modal-account');if(!modal||modal.style.display!=='flex')return;const login=document.getElementById('form-login'),register=document.getElementById('form-register');try{if(login&&login.style.display!=='none'&&recaptchaLoginId===null){const node=document.getElementById('recaptcha-login');if(node&&node.childElementCount===0)recaptchaLoginId=grecaptcha.render(node,{sitekey:RECAPTCHA_SITE_KEY});}if(register&&register.style.display!=='none'&&recaptchaRegisterId===null){const node=document.getElementById('recaptcha-register');if(node&&node.childElementCount===0)recaptchaRegisterId=grecaptcha.render(node,{sitekey:RECAPTCHA_SITE_KEY});}}catch(e){console.error('reCAPTCHA render error:',e);}}
-  const origOpenModal=window.openModal;window.openModal=function(id){if(origOpenModal)origOpenModal(id);if(id==='modal-account')setTimeout(renderVisibleRecaptcha,150);if(id==='modal-achievements'){addSpecialAchievements();if(auth.currentUser)playerRef().get().then(s=>{const a=(s.data()||{}).achievements||{};[['cook-master','cookMaster'],['bob-master','bobMaster']].forEach(([id,k])=>{const e=document.getElementById('status-'+id);if(e)e.textContent=a[k]?'Completed':'Locked';});}).catch(()=>{});}if(id==='modal-backpack')setTimeout(()=>window.loadBackpackData&&window.loadBackpackData(),0);};
+  const origOpenModal=window.openModal;window.openModal=function(id){if(origOpenModal)origOpenModal(id);if(id==='modal-account')setTimeout(renderVisibleRecaptcha,150);if(id==='modal-achievements'){addSpecialAchievements();if(auth.currentUser)playerRef().get().then(s=>{const a=(s.data()||{}).achievements||{};[['cook-master','cookMaster'],['bob-master','bobMaster']].forEach(([id,k])=>{const card=document.getElementById('ach-'+id);const e=document.getElementById('status-'+id);const done=!!a[k];if(card){card.style.opacity=done?'1':'0.5';card.style.borderColor=done?'#2ecc71':'#cbd5e1';}if(e){e.textContent=done?'Completed':'Locked';e.style.color=done?'#2ecc71':'#e74c3c';}});}).catch(()=>{});}if(id==='modal-backpack')setTimeout(()=>window.loadBackpackData&&window.loadBackpackData(),0);};
   const origSwitchAuthTab=window.switchAuthTab;window.switchAuthTab=function(tab){if(origSwitchAuthTab)origSwitchAuthTab(tab);setTimeout(renderVisibleRecaptcha,150);};
 
 
