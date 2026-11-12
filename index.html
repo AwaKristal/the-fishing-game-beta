@@ -1663,6 +1663,21 @@
         <label>Bonus Fish Reward (Optional - exact fish name)</label>
         <input type="text" id="adminPromoFish" placeholder="e.g. Goldfish Snack or leave blank" autocomplete="off">
       </div>
+      <div class="form-group">
+        <label>Mini Tuna Cubes Reward (Optional)</label>
+        <input type="number" id="adminPromoMiniTuna" placeholder="Quantity" min="0" step="1" value="0" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>Cosmetic Reward (Optional)</label>
+        <select id="adminPromoCosmetic">
+          <option value="">No cosmetic</option>
+          <option value="Sandcastle">Sandcastle</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Cosmetic Quantity</label>
+        <input type="number" id="adminPromoCosmeticQty" placeholder="Quantity" min="0" step="1" value="0" autocomplete="off">
+      </div>
       <button type="button" class="modal-action-btn" style="background:#2980b9; margin-bottom: 10px;" onclick="adminCreateCode()">Create Code</button>
       
       <div style="margin-top: 10px;">
@@ -1800,8 +1815,8 @@
 
     function onloadCallback() {
       try {
-        recaptchaLoginId = greCAPTCHA.render('recaptcha-login', { 'sitekey': RECAPTCHA_SITE_KEY });
-        recaptchaRegisterId = greCAPTCHA.render('recaptcha-register', { 'sitekey': RECAPTCHA_SITE_KEY });
+        recaptchaLoginId = grecaptcha.render('recaptcha-login', { 'sitekey': RECAPTCHA_SITE_KEY });
+        recaptchaRegisterId = grecaptcha.render('recaptcha-register', { 'sitekey': RECAPTCHA_SITE_KEY });
       } catch (e) {
         console.error("reCAPTCHA render error:", e);
       }
@@ -4134,6 +4149,8 @@
           friends: [],
           miniTanksCount: 0,
           wormBaitsCount: 0,
+          miniTunaCubesCount: 0,
+          cosmeticsInventory: {},
           isBaitActive: false,
           aquariumRoomsOwned: 1,
           aquariumTanksMap: { room_0: new Array(8).fill(null) },
@@ -4400,36 +4417,60 @@
           return;
         }
 
-        const codeData = codeSnap.data();
         const playerRef = db.collection('jugadores').doc(user.uid);
-        const playerSnap = await playerRef.get();
-        const playerData = playerSnap.data();
+        let redeemedCodeData = null;
 
-        const redeemedList = playerData.redeemedCodes || [];
-        if (redeemedList.includes(code)) {
-          showToast("You have already redeemed this code!");
-          return;
-        }
-
+        // Read and update the player's current document inside one transaction.
+        // This prevents two rapid redemption attempts from granting the same code twice.
         await db.runTransaction(async (transaction) => {
-          let updateData = {
-            coins: firebase.firestore.FieldValue.increment(codeData.coins || 0),
-            wormBaitsCount: firebase.firestore.FieldValue.increment(codeData.wormBaits || 0),
+          const freshCodeSnap = await transaction.get(codeRef);
+          const playerSnap = await transaction.get(playerRef);
+          if (!freshCodeSnap.exists || !playerSnap.exists) {
+            throw new Error("Code or player profile no longer exists.");
+          }
+
+          const codeData = freshCodeSnap.data();
+          const playerData = playerSnap.data();
+          const redeemedList = playerData.redeemedCodes || [];
+          if (redeemedList.includes(code)) {
+            throw new Error("You have already redeemed this code!");
+          }
+
+          const miniTunaCubes = Number(codeData.miniTunaCubes) || 0;
+          const cosmeticName = codeData.cosmeticName || null;
+          const cosmeticQuantity = Number(codeData.cosmeticQuantity) || 0;
+          const cosmeticsInventory = Object.assign({}, playerData.cosmeticsInventory || {});
+
+          if (cosmeticName && cosmeticQuantity > 0) {
+            cosmeticsInventory[cosmeticName] = (Number(cosmeticsInventory[cosmeticName]) || 0) + cosmeticQuantity;
+          }
+
+          const updateData = {
+            coins: firebase.firestore.FieldValue.increment(Number(codeData.coins) || 0),
+            wormBaitsCount: firebase.firestore.FieldValue.increment(Number(codeData.wormBaits) || 0),
+            miniTunaCubesCount: firebase.firestore.FieldValue.increment(miniTunaCubes),
             redeemedCodes: firebase.firestore.FieldValue.arrayUnion(code)
           };
 
           if (codeData.bonusFish) {
             updateData.fishes = firebase.firestore.FieldValue.arrayUnion({ name: codeData.bonusFish, timestamp: new Date().toISOString() });
           }
+          if (cosmeticName && cosmeticQuantity > 0) {
+            updateData.cosmeticsInventory = cosmeticsInventory;
+          }
 
           transaction.update(playerRef, updateData);
+          redeemedCodeData = codeData;
         });
 
+        const codeData = redeemedCodeData || {};
         let msg = `Success! Received`;
         let rewards = [];
 
         if (codeData.coins > 0) rewards.push(`+${codeData.coins} coins`);
         if (codeData.wormBaits > 0) rewards.push(`+${codeData.wormBaits} Worm Baits`);
+        if (codeData.miniTunaCubes > 0) rewards.push(`+${codeData.miniTunaCubes} Mini Tuna Cube(s)`);
+        if (codeData.cosmeticName && codeData.cosmeticQuantity > 0) rewards.push(`${codeData.cosmeticQuantity} ${codeData.cosmeticName}`);
         if (codeData.bonusFish) rewards.push(`🐟 ${codeData.bonusFish}`);
 
         showToast(msg + " " + (rewards.length > 0 ? rewards.join(", ") : "code rewards") + "!");
@@ -4985,12 +5026,28 @@
 
     async function adminCreateCode() {
       const codeName = document.getElementById('adminPromoCode').value.trim().toUpperCase();
-      const coins = parseInt(document.getElementById('adminPromoCoins').value) || 0;
-      const bonusBaits = parseInt(document.getElementById('adminPromoBaits').value) || 0;
+      const coins = Number(document.getElementById('adminPromoCoins').value) || 0;
+      const bonusBaits = Number(document.getElementById('adminPromoBaits').value) || 0;
       const bonusFishInput = document.getElementById('adminPromoFish').value.trim();
+      const miniTunaCubes = Number(document.getElementById('adminPromoMiniTuna').value) || 0;
+      const cosmeticName = document.getElementById('adminPromoCosmetic').value;
+      const cosmeticQuantity = Number(document.getElementById('adminPromoCosmeticQty').value) || 0;
 
       if (!codeName) {
         showToast("Enter a valid code name.");
+        return;
+      }
+      const amounts = [coins, bonusBaits, miniTunaCubes, cosmeticQuantity];
+      if (amounts.some(value => !Number.isSafeInteger(value) || value < 0)) {
+        showToast("Reward quantities must be whole numbers of 0 or more.");
+        return;
+      }
+      if ((cosmeticName && cosmeticQuantity < 1) || (!cosmeticName && cosmeticQuantity > 0)) {
+        showToast("Choose a cosmetic and enter a quantity greater than 0.");
+        return;
+      }
+      if (!coins && !bonusBaits && !bonusFishInput && !miniTunaCubes && !cosmeticName) {
+        showToast("Add at least one reward to this code.");
         return;
       }
 
@@ -5001,17 +5058,28 @@
       }
 
       try {
-        await db.collection('codes').doc(codeName).set({
+        const codeRef = db.collection('codes').doc(codeName);
+        const existing = await codeRef.get();
+        if (existing.exists) {
+          showToast("That code already exists. Delete it first or choose another name.");
+          return;
+        }
+        await codeRef.set({
           coins: coins,
           wormBaits: bonusBaits,
           bonusFish: exactBonusFish,
+          miniTunaCubes: miniTunaCubes,
+          cosmeticName: cosmeticName || null,
+          cosmeticQuantity: cosmeticName ? cosmeticQuantity : 0,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         showToast(`Promo code "${codeName}" created successfully!`);
-        document.getElementById('adminPromoCode').value = "";
-        document.getElementById('adminPromoCoins').value = "";
-        document.getElementById('adminPromoBaits').value = "";
-        document.getElementById('adminPromoFish').value = "";
+        ['adminPromoCode', 'adminPromoCoins', 'adminPromoBaits', 'adminPromoFish'].forEach(id => {
+          document.getElementById(id).value = "";
+        });
+        document.getElementById('adminPromoMiniTuna').value = "0";
+        document.getElementById('adminPromoCosmetic').value = "";
+        document.getElementById('adminPromoCosmeticQty').value = "0";
         loadAdminCodes();
       } catch (err) {
         showToast("Error creating code: " + err.message);
@@ -5036,9 +5104,11 @@
           const coins = data.coins || 0;
           const baitsText = data.wormBaits ? ` + ${data.wormBaits} Baits` : '';
           const fishText = data.bonusFish ? ` + ${data.bonusFish}` : '';
+          const tunaText = data.miniTunaCubes ? ` + ${data.miniTunaCubes} Mini Tuna Cube(s)` : '';
+          const cosmeticText = data.cosmeticName && data.cosmeticQuantity ? ` + ${data.cosmeticQuantity} ${data.cosmeticName}` : '';
           html += `
             <div class="admin-code-item">
-              <span><strong>${code}</strong> (${coins} 💰${baitsText}${fishText})</span>
+              <span><strong>${code}</strong> (${coins} 💰${baitsText}${fishText}${tunaText}${cosmeticText})</span>
               <button type="button" style="background:#e74c3c; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="adminDeleteCode('${code}')">Delete</button>
             </div>
           `;
@@ -5125,6 +5195,8 @@
               friends: [],
               miniTanksCount: 0,
               wormBaitsCount: 0,
+              miniTunaCubesCount: 0,
+              cosmeticsInventory: {},
               isBaitActive: false,
               aquariumRoomsOwned: 1,
               aquariumTanksMap: { room_0: new Array(8).fill(null) },
