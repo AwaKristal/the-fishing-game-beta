@@ -1370,7 +1370,7 @@
       <h3 style="margin-top:0;">Select a Fish for Tank</h3>
       <p style="font-size:0.85rem; color:#64748b;">Choose a fish from your inventory:</p>
       <div id="select-fish-list" style="max-height: 240px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 10px;"></div>
-      <button id="place-sandcastle-in-tank-btn" type="button" class="modal-action-btn" style="background:#8e44ad;margin-bottom:10px" onclick="placeSandcastleInSelectedTank()">Place Cosmetic</button>
+      <button id="place-sandcastle-in-tank-btn" type="button" class="modal-action-btn" style="background:#8e44ad;margin-bottom:10px" onclick="openTankCosmeticPicker()">Place Cosmetic</button>
       <button type="button" class="modal-action-btn" style="background: #e74c3c;" onclick="removeFishFromShelf()">Remove Tank / Fish</button>
     </div>
   </div>
@@ -1571,7 +1571,6 @@
         <span id="admin-stat-coins">💰 Coins: 0</span>
         <span id="admin-stat-tanks">Mini Tanks: 0</span>
         <span id="admin-stat-rooms">Aquarium Rooms: 1</span>
-        <span id="admin-stat-baits">Baits: 0</span>
       </div>
 
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">
@@ -1852,6 +1851,11 @@
       container.appendChild(toast);
       setTimeout(() => toast.remove(), 4000);
     }
+
+    let toastConfirmResolver=null;
+    function showToastConfirm(message){return new Promise(resolve=>{toastConfirmResolver=resolve;const overlay=document.getElementById('toast-confirm-overlay');const text=document.getElementById('toast-confirm-message');if(text)text.textContent=message;if(overlay)overlay.style.display='flex';else{showToast(message);resolve(false);}});}
+    function resolveToastConfirm(answer){const overlay=document.getElementById('toast-confirm-overlay');if(overlay)overlay.style.display='none';if(toastConfirmResolver){const done=toastConfirmResolver;toastConfirmResolver=null;done(!!answer);}}
+    window.resolveToastConfirm=resolveToastConfirm;
 
     function validateUsernameFormat(username) {
       if (username.length > 20) {
@@ -2313,7 +2317,7 @@
     }
 
     async function removeFriend(friendUid, friendName) {
-      if (!confirm(`Are you sure you want to remove ${friendName} from your friends list?`)) return;
+      if (!(await showToastConfirm(`Remove ${friendName} from your friends list?`))) return;
       const user = auth.currentUser;
       if (!user) return;
 
@@ -3072,9 +3076,7 @@
       const user = auth.currentUser;
       if (!user) return;
 
-      if (!confirm("Are you sure you want to sell ALL available fish in your inventory? (Fish in aquariums, market listings, and limited editions are automatically excluded).")) {
-        return;
-      }
+      if (!(await showToastConfirm("Sell all eligible fish in your inventory? Fish in aquariums, market listings, and limited editions will be excluded."))) return;
 
       try {
         const playerRef = db.collection('jugadores').doc(user.uid);
@@ -3316,7 +3318,7 @@
         slotEl.innerHTML = `
           <div style="position: relative; width: 100%; height: 100%; overflow: hidden;">
             <img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Tank" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; pointer-events: none;">
-            ${decoration === 'Sandcastle' ? `<img src="${IMG.sandcastle}" alt="Sandcastle" style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 10%; width: 34px; height: 34px; object-fit: contain; z-index: 2; pointer-events: none;">` : ''}
+            ${decoration === 'Sandcastle' ? `<img src="${IMG.sandcastle}" alt="Sandcastle" style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 4%; width: 40px; height: 40px; object-fit: contain; object-position:center bottom; z-index: 2; pointer-events: none;">` : ''}
             <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; z-index: 3; pointer-events: none;">
           </div>
         `;
@@ -5250,11 +5252,11 @@
 
   // New creatures are part of the existing fish catalogue and retain the exact supplied image URLs.
   const newCreatures = [
-    {name:'Clam', value:90, rarity:'Rare', desc:'A clam that crawls along aquarium sand.', img:IMG.clam, creatureType:'sand'},
-    {name:'Sea Urchin', value:110, rarity:'Rare', desc:'A sea urchin that moves along aquarium sand.', img:IMG.urchin, creatureType:'sand'},
-    {name:'Jellyfish', value:500, rarity:'Mythic', desc:'A drifting jellyfish.', img:IMG.jelly, creatureType:'jelly'},
-    {name:'Turtle', value:200, rarity:'Legendary', desc:'A graceful aquarium turtle.', img:IMG.turtle, creatureType:'turtle'},
-    {name:'Octopus', value:1500, rarity:'Divine', desc:'A clever and curious octopus.', img:IMG.octopus, creatureType:'octopus'}
+    {name:'Clam', value:90, rarity:'Rare', desc:'A quiet ocean dweller that filters tiny particles from the water. It slowly creeps across the aquarium sand and rests with its shell partly buried.', img:IMG.clam, creatureType:'sand'},
+    {name:'Sea Urchin', value:110, rarity:'Rare', desc:'A spiny little grazer that explores the seabed for algae. It carefully crawls over the sand instead of swimming through the water.', img:IMG.urchin, creatureType:'sand'},
+    {name:'Jellyfish', value:500, rarity:'Mythic', desc:'A delicate, translucent drifter that pulses its bell to glide through the water. Its trailing tentacles sway gently with every current.', img:IMG.jelly, creatureType:'jelly'},
+    {name:'Turtle', value:200, rarity:'Legendary', desc:'A peaceful sea turtle with a sturdy shell and powerful flippers. It glides calmly through the aquarium, occasionally changing direction as it explores.', img:IMG.turtle, creatureType:'turtle'},
+    {name:'Octopus', value:1500, rarity:'Divine', desc:'An intelligent deep-sea explorer with eight flexible arms. It gently bobs through the water while its tentacles curl and uncurl as it investigates its surroundings.', img:IMG.octopus, creatureType:'octopus'}
   ];
   newCreatures.forEach(n => { if (!ALLOWED_FISH_TYPES.some(f => f.name === n.name)) ALLOWED_FISH_TYPES.push(n); });
 
@@ -5263,6 +5265,11 @@
     const st = document.createElement('style'); st.id = 'rebuild-systems-css';
     st.textContent = `
       .rebuild-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0009;z-index:3000;padding:12px}
+      .toast-confirm-overlay{position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:16px}
+      .toast-confirm-card{width:min(420px,94vw);background:#fff;border:1px solid #dbe3ef;border-radius:16px;padding:18px;box-shadow:0 18px 55px #0f172a44;color:#1e293b;animation:toastPop .18s ease-out}
+      .toast-confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+      .bob-trade-countdown{font-weight:800;font-size:1.05rem;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin:12px 0;font-variant-numeric:tabular-nums}
+      @keyframes toastPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
       .rebuild-card{background:#fff;border-radius:14px;padding:18px;width:min(620px,96vw);max-height:90vh;overflow:auto;color:#1e293b}
       .rebuild-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:9px}
       .rebuild-item{border:1px solid #cbd5e1;border-radius:10px;padding:9px;text-align:center;background:#f8fafc}
@@ -5280,7 +5287,7 @@
       @keyframes creatureOctopus{0%,100%{transform:translateY(5px) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
       #grill-fish-stage{position:relative;min-height:250px;background-size:100% 100%;background-position:center;background-repeat:no-repeat;border-radius:10px;overflow:hidden;touch-action:none}
       #grill-fish-stage .grill-fish{position:absolute;width:100px;height:75px;object-fit:contain;left:35%;top:38%;cursor:grab;touch-action:none;user-select:none}
-      .aquarium-sandcastle{position:absolute;z-index:2;width:54px;height:54px;object-fit:contain;left:42%;bottom:5%;pointer-events:none}
+      .aquarium-sandcastle{position:absolute;z-index:2;width:58px;height:58px;object-fit:contain;object-position:center bottom;left:42%;bottom:8%;transform:translateY(-2px);pointer-events:none}
       #modal-aquarium .swimming-fish-0,#modal-aquarium .swimming-fish-1,#modal-aquarium .swimming-fish-2,#modal-aquarium .swimming-fish-3,#modal-aquarium .swimming-fish-4,#modal-aquarium .swimming-fish-5,#modal-aquarium .swimming-fish-6,#modal-aquarium .swimming-fish-7{z-index:3 !important}
       @media(max-width:480px){.rebuild-card{padding:12px}#grill-fish-stage{min-height:205px}}
     `; document.head.appendChild(st);
@@ -5350,9 +5357,11 @@
   <p id="offer-preview" style="font-size:.85rem;color:#334155;background:#eef6ff;padding:8px;border-radius:8px;margin:6px 0 10px">Add items to preview your offer.</p>
   <button type="button" class="rebuild-btn" style="width:100%;font-size:1rem" onclick="publishOffer()">Publish Offer</button>
 </div></div>
-      <div id="modal-bob-trade" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-bob-trade')">Close</button><h2>Bob's Special Trade</h2><p>Give Bob one Bluefin Tuna with both sides Well Cooked (46% - 60%). He will prepare a Mini Tuna Cube in 10 minutes.</p><div id="bob-trade-status"></div><button class="rebuild-btn" onclick="startBobTrade()">Give Bluefin Tuna</button><button class="rebuild-btn alt" onclick="claimBobReward()">Claim Mini Tuna Cube</button></div></div>
+      <div id="modal-bob-trade" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-bob-trade')">Close</button><h2>Bob's Special Trade</h2><p>Give Bob one Bluefin Tuna with both sides Well Cooked (46% - 60%). He will prepare a Mini Tuna Cube in 10 minutes.</p><div id="bob-trade-status" class="bob-trade-countdown" aria-live="polite"></div><button class="rebuild-btn" onclick="startBobTrade()">Give Bluefin Tuna</button><button class="rebuild-btn alt" onclick="claimBobReward()">Claim Mini Tuna Cube</button></div></div>
       <div id="modal-shop-pages" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-shop-pages')">Close</button><h2>Shop</h2><div id="shop-page-items" class="rebuild-grid"></div><div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px"><button class="rebuild-btn alt" onclick="changeShopPage(-1)">Previous</button><span id="shop-page-label"></span><button class="rebuild-btn alt" onclick="changeShopPage(1)">Next</button></div></div></div>
-      <div id="modal-cosmetics" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-cosmetics')">Close</button><h2>Cosmetics</h2><div id="cosmetic-inventory" class="rebuild-grid"></div></div></div>`;
+      <div id="modal-cosmetics" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-cosmetics')">Close</button><h2>Cosmetics</h2><div id="cosmetic-inventory" class="rebuild-grid"></div></div></div>
+      <div id="modal-tank-cosmetic-picker" class="rebuild-modal" style="z-index:4200"><div class="rebuild-card" style="max-width:390px"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-tank-cosmetic-picker')">Close</button><h3>Select a Cosmetic</h3><p style="color:#64748b;font-size:.88rem">Choose a decoration from your cosmetic inventory to place in this tank.</p><div id="tank-cosmetic-options" class="rebuild-grid"></div></div></div>
+      <div id="toast-confirm-overlay" class="toast-confirm-overlay" style="display:none"><div class="toast-confirm-card"><div id="toast-confirm-message"></div><div class="toast-confirm-actions"><button type="button" class="rebuild-btn alt" onclick="resolveToastConfirm(false)">Cancel</button><button type="button" class="rebuild-btn red" onclick="resolveToastConfirm(true)">Confirm</button></div></div></div>`;
     while (host.firstElementChild) document.body.appendChild(host.firstElementChild);
     const grillFish=document.getElementById('grill-fish-image'),grillStage=document.getElementById('grill-fish-stage');
     let dragGrill=false,dragStart=null,dragMoved=false,dragOffset={x:0,y:0};
@@ -5441,7 +5450,7 @@
     if(promoFish&&!document.getElementById('adminPromoMiniCubes')){const fields=document.createElement('div');fields.innerHTML=`<div class="form-group"><label>Give Bait (Optional - type exact bait name)</label><input id="adminPromoBaitName" class="rebuild-field" type="text" placeholder="e.g. Worm Bait or Mini Tuna Cube"></div><div class="form-group"><label>Bait Quantity</label><input id="adminPromoBaitQty" class="rebuild-field" type="number" min="0" value="0"></div><div class="form-group"><label>Give Cosmetic (Optional - type exact cosmetic name)</label><input id="adminPromoCosmetic" class="rebuild-field" type="text" placeholder="e.g. Sandcastle"></div><div class="form-group"><label>Cosmetic Quantity</label><input id="adminPromoCosmeticQty" class="rebuild-field" type="number" min="0" value="0"></div>`;promoFish.parentElement.insertAdjacentElement('afterend',fields);}
     if (admin && !document.getElementById('admin-give-rebuild')) {
       const sec=document.createElement('section'); sec.id='admin-give-rebuild'; sec.style.cssText='border:1px solid #cbd5e1;padding:10px;border-radius:9px;margin:12px 0';
-      const overview=document.getElementById('admin-user-stats-box');if(overview&&!document.getElementById('admin-stat-rebuild-items')){const extra=document.createElement('div');extra.id='admin-stat-rebuild-items';extra.innerHTML='<span id="admin-stat-cubes">Mini Tuna Cubes: 0</span><span id="admin-stat-cosmetics">Cosmetics: 0</span>';overview.appendChild(extra);}
+      const overview=document.getElementById('admin-user-stats-box');const extra=document.getElementById('admin-stat-rebuild-items');if(extra)extra.remove();
       /* Removed duplicated bottom Give Bait/Cosmetic section */
     }
   }
@@ -5574,17 +5583,40 @@
   window.openGrillStation=openGrillStation;window.openGrillFishPicker=openGrillFishPicker;window.addFishToGrill=addFishToGrill;window.toggleGrillZone=toggleGrillZone;window.flipGrillFish=flipGrillFish;window.finishGrilling=finishGrilling;window.closeGrillStation=closeGrillStation;
 
   // Bob trade uses exact two-side stages, a persistent 10-minute timestamp and one-time claim.
-  async function openBobTrade(){try{const d=(await playerRef().get()).data()||{};const t=d.bobTrade;let msg='No trade in progress.';if(t){const remain=Math.max(0,600000-(Date.now()-t.startedAt));msg=remain?`Mini Tuna Cube ready in ${Math.ceil(remain/60000)} minute(s).`:'Your Mini Tuna Cube is ready to claim!';}document.getElementById('bob-trade-status').textContent=msg;document.getElementById('modal-bob-trade').style.display='flex';}catch(e){showToast(e.message);}}
+  let bobCountdownInterval=null;
+  async function openBobTrade(){try{const d=(await playerRef().get()).data()||{};const t=d.bobTrade;const status=document.getElementById('bob-trade-status');if(bobCountdownInterval)clearInterval(bobCountdownInterval);const update=()=>{if(!t){status.textContent='No trade in progress. Cook a Bluefin Tuna and give it to Bob!';return;}if(t.claimed){status.textContent='Reward already claimed — you received your Mini Tuna Cube.';return;}const remain=Math.max(0,600000-(Date.now()-t.startedAt));if(remain<=0){status.textContent='🎁 Your Mini Tuna Cube is ready to claim!';return;}const mm=Math.floor(remain/60000),ss=Math.floor((remain%60000)/1000);status.textContent=`⏳ Bob is preparing your Mini Tuna Cube: ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')} remaining`;};update();if(t&&!t.claimed)bobCountdownInterval=setInterval(update,1000);document.getElementById('modal-bob-trade').style.display='flex';}catch(e){showToast(e.message);}}
   async function startBobTrade(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.bobTrade&&!d.bobTrade.claimed)throw Error('You already have a Bob trade in progress.');const fs=[...(d.fishes||[])];const i=fs.findIndex(f=>f.name==='Bluefin Tuna'&&f.cooking&&stage(f.cooking.side1)==='Well Cooked'&&stage(f.cooking.side2)==='Well Cooked');if(i<0)throw Error('Bob only accepts a Bluefin Tuna with both sides Well Cooked (46% - 60%).');const fish=fs.splice(i,1)[0];tx.update(ref,{fishes:fs,bobTrade:{startedAt:Date.now(),fishId:fish.id||null,claimed:false}});});showToast('Bob accepted your Bluefin Tuna. Come back in 10 minutes.');openBobTrade();}catch(e){showToast(e.message);}}
   async function claimBobReward(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},t=d.bobTrade;if(!t||t.claimed)throw Error('There is no unclaimed reward.');if(Date.now()-t.startedAt<600000)throw Error('Bob is still preparing your Mini Tuna Cube.');tx.update(ref,{miniTunaCubesCount:(d.miniTunaCubesCount||0)+1,bobTrade:{...t,claimed:true,claimedAt:Date.now()},achievements:{...(d.achievements||{}),bobMaster:true}});});showToast('You received 1 Mini Tuna Cube!');openBobTrade();loadBackpackData();}catch(e){showToast(e.message);}}
   window.openBobTrade=openBobTrade;window.startBobTrade=startBobTrade;window.claimBobReward=claimBobReward;
 
   // Cosmetic inventory and aquarium placement.
-  async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const n=inv.Sandcastle||0;const cMap=d.aquariumCosmeticsMap||{};const placedCount=Object.values(cMap).flat().filter(x=>x==='Sandcastle').length;document.getElementById('cosmetic-inventory').innerHTML=`<div class="rebuild-item"><img src="${IMG.sandcastle}"><strong>Sandcastle</strong><p>In bag: ${n} | Placed: ${placedCount}</p><button class="rebuild-btn" onclick="quickToggleCosmeticTank('Sandcastle')">${placedCount>0?'Unequip from Tank':'Equip in Tank'}</button><br><small>Or click any tank in your Aquarium to place/remove it per slot.</small></div>`;document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
+  async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const n=inv.Sandcastle||0;const cMap=d.aquariumCosmeticsMap||{};const placedCount=Object.values(cMap).flat().filter(x=>x==='Sandcastle').length;document.getElementById('cosmetic-inventory').innerHTML=`<div class="rebuild-item"><img src="${IMG.sandcastle}"><strong>Sandcastle</strong><p>In bag: ${n} | Placed: ${placedCount}</p><small>To place or remove it, select a tank in your Aquarium and use the cosmetic selector.</small></div>`;document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
   async function quickToggleCosmeticTank(cosName){try{const ref=playerRef();await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');const d=snap.data()||{};const inv={...(d.cosmeticsInventory||{})};const tMap={...(d.aquariumTanksMap||{})};const cMap={...(d.aquariumCosmeticsMap||{})};let removed=false;for(const rKey of Object.keys(cMap)){const arr=[...(cMap[rKey]||[])];const idx=arr.indexOf(cosName);if(idx!==-1){arr[idx]=null;cMap[rKey]=arr;inv[cosName]=(inv[cosName]||0)+1;removed=true;break;}}if(!removed){if((inv[cosName]||0)<=0)throw Error('You do not own this cosmetic.');let placed=false;const roomKeys=Object.keys(tMap).length?Object.keys(tMap):['room_0'];for(const rKey of roomKeys){const tArr=tMap[rKey]||[];const cArr=[...(cMap[rKey]||new Array(8).fill(null))];const slotIdx=tArr.findIndex((fish,i)=>fish&&!cArr[i]);if(slotIdx!==-1){cArr[slotIdx]=cosName;cMap[rKey]=cArr;inv[cosName]-=1;placed=true;break;}}if(!placed)throw Error('Place a fish in a Mini Tank in your Aquarium first!');}tx.update(ref,{aquariumCosmeticsMap:cMap,cosmeticsInventory:inv});});showToast('Cosmetic updated!');openCosmeticsInventory();loadBackpackData();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{});}}catch(e){showToast(e.message);}}
   window.quickToggleCosmeticTank=quickToggleCosmeticTank;
   async function toggleSandcastle(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},inv={...(d.cosmeticsInventory||{})};const equipped=!!d.aquariumSandcastle;if(!equipped&&(inv.Sandcastle||0)<=0)throw Error('You do not own a Sandcastle. Buy one in the Shop.');tx.update(ref,{aquariumSandcastle:!equipped});});showToast('Aquarium decoration updated.');if(typeof openCosmeticsInventory==='function'&&document.getElementById('modal-cosmetics').style.display==='flex')openCosmeticsInventory();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{});} }catch(e){showToast(e.message);}}
   window.openCosmeticsInventory=openCosmeticsInventory;window.toggleSandcastle=toggleSandcastle;
+  async function openTankCosmeticPicker(){
+    try{
+      const d=(await playerRef().get()).data()||{}, inv=d.cosmeticsInventory||{}, room=`room_${currentAquariumRoomIndex}`;
+      const placed=((d.aquariumCosmeticsMap||{})[room]||[])[selectedShelfIndex]||null;
+      const options=document.getElementById('tank-cosmetic-options');
+      const available=Object.entries(inv).filter(([name,count])=>(Number(count)||0)>0);
+      let html=available.map(([name,count])=>{
+        const img=name==='Sandcastle'?IMG.sandcastle:'';
+        return `<div class="rebuild-item"><img src="${img}" alt="${esc(name)}"><strong>${esc(name)}</strong><p>Owned: ${count}</p><button class="rebuild-btn" onclick="selectTankCosmetic('${esc(name)}')">Place</button></div>`;
+      }).join('');
+      if(placed)html+=`<div class="rebuild-item"><strong>${esc(placed)}</strong><p>Currently placed in this tank</p><button class="rebuild-btn red" onclick="removeSelectedTankCosmetic()">Remove</button></div>`;
+      options.innerHTML=html||'<p>You do not own any cosmetics yet.</p>';
+      document.getElementById('modal-tank-cosmetic-picker').style.display='flex';
+    }catch(e){showToast('Could not load cosmetics: '+e.message);}
+  }
+  async function selectTankCosmetic(name){
+    if(name!=='Sandcastle'){showToast('This cosmetic is not available for tank placement yet.');return;}
+    closeRebuildModal('modal-tank-cosmetic-picker');await placeSandcastleInSelectedTank();
+  }
+  async function removeSelectedTankCosmetic(){closeRebuildModal('modal-tank-cosmetic-picker');await placeSandcastleInSelectedTank();}
+  window.openTankCosmeticPicker=openTankCosmeticPicker;window.selectTankCosmetic=selectTankCosmetic;window.removeSelectedTankCosmetic=removeSelectedTankCosmetic;
+
   async function placeSandcastleInSelectedTank(){
     try{
       const ref=playerRef();
@@ -6181,15 +6213,13 @@
       const bait=d.equippedBait||(d.isBaitActive?'worm':'');
       document.getElementById('backpack-tanks-count').innerText=`Mini Tanks Bought: ${tanksCount}`;
       document.getElementById('backpack-rooms-count').innerText=`Aquarium Rooms Owned: ${roomsCount}`;
-      document.getElementById('backpack-baits-count').innerText='Baits';
+      const baitLabel=document.getElementById('backpack-baits-count');if(baitLabel)baitLabel.remove();
       const toggleBtn=document.getElementById('backpack-bait-toggle-btn');
       if(toggleBtn){
         toggleBtn.innerText=bait?'Change Bait':'Equip Bait';
         toggleBtn.style.background=bait?'#2563a6':'#2ecc71';
       }
-      const a=document.getElementById('rebuild-bait-summary'),c=document.getElementById('rebuild-cube-summary');
-      if(a)a.textContent=`Equipped bait: ${bait==='worm'?'Worm Bait':bait==='cube'?'Mini Tuna Cube':'None'}`;
-      if(c)c.textContent=`Cosmetics: ${Object.values(d.cosmeticsInventory||{}).reduce((n,v)=>n+(Number(v)||0),0)}`;
+      ['rebuild-bait-summary','rebuild-cube-summary'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
       const fishes=d.fishes||[];
       if(!fishes.length){if(listContainer)listContainer.innerHTML='No fish caught yet. Go fishing!';return;}
       const rawCounts={};
@@ -6231,7 +6261,7 @@
 
   // Aquarium decoration layer and custom movement per creature.
   const originalRenderAquarium=window.renderAquarium;
-  window.renderAquarium=function(username,fishes,tanksMap,cosmeticMap){if(originalRenderAquarium)originalRenderAquarium(username,fishes,tanksMap,cosmeticMap);if(isViewingMyAquarium&&auth.currentUser){db.collection('jugadores').doc(auth.currentUser.uid).get().then(s=>{if(!s.exists)return;const d=s.data()||{};if(!cosmeticMap&&d.aquariumCosmeticsMap){originalRenderAquarium(username,fishes,tanksMap,d.aquariumCosmeticsMap);}if(d.aquariumSandcastle){const scene=document.querySelector('#modal-aquarium .modal-card > div[style*="aspect-ratio"]');if(scene&&!scene.querySelector('.aquarium-sandcastle')){const im=document.createElement('img');im.className='aquarium-sandcastle';im.src=IMG.sandcastle;im.alt='Sandcastle';im.style.zIndex='2';scene.appendChild(im);}}else{document.querySelectorAll('.aquarium-sandcastle').forEach(x=>x.remove());}});}};
+  window.renderAquarium=function(username,fishes,tanksMap,cosmeticMap){if(originalRenderAquarium)originalRenderAquarium(username,fishes,tanksMap,cosmeticMap);if(isViewingMyAquarium&&auth.currentUser){db.collection('jugadores').doc(auth.currentUser.uid).get().then(s=>{if(!s.exists)return;const d=s.data()||{};if(!cosmeticMap&&d.aquariumCosmeticsMap&&originalRenderAquarium)originalRenderAquarium(username,fishes,tanksMap,d.aquariumCosmeticsMap);});}};
   const animationIntervals=[];
   window.stopFishAnimations=function(){animationIntervals.forEach(clearInterval);animationIntervals.length=0;};
   window.startFishAnimation=function(shelfIndex){const im=document.querySelector(`.swimming-fish-${shelfIndex}`);if(!im)return;const n=im.alt||'';const meta=ALLOWED_FISH_TYPES.find(f=>f.name===n);im.style.position='absolute';im.style.width=n==='Turtle'?'52px':'40px';if(meta&&meta.creatureType==='sand'){im.style.bottom='2%';im.style.top='auto';im.classList.add('creature-sand');}else if(n==='Jellyfish')im.classList.add('creature-jelly');else if(n==='Turtle')im.classList.add('creature-turtle');else if(n==='Octopus')im.classList.add('creature-octopus');else{im.style.left='25%';im.style.top='35%';im.classList.add('creature-turtle');}};
