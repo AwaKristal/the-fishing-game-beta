@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -1358,9 +1358,6 @@
 
       </div>
 
-      <div id="aquarium-owner-controls" style="display: none; background: #f8fafc; padding: 10px; border-radius: 8px; text-align: center; border: 1px solid #cbd5e1;">
-        <p style="margin: 0 0 5px 0; font-size: 0.85rem; color: #27ae60; font-weight: bold;">Each slot requires a Mini Tank! Buy tanks in Bob's Shop if you need more.</p>
-      </div>
     </div>
   </div>
 
@@ -3289,14 +3286,10 @@
       document.getElementById('aquarium-room-indicator').innerText = `Room ${currentAquariumRoomIndex + 1} / ${maxRooms}`;
 
       const subtitle = document.getElementById('aquarium-subtitle');
-      const ownerControls = document.getElementById('aquarium-owner-controls');
-      
       if (isViewingMyAquarium) {
-        subtitle.innerText = "Each slot requires 1 Mini Tank from your inventory!";
-        ownerControls.style.display = 'block';
+        subtitle.innerText = "Your Aquarium";
       } else {
         subtitle.innerText = `Viewing ${username}'s displayed fish`;
-        ownerControls.style.display = 'none';
       }
 
       const roomKey = `room_${currentAquariumRoomIndex}`;
@@ -5433,11 +5426,6 @@
       const b=document.createElement('button'); b.id='make-offer-main-button'; b.className='rebuild-btn'; b.style.cssText='width:100%;font-size:1.05rem;margin:10px 0'; b.textContent='Make Offer'; b.onclick=openMakeOffer;
       marketSell.insertBefore(b, marketSell.firstChild);
     }
-    const aquarium = document.querySelector('#modal-aquarium .modal-card');
-    if (aquarium && !document.getElementById('aquarium-cosmetic-controls')) {
-      const c=document.createElement('div'); c.id='aquarium-cosmetic-controls'; c.style.cssText='margin:8px 0;text-align:center'; c.innerHTML='<button class="rebuild-btn alt" onclick="toggleSandcastle()">Equip / Unequip Sandcastle</button>';
-      const owner=document.getElementById('aquarium-owner-controls'); if(owner) owner.appendChild(c);
-    }
     // Add Turtle, Grill, Sandcastle and Mini Tuna Cube through a paginated catalogue.
     const shop = document.querySelector('#modal-shop .modal-card');
     if (shop && !document.getElementById('open-paginated-shop')) {
@@ -5584,7 +5572,7 @@
 
   // Bob trade uses exact two-side stages, a persistent 10-minute timestamp and one-time claim.
   let bobCountdownInterval=null;
-  async function openBobTrade(){try{const d=(await playerRef().get()).data()||{};const t=d.bobTrade;const status=document.getElementById('bob-trade-status');if(bobCountdownInterval)clearInterval(bobCountdownInterval);const update=()=>{if(!t){status.textContent='No trade in progress. Cook a Bluefin Tuna and give it to Bob!';return;}if(t.claimed){status.textContent='Reward claimed, give another Well Cooked Bluefin Tuna for another cube.';return;}const remain=Math.max(0,600000-(Date.now()-t.startedAt));if(remain<=0){status.textContent='🎁 Your Mini Tuna Cube is ready to claim!';return;}const mm=Math.floor(remain/60000),ss=Math.floor((remain%60000)/1000);status.textContent=`⏳ Bob is preparing your Mini Tuna Cube: ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')} remaining`;};update();if(t&&!t.claimed)bobCountdownInterval=setInterval(update,1000);document.getElementById('modal-bob-trade').style.display='flex';}catch(e){showToast(e.message);}}
+  async function openBobTrade(){try{const d=(await playerRef().get()).data()||{};const t=d.bobTrade;const status=document.getElementById('bob-trade-status');if(bobCountdownInterval)clearInterval(bobCountdownInterval);const update=()=>{if(!t){status.textContent='No trade in progress. Cook a Bluefin Tuna and give it to Bob!';return;}if(t.claimed){status.textContent='Reward already claimed — you received your Mini Tuna Cube.';return;}const remain=Math.max(0,600000-(Date.now()-t.startedAt));if(remain<=0){status.textContent='🎁 Your Mini Tuna Cube is ready to claim!';return;}const mm=Math.floor(remain/60000),ss=Math.floor((remain%60000)/1000);status.textContent=`⏳ Bob is preparing your Mini Tuna Cube: ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')} remaining`;};update();if(t&&!t.claimed)bobCountdownInterval=setInterval(update,1000);document.getElementById('modal-bob-trade').style.display='flex';}catch(e){showToast(e.message);}}
   async function startBobTrade(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.bobTrade&&!d.bobTrade.claimed)throw Error('You already have a Bob trade in progress.');const fs=[...(d.fishes||[])];const i=fs.findIndex(f=>f.name==='Bluefin Tuna'&&f.cooking&&stage(f.cooking.side1)==='Well Cooked'&&stage(f.cooking.side2)==='Well Cooked');if(i<0)throw Error('Bob only accepts a Bluefin Tuna with both sides Well Cooked (46% - 60%).');const fish=fs.splice(i,1)[0];tx.update(ref,{fishes:fs,bobTrade:{startedAt:Date.now(),fishId:fish.id||null,claimed:false}});});showToast('Bob accepted your Bluefin Tuna. Come back in 10 minutes.');openBobTrade();}catch(e){showToast(e.message);}}
   async function claimBobReward(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},t=d.bobTrade;if(!t||t.claimed)throw Error('There is no unclaimed reward.');if(Date.now()-t.startedAt<600000)throw Error('Bob is still preparing your Mini Tuna Cube.');tx.update(ref,{miniTunaCubesCount:(d.miniTunaCubesCount||0)+1,bobTrade:{...t,claimed:true,claimedAt:Date.now()},achievements:{...(d.achievements||{}),bobMaster:true}});});showToast('You received 1 Mini Tuna Cube!');openBobTrade();loadBackpackData();}catch(e){showToast(e.message);}}
   window.openBobTrade=openBobTrade;window.startBobTrade=startBobTrade;window.claimBobReward=claimBobReward;
