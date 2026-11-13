@@ -2323,13 +2323,15 @@
           if (friendDoc.exists) {
             const fData = friendDoc.data();
             const avatar = fData.photoURL || 'https://via.placeholder.com/35';
+            const unreadCount = await getUnreadDirectMessageCount(fUid);
             html += `
-              <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
-                <div style="display:flex; align-items:center; gap:10px;">
+              <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:10px; min-width:0;">
                   <img src="${avatar}" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
                   <strong>${fData.username || 'Player'}</strong>
                 </div>
-                <div style="display:flex; gap:6px;">
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                  <span id="dm-unread-${fUid}" style="display:${unreadCount > 0 ? 'inline-flex' : 'none'};align-items:center;justify-content:center;background:#ef4444;color:white;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:700;white-space:nowrap;">${unreadCount} unread</span>
                   <button type="button" class="modal-action-btn" style="background:#1e3a8a; padding:6px 12px; font-size:0.8rem; width:auto;" onclick="openChatWithFriend('${fUid}', '${fData.username}')">Open DM</button>
                   <button type="button" class="modal-action-btn" style="background:#e74c3c; padding:6px 10px; font-size:0.8rem; width:auto;" onclick="removeFriend('${fUid}', '${fData.username}')">Remove</button>
                 </div>
@@ -2362,6 +2364,51 @@
       }
     }
 
+    async function getUnreadDirectMessageCount(friendUid) {
+      const user = auth.currentUser;
+      if (!user || !friendUid) return 0;
+      try {
+        const chatId = getChatId(user.uid, friendUid);
+        const chatRef = db.collection('directChats').doc(chatId);
+        const [chatDoc, messagesSnap] = await Promise.all([
+          chatRef.get(),
+          chatRef.collection('messages').orderBy('createdAt', 'asc').get()
+        ]);
+        const readMap = chatDoc.exists ? (chatDoc.data().lastReadMessageIds || {}) : {};
+        const lastReadId = readMap[user.uid] || null;
+        let afterReadMarker = !lastReadId;
+        let unread = 0;
+        messagesSnap.forEach(messageDoc => {
+          if (messageDoc.id === lastReadId) {
+            afterReadMarker = true;
+            return;
+          }
+          if (afterReadMarker && messageDoc.data().senderUid !== user.uid) unread++;
+        });
+        return unread;
+      } catch (err) {
+        console.warn('Could not count unread DMs:', err);
+        return 0;
+      }
+    }
+
+    async function markDirectMessagesAsRead(friendUid, latestMessageId) {
+      const user = auth.currentUser;
+      if (!user || !friendUid || !latestMessageId) return;
+      try {
+        await db.collection('directChats').doc(getChatId(user.uid, friendUid)).set({
+          lastReadMessageIds: { [user.uid]: latestMessageId }
+        }, { merge: true });
+        const badge = document.getElementById(`dm-unread-${friendUid}`);
+        if (badge) {
+          badge.style.display = 'none';
+          badge.textContent = '0 unread';
+        }
+      } catch (err) {
+        console.warn('Could not update DM read marker:', err);
+      }
+    }
+
     function getChatId(uid1, uid2) {
       return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
     }
@@ -2391,6 +2438,9 @@
             messagesArea.innerHTML = '<p style="color:#64748b; text-align:center; font-size:0.8rem;">No messages yet. Say hi!</p>';
             return;
           }
+
+          const latestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
+          if (latestMessageDoc) markDirectMessagesAsRead(friendUid, latestMessageDoc.id);
 
           snapshot.forEach(doc => {
             const msg = doc.data();
