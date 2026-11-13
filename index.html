@@ -822,7 +822,7 @@
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -1657,12 +1657,30 @@
         <input type="number" id="adminPromoCoins" placeholder="Coins amount" autocomplete="off">
       </div>
       <div class="form-group">
-        <label>Baits Reward (Optional)</label>
-        <input type="number" id="adminPromoBaits" placeholder="Baits amount (e.g. 5)" min="0" autocomplete="off">
-      </div>
-      <div class="form-group">
         <label>Bonus Fish Reward (Optional - exact fish name)</label>
         <input type="text" id="adminPromoFish" placeholder="e.g. Goldfish Snack or leave blank" autocomplete="off">
+      </div>
+      <div style="border:1px solid #cbd5e1;border-radius:12px;padding:12px;margin:12px 0;background:#f8fafc;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
+          <strong style="color:#1e293b;">Item Rewards</strong>
+          <button type="button" class="modal-action-btn" style="background:#2980b9;padding:7px 12px;" onclick="addPromoRewardRow()">+ Add Reward</button>
+        </div>
+        <p style="font-size:.82rem;color:#64748b;margin:0 0 10px;">Add multiple rewards to one code, for example Worm Bait and Mini Tuna Cube together.</p>
+        <div id="adminPromoRewardRows">
+          <div class="promo-reward-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+            <select class="promo-reward-type" style="flex:2;min-width:0;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
+              <option value="worm">Worm Bait</option>
+              <option value="cube">Mini Tuna Cube</option>
+              <option value="cosmetic">Cosmetic</option>
+            </select>
+            <input class="promo-reward-qty" type="number" min="1" step="1" value="1" aria-label="Reward quantity" style="flex:1;min-width:65px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+            <button type="button" aria-label="Remove reward" onclick="this.closest('.promo-reward-row').remove()" style="border:0;border-radius:8px;background:#fee2e2;color:#b91c1c;padding:9px 12px;font-weight:700;">×</button>
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <label>Cosmetic name (only if a Cosmetic reward is selected)</label>
+          <input type="text" id="adminPromoCosmeticName" placeholder="e.g. Sandcastle" autocomplete="off">
+        </div>
       </div>
       <button type="button" class="modal-action-btn" style="background:#2980b9; margin-bottom: 10px;" onclick="adminCreateCode()">Create Code</button>
       
@@ -4394,11 +4412,23 @@
           let updateData = {
             coins: firebase.firestore.FieldValue.increment(codeData.coins || 0),
             wormBaitsCount: firebase.firestore.FieldValue.increment(codeData.wormBaits || 0),
+            miniTunaCubesCount: firebase.firestore.FieldValue.increment(codeData.miniTunaCubes || 0),
             redeemedCodes: firebase.firestore.FieldValue.arrayUnion(code)
           };
 
           if (codeData.bonusFish) {
             updateData.fishes = firebase.firestore.FieldValue.arrayUnion({ name: codeData.bonusFish, timestamp: new Date().toISOString() });
+          }
+
+          const cosmeticRewards = codeData.cosmetics || {};
+          if (Object.keys(cosmeticRewards).length) {
+            const currentCosmetics = { ...(playerData.cosmeticsInventory || {}) };
+            Object.entries(cosmeticRewards).forEach(([name, qty]) => {
+              const amount = Number(qty);
+              if (!Number.isSafeInteger(amount) || amount < 0) throw new Error('Invalid cosmetic reward in this code.');
+              currentCosmetics[name] = (currentCosmetics[name] || 0) + amount;
+            });
+            updateData.cosmeticsInventory = currentCosmetics;
           }
 
           transaction.update(playerRef, updateData);
@@ -4409,6 +4439,8 @@
 
         if (codeData.coins > 0) rewards.push(`+${codeData.coins} coins`);
         if (codeData.wormBaits > 0) rewards.push(`+${codeData.wormBaits} Worm Baits`);
+        if (codeData.miniTunaCubes > 0) rewards.push(`+${codeData.miniTunaCubes} Mini Tuna Cubes`);
+        if (codeData.cosmetics) Object.entries(codeData.cosmetics).forEach(([name, qty]) => { if (qty > 0) rewards.push(`+${qty} ${name}`); });
         if (codeData.bonusFish) rewards.push(`🐟 ${codeData.bonusFish}`);
 
         showToast(msg + " " + (rewards.length > 0 ? rewards.join(", ") : "code rewards") + "!");
@@ -4968,38 +5000,83 @@
       }
     }
 
+    function addPromoRewardRow() {
+      const wrap = document.getElementById('adminPromoRewardRows');
+      if (!wrap) return;
+      const row = document.createElement('div');
+      row.className = 'promo-reward-row';
+      row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+      row.innerHTML = `
+        <select class="promo-reward-type" style="flex:2;min-width:0;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
+          <option value="worm">Worm Bait</option>
+          <option value="cube">Mini Tuna Cube</option>
+          <option value="cosmetic">Cosmetic</option>
+        </select>
+        <input class="promo-reward-qty" type="number" min="1" step="1" value="1" aria-label="Reward quantity" style="flex:1;min-width:65px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+        <button type="button" aria-label="Remove reward" onclick="this.closest('.promo-reward-row').remove()" style="border:0;border-radius:8px;background:#fee2e2;color:#b91c1c;padding:9px 12px;font-weight:700;">×</button>`;
+      wrap.appendChild(row);
+    }
+
     async function adminCreateCode() {
       const codeName = document.getElementById('adminPromoCode').value.trim().toUpperCase();
-      const coins = parseInt(document.getElementById('adminPromoCoins').value) || 0;
-      const bonusBaits = parseInt(document.getElementById('adminPromoBaits').value) || 0;
+      const coinsRaw = document.getElementById('adminPromoCoins').value.trim();
+      const coins = coinsRaw === '' ? 0 : Number(coinsRaw);
       const bonusFishInput = document.getElementById('adminPromoFish').value.trim();
+      const rewardRows = [...document.querySelectorAll('#adminPromoRewardRows .promo-reward-row')];
+      const rewards = { wormBaits: 0, miniTunaCubes: 0, cosmetics: {} };
 
-      if (!codeName) {
-        showToast("Enter a valid code name.");
-        return;
-      }
+      if (!codeName) return showToast('Enter a valid code name.');
+      if (!Number.isSafeInteger(coins) || coins < 0) return showToast('Coins must be a non-negative whole number.');
 
       let exactBonusFish = null;
       if (bonusFishInput) {
         const matchFish = ALLOWED_FISH_TYPES.find(f => f.name.toLowerCase() === bonusFishInput.toLowerCase());
-        exactBonusFish = matchFish ? matchFish.name : bonusFishInput;
+        if (!matchFish) return showToast('That fish does not exist. Use its exact name.');
+        exactBonusFish = matchFish.name;
       }
 
       try {
-        await db.collection('codes').doc(codeName).set({
-          coins: coins,
-          wormBaits: bonusBaits,
+        for (const row of rewardRows) {
+          const type = row.querySelector('.promo-reward-type').value;
+          const qty = Number(row.querySelector('.promo-reward-qty').value);
+          if (!Number.isSafeInteger(qty) || qty < 1) throw new Error('Every item reward needs a quantity of at least 1.');
+          if (type === 'worm') rewards.wormBaits += qty;
+          else if (type === 'cube') rewards.miniTunaCubes += qty;
+          else if (type === 'cosmetic') {
+            const cosmeticName = (document.getElementById('adminPromoCosmeticName')?.value || '').trim();
+            if (!cosmeticName) throw new Error('Enter the exact cosmetic name for the cosmetic reward.');
+            rewards.cosmetics[cosmeticName] = (rewards.cosmetics[cosmeticName] || 0) + qty;
+          }
+        }
+
+        if (coins === 0 && !exactBonusFish && rewards.wormBaits === 0 && rewards.miniTunaCubes === 0 && Object.keys(rewards.cosmetics).length === 0) {
+          throw new Error('Add at least one reward before creating the code.');
+        }
+
+        const codeRef = db.collection('codes').doc(codeName);
+        const existing = await codeRef.get();
+        if (existing.exists) throw new Error('That code already exists.');
+
+        await codeRef.set({
+          coins,
+          wormBaits: rewards.wormBaits,
+          miniTunaCubes: rewards.miniTunaCubes,
+          cosmetics: rewards.cosmetics,
           bonusFish: exactBonusFish,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+
+        ['adminPromoCode','adminPromoCoins','adminPromoFish','adminPromoCosmeticName'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+        const rowsWrap = document.getElementById('adminPromoRewardRows');
+        if (rowsWrap) rowsWrap.innerHTML = '';
+        addPromoRewardRow();
         showToast(`Promo code "${codeName}" created successfully!`);
-        document.getElementById('adminPromoCode').value = "";
-        document.getElementById('adminPromoCoins').value = "";
-        document.getElementById('adminPromoBaits').value = "";
-        document.getElementById('adminPromoFish').value = "";
         loadAdminCodes();
       } catch (err) {
-        showToast("Error creating code: " + err.message);
+        showToast('Error creating code: ' + err.message);
       }
     }
 
@@ -5572,7 +5649,7 @@
 
   // Bob trade uses exact two-side stages, a persistent 10-minute timestamp and one-time claim.
   let bobCountdownInterval=null;
-  async function openBobTrade(){try{const d=(await playerRef().get()).data()||{};const t=d.bobTrade;const status=document.getElementById('bob-trade-status');if(bobCountdownInterval)clearInterval(bobCountdownInterval);const update=()=>{if(!t){status.textContent='No trade in progress. Cook a Bluefin Tuna and give it to Bob!';return;}if(t.claimed){status.textContent='Reward claimed, give another Well Cooked Bluefin Tuna for another cube.';return;}const remain=Math.max(0,600000-(Date.now()-t.startedAt));if(remain<=0){status.textContent='🎁 Your Mini Tuna Cube is ready to claim!';return;}const mm=Math.floor(remain/60000),ss=Math.floor((remain%60000)/1000);status.textContent=`⏳ Bob is preparing your Mini Tuna Cube: ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')} remaining`;};update();if(t&&!t.claimed)bobCountdownInterval=setInterval(update,1000);document.getElementById('modal-bob-trade').style.display='flex';}catch(e){showToast(e.message);}}
+  async function openBobTrade(){try{const d=(await playerRef().get()).data()||{};const t=d.bobTrade;const status=document.getElementById('bob-trade-status');if(bobCountdownInterval)clearInterval(bobCountdownInterval);const update=()=>{if(!t){status.textContent='No trade in progress. Cook a Bluefin Tuna and give it to Bob!';return;}if(t.claimed){status.textContent='Give a Well Cooked Bluefin Tuna for a Mini Tuna Cube.';return;}const remain=Math.max(0,600000-(Date.now()-t.startedAt));if(remain<=0){status.textContent='🎁 Your Mini Tuna Cube is ready to claim!';return;}const mm=Math.floor(remain/60000),ss=Math.floor((remain%60000)/1000);status.textContent=`⏳ Bob is preparing your Mini Tuna Cube: ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')} remaining`;};update();if(t&&!t.claimed)bobCountdownInterval=setInterval(update,1000);document.getElementById('modal-bob-trade').style.display='flex';}catch(e){showToast(e.message);}}
   async function startBobTrade(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.bobTrade&&!d.bobTrade.claimed)throw Error('You already have a Bob trade in progress.');const fs=[...(d.fishes||[])];const i=fs.findIndex(f=>f.name==='Bluefin Tuna'&&f.cooking&&stage(f.cooking.side1)==='Well Cooked'&&stage(f.cooking.side2)==='Well Cooked');if(i<0)throw Error('Bob only accepts a Bluefin Tuna with both sides Well Cooked (46% - 60%).');const fish=fs.splice(i,1)[0];tx.update(ref,{fishes:fs,bobTrade:{startedAt:Date.now(),fishId:fish.id||null,claimed:false}});});showToast('Bob accepted your Bluefin Tuna. Come back in 10 minutes.');openBobTrade();}catch(e){showToast(e.message);}}
   async function claimBobReward(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},t=d.bobTrade;if(!t||t.claimed)throw Error('There is no unclaimed reward.');if(Date.now()-t.startedAt<600000)throw Error('Bob is still preparing your Mini Tuna Cube.');tx.update(ref,{miniTunaCubesCount:(d.miniTunaCubesCount||0)+1,bobTrade:{...t,claimed:true,claimedAt:Date.now()},achievements:{...(d.achievements||{}),bobMaster:true}});});showToast('You received 1 Mini Tuna Cube!');openBobTrade();loadBackpackData();}catch(e){showToast(e.message);}}
   window.openBobTrade=openBobTrade;window.startBobTrade=startBobTrade;window.claimBobReward=claimBobReward;
@@ -6288,5 +6365,180 @@
 })();
 
 </script>
+
+<script>
+/* Aquarium movement constrained to the actual visible tank slot.
+   Positions are calculated in pixels so large sprites (especially Turtle)
+   can never travel beyond the clipped tank viewport. */
+(function () {
+  const motionTimers = new Map();
+  const rand = (min, max) => min + Math.random() * (max - min);
+
+  function stopOne(img) {
+    const timer = motionTimers.get(img);
+    if (timer) clearInterval(timer);
+    motionTimers.delete(img);
+  }
+
+  const previousStop = window.stopFishAnimations;
+  window.stopFishAnimations = function () {
+    motionTimers.forEach(timer => clearInterval(timer));
+    motionTimers.clear();
+    if (typeof previousStop === 'function') previousStop();
+  };
+
+  window.startFishAnimation = function (shelfIndex) {
+    const img = document.querySelector(`.swimming-fish-${shelfIndex}`);
+    if (!img || !img.parentElement) return;
+
+    stopOne(img);
+
+    const tankViewport = img.parentElement;
+    const name = img.alt || '';
+    const isSandCreature = name === 'Clam' || name === 'Sea Urchin';
+    const isJelly = name === 'Jellyfish';
+    const isTurtle = name === 'Turtle';
+    const isOctopus = name === 'Octopus';
+
+    img.style.position = 'absolute';
+    img.style.width = isTurtle ? '32px' : '32px';
+    img.style.height = 'auto';
+    img.style.maxWidth = 'none';
+    img.style.willChange = 'left, top, transform';
+    img.style.bottom = 'auto';
+
+    // The tank slot itself is overflow:hidden. Measure that exact inner
+    // viewport, not the whole aquarium panel or the outer tank artwork.
+    const getBounds = () => {
+      const w = tankViewport.clientWidth;
+      const h = tankViewport.clientHeight;
+      const iw = img.offsetWidth || 32;
+      const ih = img.offsetHeight || 24;
+      const pad = 3;
+
+      // Match the safe swimming area used by the original fish (roughly
+      // 10–65% horizontally and 20–70% vertically), then clamp by sprite size.
+      let minX = Math.max(pad, w * 0.10);
+      let maxX = Math.min(w * 0.65, w - iw - pad);
+      // Sandcastle is anchored with bottom:28%, so its ground line is
+      // at 72% of the inner tank viewport. Sand creatures crawl ON that line:
+      // their top coordinate is the ground line minus their own image height.
+      const sandGroundY = h * 0.72;
+      let minY = isSandCreature
+        ? sandGroundY - ih - 1.5
+        : h * (isJelly ? 0.22 : 0.20);
+      let maxY = isSandCreature
+        ? sandGroundY - ih + 1.5
+        : h * (isJelly ? 0.66 : 0.70);
+
+      minY = Math.max(pad, Math.min(minY, h - ih - pad));
+      maxY = Math.max(minY, Math.min(maxY, h - ih - pad));
+      if (maxX < minX) {
+        minX = pad;
+        maxX = Math.max(pad, w - iw - pad);
+      }
+      return { w, h, iw, ih, minX, maxX, minY, maxY };
+    };
+
+    // Wait until the image has a measurable natural height.
+    const begin = () => {
+      if (!img.isConnected) return;
+      let b = getBounds();
+      let x = rand(b.minX, Math.max(b.minX, b.maxX));
+      let y = isSandCreature
+        ? rand(b.minY, b.maxY)
+        : rand(b.minY, Math.max(b.minY, b.maxY));
+      let vx = (isSandCreature ? rand(0.07, 0.16) : rand(0.25, isTurtle ? 0.75 : 1.15)) * (Math.random() < 0.5 ? -1 : 1);
+      let vy = isSandCreature ? 0 : rand(0.12, isJelly ? 0.48 : 0.72) * (Math.random() < 0.5 ? -1 : 1);
+      let choiceIn = Math.floor(rand(18, 75));
+      let pause = 0;
+      let burst = 0;
+      let facing = vx >= 0 ? 1 : -1;
+
+      const paint = () => {
+        img.style.left = `${x}px`;
+        img.style.top = `${y}px`;
+        img.style.transform = `scaleX(${facing})`;
+      };
+      paint();
+
+      const timer = setInterval(() => {
+        if (!img.isConnected || !tankViewport.isConnected) {
+          stopOne(img);
+          return;
+        }
+
+        b = getBounds();
+        // If the tank resizes, immediately keep the fish inside the new area.
+        x = Math.max(b.minX, Math.min(x, b.maxX));
+        y = Math.max(b.minY, Math.min(y, b.maxY));
+
+        if (pause > 0) {
+          pause--;
+        } else {
+          choiceIn--;
+          if (choiceIn <= 0) {
+            const angle = isSandCreature
+              ? (Math.random() < 0.5 ? 0 : Math.PI)
+              : rand(-Math.PI, Math.PI);
+
+            let speed = isSandCreature ? rand(0.07, 0.16)
+              : isTurtle ? rand(0.25, 0.65)
+              : isJelly ? rand(0.22, 0.58)
+              : isOctopus ? rand(0.45, 0.95)
+              : rand(0.35, 0.85);
+
+            if (Math.random() < (isSandCreature ? 0.015 : 0.22)) {
+              speed *= rand(isSandCreature ? 1.15 : 1.7, isSandCreature ? 1.35 : 2.4);
+              burst = Math.floor(rand(8, 18));
+            } else {
+              burst = 0;
+            }
+
+            vx = Math.cos(angle) * speed;
+            vy = isSandCreature ? 0 : Math.sin(angle) * speed * (isJelly ? 0.75 : 0.65);
+            choiceIn = Math.floor(rand(20, 80));
+            if (Math.random() < (isSandCreature ? 0.08 : 0.17)) pause = Math.floor(rand(isSandCreature ? 10 : 6, isSandCreature ? 28 : 22));
+          }
+
+          if (burst > 0) burst--;
+          x += vx;
+          if (!isSandCreature) y += vy;
+          if (isJelly) y += Math.sin(Date.now() / 480 + shelfIndex) * 0.12;
+        }
+
+        if (x <= b.minX) {
+          x = b.minX;
+          vx = Math.abs(vx);
+        } else if (x >= b.maxX) {
+          x = b.maxX;
+          vx = -Math.abs(vx);
+        }
+
+        if (!isSandCreature) {
+          if (y <= b.minY) {
+            y = b.minY;
+            vy = Math.abs(vy);
+          } else if (y >= b.maxY) {
+            y = b.maxY;
+            vy = -Math.abs(vy);
+          }
+        } else {
+          y = Math.max(b.minY, Math.min(y, b.maxY));
+        }
+
+        const newFacing = vx >= 0 ? 1 : -1;
+        if (newFacing !== facing) facing = newFacing;
+        paint();
+      }, 50);
+
+      motionTimers.set(img, timer);
+    };
+
+    if (img.complete) begin();
+    else img.addEventListener('load', begin, { once: true });
+  };
+})();</script>
+
 </body>
 </html>
