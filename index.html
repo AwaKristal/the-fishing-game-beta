@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game</title>
+  <title>The Fishing Game BETA</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -817,12 +817,12 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.3</div>
+      <div class="version-tag">v.1.0.0.3 BETA</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -1862,6 +1862,25 @@
 
     let toastConfirmResolver=null;
     function showToastConfirm(message){return new Promise(resolve=>{toastConfirmResolver=resolve;const overlay=document.getElementById('toast-confirm-overlay');const text=document.getElementById('toast-confirm-message');if(text)text.textContent=message;if(overlay)overlay.style.display='flex';else{showToast(message);resolve(false);}});}
+    let toastPromptResolver=null;
+    window.resolveToastPrompt=function(value){
+      const overlay=document.getElementById('toast-prompt-overlay');
+      if(overlay)overlay.style.display='none';
+      if(toastPromptResolver){const done=toastPromptResolver;toastPromptResolver=null;done(value);}
+    };
+    function showToastPrompt(message,defaultValue='1'){
+      return new Promise(resolve=>{
+        toastPromptResolver=resolve;
+        const overlay=document.getElementById('toast-prompt-overlay');
+        const label=document.getElementById('toast-prompt-message');
+        const input=document.getElementById('toast-prompt-input');
+        if(!overlay||!input){showToast(message);resolve(null);return;}
+        if(label)label.textContent=message;
+        input.value=defaultValue;
+        overlay.style.display='flex';
+        input.focus();input.select();
+      });
+    }
     function resolveToastConfirm(answer){const overlay=document.getElementById('toast-confirm-overlay');if(overlay)overlay.style.display='none';if(toastConfirmResolver){const done=toastConfirmResolver;toastConfirmResolver=null;done(!!answer);}}
     window.resolveToastConfirm=resolveToastConfirm;
 
@@ -2376,20 +2395,61 @@
           snapshot.forEach(doc => {
             const msg = doc.data();
             const isMe = msg.senderUid === user.uid;
-            
+
+            const messageRow = document.createElement('div');
+            messageRow.style.cssText = `width:100%;display:flex;align-items:center;gap:7px;justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
+
             const bubble = document.createElement('div');
             bubble.className = `chat-bubble ${isMe ? 'sent' : 'received'}`;
-            
-            
+            bubble.innerHTML = `<span>${escapeHtml(msg.text || '')}</span>`;
+            messageRow.appendChild(bubble);
 
-            bubble.innerHTML = `
-              <span>${escapeHtml(msg.text)}</span>
-            `;
-            messagesArea.appendChild(bubble);
+            // Only the sender sees a delete control on their own messages.
+            if (isMe) {
+              const deleteButton = document.createElement('button');
+              deleteButton.type = 'button';
+              deleteButton.className = 'dm-delete-message-btn';
+              deleteButton.textContent = '🗑️';
+              deleteButton.title = 'Delete your message';
+              deleteButton.setAttribute('aria-label', 'Delete your message');
+              deleteButton.style.cssText = 'flex:0 0 auto;border:0;background:transparent;padding:5px 3px;cursor:pointer;font-size:14px;line-height:1;opacity:.68;border-radius:7px;';
+              deleteButton.addEventListener('mouseenter', () => { deleteButton.style.opacity = '1'; });
+              deleteButton.addEventListener('mouseleave', () => { deleteButton.style.opacity = '.68'; });
+              deleteButton.addEventListener('click', () => deleteDirectMessage(doc.id, deleteButton));
+              messageRow.appendChild(deleteButton);
+            }
+
+            messagesArea.appendChild(messageRow);
           });
 
           messagesArea.scrollTop = messagesArea.scrollHeight;
         });
+    }
+
+    async function deleteDirectMessage(messageId, button) {
+      const user = auth.currentUser;
+      if (!user || !activeChatFriendUid || !messageId) return;
+      if (button) button.disabled = true;
+      try {
+        const chatId = getChatId(user.uid, activeChatFriendUid);
+        const messageRef = db.collection('directChats').doc(chatId).collection('messages').doc(messageId);
+        const messageSnap = await messageRef.get();
+        if (!messageSnap.exists) {
+          showToast('This message was already deleted.');
+          return;
+        }
+        if (messageSnap.data().senderUid !== user.uid) {
+          showToast('You can only delete your own messages.');
+          return;
+        }
+        await messageRef.delete();
+        showToast('Message deleted.');
+      } catch (err) {
+        console.error('Error deleting DM:', err);
+        showToast('Could not delete message.');
+      } finally {
+        if (button) button.disabled = false;
+      }
     }
 
     function escapeHtml(text) {
@@ -2615,6 +2675,24 @@
       document.getElementById('index-counter').innerText = `${currentIndexFish + 1} / ${filteredFishes.length}`;
     }
 
+    // Full achievement-unlock notification, styled to match the game's own UI.
+    window.showAchievementUnlocked = function(name, description, objective) {
+      let node=document.getElementById('achievement-unlock-notice');
+      if(!node){
+        node=document.createElement('div');
+        node.id='achievement-unlock-notice';
+        node.style.cssText='position:fixed;top:18px;right:18px;z-index:100000;max-width:min(420px,calc(100vw - 36px));width:calc(100% - 36px);box-sizing:border-box;background:#f8fafc;border:1px solid #22c55e;border-radius:12px;padding:14px 16px;box-shadow:0 10px 30px rgba(15,23,42,.2);font-family:inherit;opacity:0;transform:translateY(-12px);transition:opacity .25s ease,transform .25s ease;pointer-events:none;';
+        node.innerHTML='<div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#16a34a;font-weight:800;margin-bottom:5px;">Achievement Unlocked!</div><h3 data-ach-title style="margin:0 0 4px;color:#1e3a8a;font-size:1.08rem;"></h3><p data-ach-desc style="margin:0 0 5px;color:#1f2937;font-weight:700;font-size:.92rem;"></p><p data-ach-objective style="margin:0;color:#64748b;font-size:.82rem;line-height:1.4;"></p>';
+        document.body.appendChild(node);
+      }
+      node.querySelector('[data-ach-title]').textContent=name;
+      node.querySelector('[data-ach-desc]').textContent=description;
+      node.querySelector('[data-ach-objective]').textContent=objective;
+      node.style.opacity='1';node.style.transform='translateY(0)';
+      clearTimeout(window.__achievementNoticeTimer);
+      window.__achievementNoticeTimer=setTimeout(()=>{node.style.opacity='0';node.style.transform='translateY(-12px)';},6500);
+    };
+
     async function checkAchievements(fishesCount, tankBought = false, usedBait = false, caughtDivine = false) {
       const user = auth.currentUser;
       if (!user) return;
@@ -2630,25 +2708,25 @@
           if (fishesCount > 0 && !achievements.catchFirst) {
             achievements.catchFirst = true;
             updated = true;
-            showToast("Achievement Unlocked: Catch! (That was easy.)");
+            window.showAchievementUnlocked('Catch!','That was easy.','Catch your first fish.');
           }
 
           if (tankBought && !achievements.gluGluTank) {
             achievements.gluGluTank = true;
             updated = true;
-            showToast("Achievement Unlocked: Glu glu tank! (Amazing!)");
+            window.showAchievementUnlocked('Glu glu tank!','Amazing!','Buy an aquarium tank.');
           }
 
           if (usedBait && !achievements.wormBaitAch) {
             achievements.wormBaitAch = true;
             updated = true;
-            showToast("Achievement Unlocked: Not Hungry Anymore (That was a good worm!.)");
+            window.showAchievementUnlocked('Not Hungry Anymore','That was a good worm!','Use bait to catch a fish.');
           }
 
           if (caughtDivine && !achievements.divineAch) {
             achievements.divineAch = true;
             updated = true;
-            showToast("Achievement Unlocked: Divine i say (Beautiful.)");
+            window.showAchievementUnlocked('Divine i say','Beautiful.','Catch a Divine fish.');
           }
 
           if (updated) {
@@ -5336,6 +5414,8 @@
       .toast-confirm-overlay{position:fixed;inset:0;z-index:9000;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:16px}
       .toast-confirm-card{width:min(420px,94vw);background:#fff;border:1px solid #dbe3ef;border-radius:16px;padding:18px;box-shadow:0 18px 55px #0f172a44;color:#1e293b;animation:toastPop .18s ease-out}
       .toast-confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+      .toast-prompt-input{display:block;width:100%;box-sizing:border-box;margin-top:12px;padding:11px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;color:#1e293b;background:#f8fafc;outline:none}
+      .toast-prompt-input:focus{border-color:#2980b9;box-shadow:0 0 0 3px #2980b922}
       .bob-trade-countdown{font-weight:800;font-size:1.05rem;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin:12px 0;font-variant-numeric:tabular-nums}
       @keyframes toastPop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
       .rebuild-card{background:#fff;border-radius:14px;padding:18px;width:min(620px,96vw);max-height:90vh;overflow:auto;color:#1e293b}
@@ -5429,7 +5509,8 @@
       <div id="modal-shop-pages" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-shop-pages')">Close</button><h2>Shop</h2><div id="shop-page-items" class="rebuild-grid"></div><div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:12px"><button class="rebuild-btn alt" onclick="changeShopPage(-1)">Previous</button><span id="shop-page-label"></span><button class="rebuild-btn alt" onclick="changeShopPage(1)">Next</button></div></div></div>
       <div id="modal-cosmetics" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-cosmetics')">Close</button><h2>Cosmetics</h2><div id="cosmetic-inventory" class="rebuild-grid"></div></div></div>
       <div id="modal-tank-cosmetic-picker" class="rebuild-modal" style="z-index:4200"><div class="rebuild-card" style="max-width:390px"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-tank-cosmetic-picker')">Close</button><h3>Select a Cosmetic</h3><p style="color:#64748b;font-size:.88rem">Choose a decoration from your cosmetic inventory to place in this tank.</p><div id="tank-cosmetic-options" class="rebuild-grid"></div></div></div>
-      <div id="toast-confirm-overlay" class="toast-confirm-overlay" style="display:none"><div class="toast-confirm-card"><div id="toast-confirm-message"></div><div class="toast-confirm-actions"><button type="button" class="rebuild-btn alt" onclick="resolveToastConfirm(false)">Cancel</button><button type="button" class="rebuild-btn red" onclick="resolveToastConfirm(true)">Confirm</button></div></div></div>`;
+      <div id="toast-confirm-overlay" class="toast-confirm-overlay" style="display:none"><div class="toast-confirm-card"><div id="toast-confirm-message"></div><div class="toast-confirm-actions"><button type="button" class="rebuild-btn alt" onclick="resolveToastConfirm(false)">Cancel</button><button type="button" class="rebuild-btn red" onclick="resolveToastConfirm(true)">Confirm</button></div></div></div>
+      <div id="toast-prompt-overlay" class="toast-confirm-overlay" style="display:none"><div class="toast-confirm-card"><div id="toast-prompt-message"></div><input id="toast-prompt-input" class="toast-prompt-input" type="number" min="1" step="1" value="1"><div class="toast-confirm-actions"><button type="button" class="rebuild-btn alt" onclick="resolveToastPrompt(null)">Cancel</button><button type="button" class="rebuild-btn" onclick="resolveToastPrompt(document.getElementById('toast-prompt-input').value)">Continue</button></div></div></div>`;
     while (host.firstElementChild) document.body.appendChild(host.firstElementChild);
     const grillFish=document.getElementById('grill-fish-image'),grillStage=document.getElementById('grill-fish-stage');
     let dragGrill=false,dragStart=null,dragMoved=false,dragOffset={x:0,y:0};
@@ -5641,7 +5722,24 @@
   async function saveGrillState(){if(!auth.currentUser||!grillState)return;try{await playerRef().update({grillState:grillState});}catch(e){console.error('Grill save failed',e);}}
   function toggleGrillZone(){if(!grillState)return;grillState.zone=grillState.zone==='hot'?'rest':'hot';renderGrillState();saveGrillState();}
   function flipGrillFish(){if(!grillState){showToast('Add a fish to the grill first.');return;}grillState.activeSide=grillState.activeSide===1?2:1;const nextPct=grillState[grillState.activeSide===1?'side1':'side2'];if(grillState.zone==='rest'&&nextPct<99){grillState.zone='hot';}renderGrillState();saveGrillState();showToast(`Flipped to Side ${grillState.activeSide}!`);}
-  async function finishGrilling(){if(!grillState)return;try{const done={...grillState.fish,cooking:{side1:grillState.side1,side2:grillState.side2,stage1:stage(grillState.side1),stage2:stage(grillState.side2),cookedAt:Date.now()}};const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists)throw Error('Player profile missing.');const d=s.data()||{};if(!d.grillState)throw Error('No fish is on the Grill.');tx.update(ref,{fishes:[...(d.fishes||[]),done],grillState:null,achievements:{...(d.achievements||{}),cookMaster:true}});});grillState=null;renderGrillState();showToast('Cooked fish returned to your Backpack.');loadBackpackData();}catch(e){showToast('Could not finish cooking: '+e.message);}}
+  async function finishGrilling(){if(!grillState)return;try{
+    const side1=Number(grillState.side1)||0,side2=Number(grillState.side2)||0;
+    const done={...grillState.fish,cooking:{side1,side2,stage1:stage(side1),stage2:stage(side2),cookedAt:Date.now()}};
+    const earnsDing=side1>=100&&side2>=100;
+    const ref=playerRef();let dingWasNew=false,cookWasNew=false;
+    await db.runTransaction(async tx=>{
+      const s=await tx.get(ref);if(!s.exists)throw Error('Player profile missing.');
+      const d=s.data()||{};if(!d.grillState)throw Error('No fish is on the Grill.');
+      const achievements={...(d.achievements||{})};
+      cookWasNew=!achievements.cookMaster;achievements.cookMaster=true;
+      if(earnsDing&&!achievements.dingReady){achievements.dingReady=true;dingWasNew=true;}
+      tx.update(ref,{fishes:[...(d.fishes||[]),done],grillState:null,achievements});
+    });
+    grillState=null;renderGrillState();showToast('Cooked fish returned to your Backpack.');
+    if(cookWasNew)window.showAchievementUnlocked('Call me master master','One, two FLIP!','Cook a fish.');
+    if(dingWasNew)window.showAchievementUnlocked('Ding, its ready!','Tastes better than before.','Burn a fish in the grill.');
+    loadBackpackData();
+  }catch(e){showToast('Could not finish cooking: '+e.message);}}
   async function closeGrillStation(){await saveGrillState();if(grillTimer)clearInterval(grillTimer);if(grillSaveTimer)clearInterval(grillSaveTimer);grillTimer=grillSaveTimer=null;closeRebuildModal('modal-grill-station');}
   window.openGrillStation=openGrillStation;window.openGrillFishPicker=openGrillFishPicker;window.addFishToGrill=addFishToGrill;window.toggleGrillZone=toggleGrillZone;window.flipGrillFish=flipGrillFish;window.finishGrilling=finishGrilling;window.closeGrillStation=closeGrillStation;
 
@@ -5649,7 +5747,7 @@
   let bobCountdownInterval=null;
   async function openBobTrade(){try{const d=(await playerRef().get()).data()||{};const t=d.bobTrade;const status=document.getElementById('bob-trade-status');if(bobCountdownInterval)clearInterval(bobCountdownInterval);const update=()=>{if(!t){status.textContent='No trade in progress. Cook a Bluefin Tuna and give it to Bob!';return;}if(t.claimed){status.textContent='Give a Well Cooked Bluefin Tuna for a Mini Tuna Cube.';return;}const remain=Math.max(0,600000-(Date.now()-t.startedAt));if(remain<=0){status.textContent='🎁 Your Mini Tuna Cube is ready to claim!';return;}const mm=Math.floor(remain/60000),ss=Math.floor((remain%60000)/1000);status.textContent=`⏳ Bob is preparing your Mini Tuna Cube: ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')} remaining`;};update();if(t&&!t.claimed)bobCountdownInterval=setInterval(update,1000);document.getElementById('modal-bob-trade').style.display='flex';}catch(e){showToast(e.message);}}
   async function startBobTrade(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.bobTrade&&!d.bobTrade.claimed)throw Error('You already have a Bob trade in progress.');const fs=[...(d.fishes||[])];const i=fs.findIndex(f=>f.name==='Bluefin Tuna'&&f.cooking&&stage(f.cooking.side1)==='Well Cooked'&&stage(f.cooking.side2)==='Well Cooked');if(i<0)throw Error('Bob only accepts a Bluefin Tuna with both sides Well Cooked (46% - 60%).');const fish=fs.splice(i,1)[0];tx.update(ref,{fishes:fs,bobTrade:{startedAt:Date.now(),fishId:fish.id||null,claimed:false}});});showToast('Bob accepted your Bluefin Tuna. Come back in 10 minutes.');openBobTrade();}catch(e){showToast(e.message);}}
-  async function claimBobReward(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},t=d.bobTrade;if(!t||t.claimed)throw Error('There is no unclaimed reward.');if(Date.now()-t.startedAt<600000)throw Error('Bob is still preparing your Mini Tuna Cube.');tx.update(ref,{miniTunaCubesCount:(d.miniTunaCubesCount||0)+1,bobTrade:{...t,claimed:true,claimedAt:Date.now()},achievements:{...(d.achievements||{}),bobMaster:true}});});showToast('You received 1 Mini Tuna Cube!');openBobTrade();loadBackpackData();}catch(e){showToast(e.message);}}
+  async function claimBobReward(){try{const ref=playerRef();let bobWasNew=false;await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},t=d.bobTrade;if(!t||t.claimed)throw Error('There is no unclaimed reward.');if(Date.now()-t.startedAt<600000)throw Error('Bob is still preparing your Mini Tuna Cube.');const achievements={...(d.achievements||{})};bobWasNew=!achievements.bobMaster;achievements.bobMaster=true;tx.update(ref,{miniTunaCubesCount:(d.miniTunaCubesCount||0)+1,bobTrade:{...t,claimed:true,claimedAt:Date.now()},achievements});});showToast('You received 1 Mini Tuna Cube!');if(bobWasNew)window.showAchievementUnlocked("That's what you get",'Hope i get a better one!','Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.');openBobTrade();loadBackpackData();}catch(e){showToast(e.message);}}
   window.openBobTrade=openBobTrade;window.startBobTrade=startBobTrade;window.claimBobReward=claimBobReward;
 
   // Cosmetic inventory and aquarium placement.
@@ -6215,7 +6313,7 @@
   window.adminDeleteCode=async function(codeName){
     try{
       if(!auth.currentUser||auth.currentUser.uid!==ADMIN_UID)throw Error('Admin only.');
-      if(!confirm(`Delete promo code "${codeName}"?`))return;
+      if(!(await showToastConfirm(`Delete promo code "${codeName}"?`)))return;
       await db.collection('codes').doc(codeName).delete();
       showToast(`Code "${codeName}" deleted successfully.`);window.loadAdminCodes();
     }catch(e){showToast('Error deleting code: '+e.message);}
@@ -6293,10 +6391,10 @@
   window.adminRemoveBaitOrCosmetic=async function(kind,name,maxCount){
     const username=document.getElementById('adminTargetUsername').value.trim();
     if(!username)return;
-    const raw=prompt(`How many "${name}" to remove from ${username}? (Max: ${maxCount})`, '1');
+    const raw=await showToastPrompt(`How many "${name}" should be removed from ${username}? (Max: ${maxCount})`, '1');
     if(raw===null)return;
-    const qty=parseInt(raw,10);
-    if(isNaN(qty)||qty<=0){showToast('Enter a valid quantity.');return;}
+    const qty=Number(raw);
+    if(!Number.isSafeInteger(qty)||qty<=0||qty>maxCount){showToast(`Enter a whole number between 1 and ${maxCount}.`);return;}
     try{
       const uid=await getUidByUsername(username);if(!uid)throw Error('Player not found.');
       const ref=db.collection('jugadores').doc(uid);
@@ -6441,7 +6539,8 @@
     if(!list||document.getElementById('ach-cook-master'))return;
     [
       ['cook-master','Call me master master','One, two FLIP!','Cook a fish.'],
-      ['bob-master',"That's what you get",'Hope i get a better one!','Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.']
+      ['bob-master',"That's what you get",'Hope i get a better one!','Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.'],
+      ['ding-ready',"Ding, its ready!",'Tastes better than before.','Burn a fish in the grill.']
     ].forEach(([id,name,desc,obj])=>{
       const el=document.createElement('div');
       el.id='ach-'+id;
@@ -6452,7 +6551,7 @@
   }
   let recaptchaReady=false;
   function renderVisibleRecaptcha(){if(!recaptchaReady||!window.grecaptcha||typeof grecaptcha.render!=='function')return;const modal=document.getElementById('modal-account');if(!modal||modal.style.display!=='flex')return;const login=document.getElementById('form-login'),register=document.getElementById('form-register');try{if(login&&login.style.display!=='none'&&recaptchaLoginId===null){const node=document.getElementById('recaptcha-login');if(node&&node.childElementCount===0)recaptchaLoginId=grecaptcha.render(node,{sitekey:RECAPTCHA_SITE_KEY});}if(register&&register.style.display!=='none'&&recaptchaRegisterId===null){const node=document.getElementById('recaptcha-register');if(node&&node.childElementCount===0)recaptchaRegisterId=grecaptcha.render(node,{sitekey:RECAPTCHA_SITE_KEY});}}catch(e){console.error('reCAPTCHA render error:',e);}}
-  const origOpenModal=window.openModal;window.openModal=function(id){if(origOpenModal)origOpenModal(id);if(id==='modal-account')setTimeout(renderVisibleRecaptcha,150);if(id==='modal-achievements'){addSpecialAchievements();if(auth.currentUser)playerRef().get().then(s=>{const a=(s.data()||{}).achievements||{};[['cook-master','cookMaster'],['bob-master','bobMaster']].forEach(([id,k])=>{const card=document.getElementById('ach-'+id);const e=document.getElementById('status-'+id);const done=!!a[k];if(card){card.style.opacity=done?'1':'0.5';card.style.borderColor=done?'#2ecc71':'#cbd5e1';}if(e){e.textContent=done?'Completed':'Locked';e.style.color=done?'#2ecc71':'#e74c3c';}});}).catch(()=>{});}if(id==='modal-backpack')setTimeout(()=>window.loadBackpackData&&window.loadBackpackData(),0);};
+  const origOpenModal=window.openModal;window.openModal=function(id){if(origOpenModal)origOpenModal(id);if(id==='modal-account')setTimeout(renderVisibleRecaptcha,150);if(id==='modal-achievements'){addSpecialAchievements();if(auth.currentUser)playerRef().get().then(s=>{const a=(s.data()||{}).achievements||{};[['cook-master','cookMaster'],['bob-master','bobMaster'],['ding-ready','dingReady']].forEach(([id,k])=>{const card=document.getElementById('ach-'+id);const e=document.getElementById('status-'+id);const done=!!a[k];if(card){card.style.opacity=done?'1':'0.5';card.style.borderColor=done?'#2ecc71':'#cbd5e1';}if(e){e.textContent=done?'Completed':'Locked';e.style.color=done?'#2ecc71':'#e74c3c';}});}).catch(()=>{});}if(id==='modal-backpack')setTimeout(()=>window.loadBackpackData&&window.loadBackpackData(),0);};
   const origSwitchAuthTab=window.switchAuthTab;window.switchAuthTab=function(tab){if(origSwitchAuthTab)origSwitchAuthTab(tab);setTimeout(renderVisibleRecaptcha,150);};
 
 
