@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -817,12 +817,12 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.3 BETA</div>
+      <div class="version-tag">v.1.0.0.3</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -1654,32 +1654,25 @@
       </div>
       <div class="form-group">
         <label>Coins Reward</label>
-        <input type="number" id="adminPromoCoins" placeholder="Coins amount" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label>Bonus Fish Reward (Optional - exact fish name)</label>
-        <input type="text" id="adminPromoFish" placeholder="e.g. Goldfish Snack or leave blank" autocomplete="off">
+        <input type="number" id="adminPromoCoins" placeholder="Coins amount" min="0" step="1" autocomplete="off">
       </div>
       <div style="border:1px solid #cbd5e1;border-radius:12px;padding:12px;margin:12px 0;background:#f8fafc;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;">
           <strong style="color:#1e293b;">Item Rewards</strong>
           <button type="button" class="modal-action-btn" style="background:#2980b9;padding:7px 12px;" onclick="addPromoRewardRow()">+ Add Reward</button>
         </div>
-        <p style="font-size:.82rem;color:#64748b;margin:0 0 10px;">Add multiple rewards to one code, for example Worm Bait and Mini Tuna Cube together.</p>
+        <p style="font-size:.82rem;color:#64748b;margin:0 0 10px;">Choose Fish, Bait or Cosmetic, then enter the item's exact name and quantity.</p>
         <div id="adminPromoRewardRows">
-          <div class="promo-reward-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-            <select class="promo-reward-type" style="flex:2;min-width:0;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
-              <option value="worm">Worm Bait</option>
-              <option value="cube">Mini Tuna Cube</option>
+          <div class="promo-reward-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
+            <select class="promo-reward-type" aria-label="Reward category" style="flex:1;min-width:105px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
+              <option value="fish">Fish</option>
+              <option value="bait">Bait</option>
               <option value="cosmetic">Cosmetic</option>
             </select>
-            <input class="promo-reward-qty" type="number" min="1" step="1" value="1" aria-label="Reward quantity" style="flex:1;min-width:65px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+            <input class="promo-reward-name" type="text" placeholder="Exact item name (e.g. Clam)" aria-label="Exact item name" style="flex:2;min-width:145px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+            <input class="promo-reward-qty" type="number" min="1" step="1" value="1" aria-label="Reward quantity" style="width:75px;min-width:65px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
             <button type="button" aria-label="Remove reward" onclick="this.closest('.promo-reward-row').remove()" style="border:0;border-radius:8px;background:#fee2e2;color:#b91c1c;padding:9px 12px;font-weight:700;">×</button>
           </div>
-        </div>
-        <div style="margin-top:8px;">
-          <label>Cosmetic name (only if a Cosmetic reward is selected)</label>
-          <input type="text" id="adminPromoCosmeticName" placeholder="e.g. Sandcastle" autocomplete="off">
         </div>
       </div>
       <button type="button" class="modal-action-btn" style="background:#2980b9; margin-bottom: 10px;" onclick="adminCreateCode()">Create Code</button>
@@ -3265,10 +3258,11 @@
     function openOtherAquarium() {
       isViewingMyAquarium = false;
       let tanksMap = viewingTargetTanksMap || {};
-      renderAquarium(viewingTargetUsername, viewingTargetFishes, tanksMap);
+      renderAquarium(viewingTargetUsername, viewingTargetFishes, tanksMap, viewingTargetCosmeticsMap || {});
     }
 
     let viewingTargetTanksMap = {};
+    let viewingTargetCosmeticsMap = {};
 
     function changeAquariumRoom(direction) {
       const maxRooms = isViewingMyAquarium ? totalAquariumRoomsOwned : Object.keys(viewingTargetTanksMap).length || 1;
@@ -3288,7 +3282,7 @@
           }
         });
       } else {
-        renderAquarium(viewingTargetUsername, viewingTargetFishes, viewingTargetTanksMap);
+        renderAquarium(viewingTargetUsername, viewingTargetFishes, viewingTargetTanksMap, viewingTargetCosmeticsMap || {});
       }
     }
 
@@ -4501,6 +4495,10 @@
       viewingTargetUid = uid;
       viewingTargetFishes = fishes;
       viewingTargetTanksMap = tanksMap;
+      try {
+        const targetAquariumDoc = await db.collection('jugadores').doc(uid).get();
+        viewingTargetCosmeticsMap = targetAquariumDoc.exists ? (targetAquariumDoc.data().aquariumCosmeticsMap || {}) : {};
+      } catch (_) { viewingTargetCosmeticsMap = {}; }
       currentAquariumRoomIndex = 0;
       
       document.getElementById('view-profile-name').innerText = username;
@@ -6152,10 +6150,116 @@
   const originalTargetInventoryLoader=window.loadTargetUserInventoryForAdmin;
   window.loadTargetUserInventoryForAdmin=async function(){if(originalTargetInventoryLoader)await originalTargetInventoryLoader();try{const username=document.getElementById('adminTargetUsername')?.value.trim();if(!username)return;const uid=await getUidByUsername(username);if(!uid)return;const d=(await db.collection('jugadores').doc(uid).get()).data()||{};const cubes=document.getElementById('admin-stat-cubes'),cos=document.getElementById('admin-stat-cosmetics');if(cubes){cubes.style.display='block';cubes.textContent=`Mini Tuna Cubes: ${d.miniTunaCubesCount||0}`;}if(cos){cos.style.display='block';cos.textContent=`Cosmetics: ${Object.entries(d.cosmeticsInventory||{}).filter(([,v])=>v>0).map(([k,v])=>`${k} x${v}`).join(', ')||'None'}`;}renderAdminBaitsAndCosmeticsLists(d);}catch(e){console.warn('Admin inventory stats unavailable',e);}};
 
-  // Promo codes can grant both bait types and cosmetics; redemption is atomic and one-time.
-  window.adminCreateCode=async function(){try{if(!auth.currentUser||auth.currentUser.uid!==ADMIN_UID)throw Error('Admin only.');const code=document.getElementById('adminPromoCode').value.trim().toUpperCase();const rewardNumber=id=>{const raw=document.getElementById(id)?.value||'0',n=Number(raw);if(!Number.isInteger(n)||n<0)throw Error('Rewards must be non-negative whole numbers.');return n;};const coins=rewardNumber('adminPromoCoins');const baitName=(document.getElementById('adminPromoBaitName')?.value||'').trim();const baitQuantity=rewardNumber('adminPromoBaitQty');const fishInput=document.getElementById('adminPromoFish').value.trim();const cosmeticName=(document.getElementById('adminPromoCosmetic')?.value||'').trim();const cosmeticQuantity=rewardNumber('adminPromoCosmeticQty');if(!code)throw Error('Enter a code name.');if([coins,baitQuantity,cosmeticQuantity].some(n=>!Number.isInteger(n)||n<0))throw Error('Rewards must be non-negative whole numbers.');if(cosmeticName&&!cosmeticQuantity)throw Error('Enter a cosmetic quantity.');if(!cosmeticName&&cosmeticQuantity)throw Error('Type a cosmetic name.');if(baitName&&!baitQuantity)throw Error('Enter a bait quantity.');if(!baitName&&baitQuantity)throw Error('Type a bait name.');let bonusFish=null;if(fishInput){const m=ALLOWED_FISH_TYPES.find(f=>f.name.toLowerCase()===fishInput.toLowerCase());if(!m)throw Error('That fish does not exist.');bonusFish=m.name;}if(coins+baitQuantity+cosmeticQuantity+(bonusFish?1:0)===0)throw Error('Add at least one reward.');const ref=db.collection('codes').doc(code);if((await ref.get()).exists)throw Error('That code already exists.');await ref.set({coins,baitName:baitName||null,baitQuantity:baitName?baitQuantity:0,bonusFish,cosmeticName:cosmeticName||null,cosmeticQuantity:cosmeticName?cosmeticQuantity:0,createdAt:firebase.firestore.FieldValue.serverTimestamp()});['adminPromoCode','adminPromoCoins','adminPromoBaitName','adminPromoBaitQty','adminPromoFish','adminPromoCosmeticQty'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});const c=document.getElementById('adminPromoCosmetic');if(c)c.value='';showToast(`Promo code ${code} created.`);loadAdminCodes();}catch(e){showToast('Could not create code: '+e.message);}};
-  window.loadAdminCodes=async function(){const c=document.getElementById('adminCodesList');if(!c)return;c.textContent='Loading codes...';try{const snap=await db.collection('codes').get();if(snap.empty){c.textContent='No active codes.';return;}c.innerHTML=snap.docs.map(d=>{const x=d.data();const rewards=[x.coins?`${x.coins} Coins`:null,x.baitName?`${x.baitQuantity||1} ${x.baitName}`:null,x.bonusFish||null,x.cosmeticName?`${x.cosmeticQuantity||1} ${x.cosmeticName}`:null].filter(Boolean).join(' + ')||'No rewards';return `<div class="admin-code-item"><strong>${esc(d.id)}</strong><span>${esc(rewards)}</span></div>`;}).join('');}catch(e){c.textContent='Error loading codes: '+e.message;}};
-  window.redeemCode=async function(){const user=auth.currentUser;if(!user){showToast('Log in to redeem a code.');return;}const code=(document.getElementById('redeemCodeInput').value||'').trim().toUpperCase();if(!code){showToast('Enter a promo code.');return;}try{const codeRef=db.collection('codes').doc(code),pRef=db.collection('jugadores').doc(user.uid);let rewards=[];await db.runTransaction(async tx=>{const cs=await tx.get(codeRef),ps=await tx.get(pRef);if(!cs.exists)throw Error('Invalid code.');if(!ps.exists)throw Error('Player profile not found.');const x=cs.data()||{},d=ps.data()||{},redeemed=d.redeemedCodes||[];if(redeemed.includes(code))throw Error('You have already redeemed this code.');const coins=x.coins||0,baitName=x.baitName||null,baitQty=x.baitQuantity||0,worm=x.wormBaits||0,cubes=x.miniTunaCubes||0,fish=x.bonusFish||null,cos=x.cosmeticName||null,cosQty=x.cosmeticQuantity||0;const update={coins:(d.coins||0)+coins,redeemedCodes:[...redeemed,code]};if(baitName){const key=/^mini tuna cube$/i.test(baitName)?'miniTunaCubesCount':/^worm bait$/i.test(baitName)?'wormBaitsCount':null;if(!key)throw Error('Unknown bait name.');update[key]=(d[key]||0)+baitQty;}else{update.wormBaitsCount=(d.wormBaitsCount||0)+worm;update.miniTunaCubesCount=(d.miniTunaCubesCount||0)+cubes;}if(fish)update.fishes=[...(d.fishes||[]),{id:'code-'+code+'-'+Date.now(),name:fish,timestamp:new Date().toISOString()}];if(cos&&cosQty>0){const inv={...(d.cosmeticsInventory||{})};inv[cos]=(inv[cos]||0)+cosQty;update.cosmeticsInventory=inv;}tx.update(pRef,update);rewards=[coins?`${coins} Coins`:null,baitName?`${baitQty} ${baitName}`:null,worm?`${worm} Worm Bait`:null,cubes?`${cubes} Mini Tuna Cube`:null,fish,cos?`${cosQty} ${cos}`:null].filter(Boolean);});document.getElementById('redeemCodeInput').value='';showToast('Code redeemed: '+(rewards.join(', ')||'rewards received')+'.');loadBackpackData();updateGameHUD();}catch(e){showToast('Code redemption failed: '+e.message);}};
+  // Promo codes support multiple exact-name Fish, Bait and Cosmetic rewards.
+  window.addPromoRewardRow=function(){
+    const wrap=document.getElementById('adminPromoRewardRows');if(!wrap)return;
+    const row=document.createElement('div');row.className='promo-reward-row';
+    row.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;';
+    row.innerHTML=`<select class="promo-reward-type" aria-label="Reward category" style="flex:1;min-width:105px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;"><option value="fish">Fish</option><option value="bait">Bait</option><option value="cosmetic">Cosmetic</option></select>
+      <input class="promo-reward-name" type="text" placeholder="Exact item name" aria-label="Exact item name" style="flex:2;min-width:145px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+      <input class="promo-reward-qty" type="number" min="1" step="1" value="1" aria-label="Reward quantity" style="width:75px;min-width:65px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+      <button type="button" aria-label="Remove reward" onclick="this.closest('.promo-reward-row').remove()" style="border:0;border-radius:8px;background:#fee2e2;color:#b91c1c;padding:9px 12px;font-weight:700;">×</button>`;
+    wrap.appendChild(row);
+  };
+  window.adminCreateCode=async function(){
+    try{
+      if(!auth.currentUser||auth.currentUser.uid!==ADMIN_UID)throw Error('Admin only.');
+      const code=document.getElementById('adminPromoCode').value.trim().toUpperCase();
+      const rawCoins=document.getElementById('adminPromoCoins').value.trim();
+      const coins=rawCoins===''?0:Number(rawCoins);
+      if(!code)throw Error('Enter a code name.');
+      if(!Number.isSafeInteger(coins)||coins<0)throw Error('Coins must be a non-negative whole number.');
+      const items=[];
+      document.querySelectorAll('#adminPromoRewardRows .promo-reward-row').forEach(row=>{
+        const type=row.querySelector('.promo-reward-type').value;
+        const typedName=(row.querySelector('.promo-reward-name')?.value||'').trim();
+        const quantity=Number(row.querySelector('.promo-reward-qty').value);
+        if(!typedName && quantity===1)return; // Ignore the untouched starter row for coin-only codes.
+        if(!typedName)throw Error('Enter the exact name for every item reward.');
+        if(!Number.isSafeInteger(quantity)||quantity<1)throw Error('Every item reward needs a quantity of at least 1.');
+        let name=typedName;
+        if(type==='fish'){
+          const match=ALLOWED_FISH_TYPES.find(f=>f.name.toLowerCase()===typedName.toLowerCase());
+          if(!match)throw Error(`"${typedName}" is not an existing fish. Use its exact name.`);
+          name=match.name;
+        }else if(type==='bait'){
+          const match=['Worm Bait','Mini Tuna Cube'].find(x=>x.toLowerCase()===typedName.toLowerCase());
+          if(!match)throw Error('Unknown bait. Use Worm Bait or Mini Tuna Cube.');
+          name=match;
+        }else if(type!=='cosmetic')throw Error('Invalid item category.');
+        items.push({type,name,quantity});
+      });
+      if(coins===0&&!items.length)throw Error('Add at least one reward before creating the code.');
+      const ref=db.collection('codes').doc(code);
+      if((await ref.get()).exists)throw Error('That code already exists.');
+      await ref.set({coins,items,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+      document.getElementById('adminPromoCode').value='';
+      document.getElementById('adminPromoCoins').value='';
+      const rows=document.getElementById('adminPromoRewardRows');rows.innerHTML='';window.addPromoRewardRow();
+      showToast(`Promo code ${code} created successfully.`);window.loadAdminCodes();
+    }catch(e){showToast('Could not create code: '+e.message);}
+  };
+  window.loadAdminCodes=async function(){
+    const c=document.getElementById('adminCodesList');if(!c)return;c.textContent='Loading codes...';
+    try{
+      const snap=await db.collection('codes').get();
+      if(snap.empty){c.textContent='No active codes.';return;}
+      c.innerHTML=snap.docs.map(d=>{
+        const x=d.data()||{},rewards=[x.coins?`${x.coins} Coins`:null];
+        (x.items||[]).forEach(it=>rewards.push(`${it.quantity} ${it.name} (${it.type})`));
+        if(!x.items){if(x.baitName)rewards.push(`${x.baitQuantity||1} ${x.baitName}`);if(x.wormBaits)rewards.push(`${x.wormBaits} Worm Bait`);if(x.miniTunaCubes)rewards.push(`${x.miniTunaCubes} Mini Tuna Cube`);if(x.bonusFish)rewards.push(x.bonusFish);if(x.cosmeticName)rewards.push(`${x.cosmeticQuantity||1} ${x.cosmeticName}`);Object.entries(x.cosmetics||{}).forEach(([n,q])=>rewards.push(`${q} ${n}`));}
+        return `<div class="admin-code-item"><strong>${esc(d.id)}</strong><span style="flex:1;margin:0 8px;">${esc(rewards.filter(Boolean).join(' + ')||'No rewards')}</span><button type="button" style="background:#e74c3c;color:#fff;border:none;padding:5px 9px;border-radius:5px;cursor:pointer;" onclick="adminDeleteCode('${esc(d.id)}')">Delete</button></div>`;
+      }).join('');
+    }catch(e){c.textContent='Error loading codes: '+e.message;}
+  };
+  window.adminDeleteCode=async function(codeName){
+    try{
+      if(!auth.currentUser||auth.currentUser.uid!==ADMIN_UID)throw Error('Admin only.');
+      if(!confirm(`Delete promo code "${codeName}"?`))return;
+      await db.collection('codes').doc(codeName).delete();
+      showToast(`Code "${codeName}" deleted successfully.`);window.loadAdminCodes();
+    }catch(e){showToast('Error deleting code: '+e.message);}
+  };
+  window.redeemCode=async function(){
+    const user=auth.currentUser;if(!user){showToast('Log in to redeem a code.');return;}
+    const code=(document.getElementById('redeemCodeInput').value||'').trim().toUpperCase();
+    if(!code){showToast('Enter a promo code.');return;}
+    try{
+      const codeRef=db.collection('codes').doc(code),pRef=db.collection('jugadores').doc(user.uid);let rewards=[];
+      await db.runTransaction(async tx=>{
+        const cs=await tx.get(codeRef),ps=await tx.get(pRef);
+        if(!cs.exists)throw Error('Invalid code.');
+        if(!ps.exists)throw Error('Player profile not found.');
+        const x=cs.data()||{},d=ps.data()||{},redeemed=d.redeemedCodes||[];
+        if(redeemed.includes(code))throw Error('You have already redeemed this code.');
+        const update={coins:(d.coins||0)+(x.coins||0),redeemedCodes:[...redeemed,code]};
+        if(x.coins)rewards.push(`${x.coins} Coins`);
+        if((x.items||[]).length){
+          const fishes=[...(d.fishes||[])],cosmetics={...(d.cosmeticsInventory||{})};
+          let worms=d.wormBaitsCount||0,cubes=d.miniTunaCubesCount||0;
+          x.items.forEach(it=>{
+            const qty=Number(it.quantity)||0;
+            if(it.type==='fish'){for(let i=0;i<qty;i++)fishes.push({id:'code-'+code+'-'+Date.now()+'-'+i+'-'+Math.random().toString(36).slice(2),name:it.name,timestamp:new Date().toISOString()});}
+            else if(it.type==='bait'){if(it.name==='Worm Bait')worms+=qty;else if(it.name==='Mini Tuna Cube')cubes+=qty;else throw Error('Unknown bait in this code.');}
+            else if(it.type==='cosmetic')cosmetics[it.name]=(cosmetics[it.name]||0)+qty;
+            rewards.push(`${qty} ${it.name}`);
+          });
+          update.fishes=fishes;update.wormBaitsCount=worms;update.miniTunaCubesCount=cubes;update.cosmeticsInventory=cosmetics;
+        }else{
+          const baitName=x.baitName||null,baitQty=x.baitQuantity||0,worm=x.wormBaits||0,cubes=x.miniTunaCubes||0,fish=x.bonusFish||null,cos=x.cosmeticName||null,cosQty=x.cosmeticQuantity||0;
+          if(baitName){const key=baitName==='Mini Tuna Cube'?'miniTunaCubesCount':baitName==='Worm Bait'?'wormBaitsCount':null;if(!key)throw Error('Unknown bait name.');update[key]=(d[key]||0)+baitQty;rewards.push(`${baitQty} ${baitName}`);}
+          update.wormBaitsCount=(update.wormBaitsCount??d.wormBaitsCount??0)+worm;update.miniTunaCubesCount=(update.miniTunaCubesCount??d.miniTunaCubesCount??0)+cubes;
+          if(worm)rewards.push(`${worm} Worm Bait`);if(cubes)rewards.push(`${cubes} Mini Tuna Cube`);
+          if(fish){update.fishes=[...(d.fishes||[]),{id:'code-'+code+'-'+Date.now(),name:fish,timestamp:new Date().toISOString()}];rewards.push(fish);}
+          const cosmetics={...(d.cosmeticsInventory||{})};if(cos&&cosQty){cosmetics[cos]=(cosmetics[cos]||0)+cosQty;rewards.push(`${cosQty} ${cos}`);}
+          Object.entries(x.cosmetics||{}).forEach(([n,q])=>{cosmetics[n]=(cosmetics[n]||0)+q;rewards.push(`${q} ${n}`);});
+          if(Object.keys(cosmetics).length)update.cosmeticsInventory=cosmetics;
+        }
+        tx.update(pRef,update);
+      });
+      document.getElementById('redeemCodeInput').value='';showToast('Code redeemed: '+(rewards.join(', ')||'rewards received')+'.');loadBackpackData();updateGameHUD();
+    }catch(e){showToast('Code redemption failed: '+e.message);}
+  };
 
   // Admin grant: rules must explicitly permit the admin UID to update other players (see note in delivery).
   async function adminGiveRebuildItem(kind){const username=document.getElementById('adminTargetUsername').value.trim(),amount=safeInt(document.getElementById('admin-rebuild-amount').value);if(!username||!amount){showToast('Enter a recipient username and valid amount.');return;}try{const uid=await getUidByUsername(username);if(!uid)throw Error('Player not found.');const ref=db.collection('jugadores').doc(uid);await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists)throw Error('Player profile not found.');const d=s.data()||{},u={};if(kind==='worm')u.wormBaitsCount=(d.wormBaitsCount||0)+amount;else if(kind==='cube')u.miniTunaCubesCount=(d.miniTunaCubesCount||0)+amount;else{const inv={...(d.cosmeticsInventory||{})};inv.Sandcastle=(inv.Sandcastle||0)+amount;u.cosmeticsInventory=inv;}tx.update(ref,u);});showToast(`Granted ${amount} ${kind==='worm'?'Worm Bait':kind==='cube'?'Mini Tuna Cube':'Sandcastle'} to ${username}.`);loadTargetUserInventoryForAdmin();}catch(e){showToast('Admin grant failed: '+e.message+' (check Firestore admin update rules).');}}
@@ -6425,10 +6529,10 @@
       // their top coordinate is the ground line minus their own image height.
       const sandGroundY = h * 0.72;
       let minY = isSandCreature
-        ? sandGroundY - ih - 1.5
+        ? sandGroundY - ih + 3.5
         : h * (isJelly ? 0.22 : 0.20);
       let maxY = isSandCreature
-        ? sandGroundY - ih + 1.5
+        ? sandGroundY - ih + 6.5
         : h * (isJelly ? 0.66 : 0.70);
 
       minY = Math.max(pad, Math.min(minY, h - ih - pad));
