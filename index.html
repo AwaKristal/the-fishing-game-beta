@@ -1520,6 +1520,8 @@
         <span style="font-weight: bold; color: #1e3a8a;">User Overview:</span>
         <span id="admin-stat-coins">💰 Coins: 0</span>
         <span id="admin-stat-tanks">Mini Tanks: 0</span>
+        <span id="admin-stat-tanks-inventory">Mini Tanks in inventory: 0</span>
+        <span id="admin-stat-tanks-placed">Mini Tanks placed: 0</span>
         <span id="admin-stat-rooms">Aquarium Rooms: 1</span>
       </div>
 
@@ -4683,6 +4685,8 @@
       const username = usernameEl.value.trim();
       const statCoins = document.getElementById('admin-stat-coins');
       const statTanks = document.getElementById('admin-stat-tanks');
+      const statTanksInventory = document.getElementById('admin-stat-tanks-inventory');
+      const statTanksPlaced = document.getElementById('admin-stat-tanks-placed');
       const statRooms = document.getElementById('admin-stat-rooms');
       const statBaits = document.getElementById('admin-stat-baits');
       const baitsListEl = document.getElementById('admin-target-baits-list');
@@ -4699,6 +4703,8 @@
         if (cosListEl) cosListEl.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Select a target username above to view cosmetics...</p>';
         setText(statCoins, '💰 Coins: 0');
         setText(statTanks, 'Mini Tanks: 0');
+        setText(statTanksInventory, 'Mini Tanks in inventory: 0');
+        setText(statTanksPlaced, 'Mini Tanks placed: 0');
         setText(statRooms, 'Aquarium Rooms: 1');
         setText(statBaits, 'Baits: 0');
         return;
@@ -4723,7 +4729,17 @@
 
         const data = targetDoc.data() || {};
         setText(statCoins, `💰 Coins: ${Number(data.coins) || 0}`);
-        setText(statTanks, `Mini Tanks: ${Number(data.miniTanksCount) || 0}`);
+        const tanksInInventory = Math.max(0, Number(data.miniTanksCount) || 0);
+        const tanksMap = data.aquariumTanksMap && typeof data.aquariumTanksMap === 'object'
+          ? data.aquariumTanksMap
+          : {};
+        const tanksPlaced = Object.values(tanksMap).reduce((total, roomTanks) => {
+          if (!Array.isArray(roomTanks)) return total;
+          return total + roomTanks.filter(Boolean).length;
+        }, 0);
+        setText(statTanks, `Mini Tanks: ${tanksInInventory + tanksPlaced}`);
+        setText(statTanksInventory, `Mini Tanks in inventory: ${tanksInInventory}`);
+        setText(statTanksPlaced, `Mini Tanks placed: ${tanksPlaced}`);
         setText(statRooms, `Aquarium Rooms: ${Number(data.aquariumRoomsOwned) || 1}`);
         setText(statBaits, `Baits: ${Number(data.wormBaitsCount) || 0}`);
 
@@ -6311,7 +6327,7 @@
           if(!match)throw Error(`"${typedName}" is not an existing fish. Use its exact name.`);
           name=match.name;
         }else if(type==='bait'){
-          const match=['Worm Bait','Mini Tuna Cube'].find(x=>x.toLowerCase()===typedName.toLowerCase());
+          const match=['Worm Bait','Mini Tuna Cube','Mini Tung Cube'].find(x=>x.toLowerCase()===typedName.toLowerCase());
           if(!match)throw Error('Unknown bait. Use Worm Bait, Mini Tuna Cube, or Mini Tung Cube.');
           name=match;
         }else if(type!=='cosmetic')throw Error('Invalid item category.');
@@ -6334,7 +6350,7 @@
       if(snap.empty){c.textContent='No active codes.';return;}
       c.innerHTML=snap.docs.map(d=>{
         const x=d.data()||{},rewards=[x.coins?`${x.coins} Coins`:null];
-        (x.items||[]).forEach(it=>rewards.push(`${it.quantity} ${it.name} (${it.type})`));
+        (x.items||[]).forEach(it=>{const legacyTung=String(it.name||'').toLowerCase()==='mini tung cube';rewards.push(`${it.quantity} ${it.name} (${legacyTung?'bait':it.type})`);});
         if(!x.items){if(x.baitName)rewards.push(`${x.baitQuantity||1} ${x.baitName}`);if(x.wormBaits)rewards.push(`${x.wormBaits} Worm Bait`);if(x.miniTunaCubes)rewards.push(`${x.miniTunaCubes} Mini Tuna Cube`);if(x.bonusFish)rewards.push(x.bonusFish);if(x.cosmeticName)rewards.push(`${x.cosmeticQuantity||1} ${x.cosmeticName}`);Object.entries(x.cosmetics||{}).forEach(([n,q])=>rewards.push(`${q} ${n}`));}
         return `<div class="admin-code-item"><strong>${esc(d.id)}</strong><span style="flex:1;margin:0 8px;">${esc(rewards.filter(Boolean).join(' + ')||'No rewards')}</span><button type="button" style="background:#e74c3c;color:#fff;border:none;padding:5px 9px;border-radius:5px;cursor:pointer;" onclick="adminDeleteCode('${esc(d.id)}')">Delete</button></div>`;
       }).join('');
@@ -6364,23 +6380,23 @@
         if(x.coins)rewards.push(`${x.coins} Coins`);
         if((x.items||[]).length){
           const fishes=[...(d.fishes||[])],cosmetics={...(d.cosmeticsInventory||{})};
-          let worms=d.wormBaitsCount||0,cubes=d.miniTunaCubesCount||0;
+          let worms=d.wormBaitsCount||0,cubes=d.miniTunaCubesCount||0,tung=d.miniTungCubesCount||0;
           x.items.forEach(it=>{
             const qty=Number(it.quantity)||0;
             if(it.type==='fish'){for(let i=0;i<qty;i++)fishes.push({id:'code-'+code+'-'+Date.now()+'-'+i+'-'+Math.random().toString(36).slice(2),name:it.name,timestamp:new Date().toISOString()});}
-            else if(it.type==='bait'){if(it.name==='Worm Bait')worms+=qty;else if(it.name==='Mini Tuna Cube')cubes+=qty;else throw Error('Unknown bait in this code.');}
+            else if(it.type==='bait'||String(it.name||'').toLowerCase()==='mini tung cube'){if(it.name==='Worm Bait')worms+=qty;else if(it.name==='Mini Tuna Cube')cubes+=qty;else if(String(it.name||'').toLowerCase()==='mini tung cube')tung+=qty;else throw Error('Unknown bait in this code.');}
             else if(it.type==='cosmetic')cosmetics[it.name]=(cosmetics[it.name]||0)+qty;
             rewards.push(`${qty} ${it.name}`);
           });
-          update.fishes=fishes;update.wormBaitsCount=worms;update.miniTunaCubesCount=cubes;update.cosmeticsInventory=cosmetics;
+          update.fishes=fishes;update.wormBaitsCount=worms;update.miniTunaCubesCount=cubes;update.miniTungCubesCount=tung;update.cosmeticsInventory=cosmetics;
         }else{
-          const baitName=x.baitName||null,baitQty=x.baitQuantity||0,worm=x.wormBaits||0,cubes=x.miniTunaCubes||0,fish=x.bonusFish||null,cos=x.cosmeticName||null,cosQty=x.cosmeticQuantity||0;
-          if(baitName){const key=baitName==='Mini Tuna Cube'?'miniTunaCubesCount':baitName==='Worm Bait'?'wormBaitsCount':null;if(!key)throw Error('Unknown bait name.');update[key]=(d[key]||0)+baitQty;rewards.push(`${baitQty} ${baitName}`);}
-          update.wormBaitsCount=(update.wormBaitsCount??d.wormBaitsCount??0)+worm;update.miniTunaCubesCount=(update.miniTunaCubesCount??d.miniTunaCubesCount??0)+cubes;
-          if(worm)rewards.push(`${worm} Worm Bait`);if(cubes)rewards.push(`${cubes} Mini Tuna Cube`);
+          const baitName=x.baitName||null,baitQty=x.baitQuantity||0,worm=x.wormBaits||0,cubes=x.miniTunaCubes||0,tung=x.miniTungCubes||0,fish=x.bonusFish||null,rawCos=x.cosmeticName||null,cos=String(rawCos||'').toLowerCase()==='mini tung cube'?null:rawCos,cosQty=x.cosmeticQuantity||0;
+          if(baitName){const key=baitName==='Mini Tuna Cube'?'miniTunaCubesCount':baitName==='Mini Tung Cube'?'miniTungCubesCount':baitName==='Worm Bait'?'wormBaitsCount':null;if(!key)throw Error('Unknown bait name.');update[key]=(d[key]||0)+baitQty;rewards.push(`${baitQty} ${baitName}`);}
+          update.wormBaitsCount=(update.wormBaitsCount??d.wormBaitsCount??0)+worm;update.miniTunaCubesCount=(update.miniTunaCubesCount??d.miniTunaCubesCount??0)+cubes;update.miniTungCubesCount=(update.miniTungCubesCount??d.miniTungCubesCount??0)+tung;
+          if(worm)rewards.push(`${worm} Worm Bait`);if(cubes)rewards.push(`${cubes} Mini Tuna Cube`);if(tung)rewards.push(`${tung} Mini Tung Cube`);
           if(fish){update.fishes=[...(d.fishes||[]),{id:'code-'+code+'-'+Date.now(),name:fish,timestamp:new Date().toISOString()}];rewards.push(fish);}
-          const cosmetics={...(d.cosmeticsInventory||{})};if(cos&&cosQty){cosmetics[cos]=(cosmetics[cos]||0)+cosQty;rewards.push(`${cosQty} ${cos}`);}
-          Object.entries(x.cosmetics||{}).forEach(([n,q])=>{cosmetics[n]=(cosmetics[n]||0)+q;rewards.push(`${q} ${n}`);});
+          const cosmetics={...(d.cosmeticsInventory||{})};if(rawCos&&String(rawCos).toLowerCase()==='mini tung cube'&&cosQty){update.miniTungCubesCount=(update.miniTungCubesCount??d.miniTungCubesCount??0)+cosQty;rewards.push(`${cosQty} Mini Tung Cube`);}else if(cos&&cosQty){cosmetics[cos]=(cosmetics[cos]||0)+cosQty;rewards.push(`${cosQty} ${cos}`);}
+          Object.entries(x.cosmetics||{}).forEach(([n,q])=>{if(String(n).toLowerCase()==='mini tung cube'){update.miniTungCubesCount=(update.miniTungCubesCount??d.miniTungCubesCount??0)+q;rewards.push(`${q} Mini Tung Cube`);}else{cosmetics[n]=(cosmetics[n]||0)+q;rewards.push(`${q} ${n}`);}});
           if(Object.keys(cosmetics).length)update.cosmeticsInventory=cosmetics;
         }
         tx.update(pRef,update);
