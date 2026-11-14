@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -817,12 +817,12 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.3 BETA</div>
+      <div class="version-tag">v.1.0.0.3</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -1556,10 +1556,13 @@
       <button class="modal-close" onclick="closeAllModals()">✖</button>
       <h2>Admin Control Panel</h2>
       
-      <form autocomplete="off" onsubmit="return false;">
+      <form autocomplete="off" onsubmit="event.preventDefault(); loadTargetUserInventoryForAdmin();">
         <div class="form-group">
           <label>Target Username</label>
-          <input type="text" id="adminTargetUsername" autocomplete="off" name="admin_target_unique_field" placeholder="Exact username..." oninput="loadTargetUserInventoryForAdmin()">
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="adminTargetUsername" autocomplete="off" name="admin_target_unique_field" placeholder="Enter username..." oninput="loadTargetUserInventoryForAdmin()" onchange="loadTargetUserInventoryForAdmin()" style="flex:1;">
+            <button type="button" class="modal-action-btn" style="width:auto; padding:8px 14px; background:#1e3a8a;" onclick="loadTargetUserInventoryForAdmin()">Load</button>
+          </div>
         </div>
       </form>
 
@@ -1789,24 +1792,24 @@
       { name: "Tilapia", value: 9, rarity: "Common", desc: "A sturdy cichlid fish found in warm regions.", img: "https://i.postimg.cc/zXTCP9pD/tilapia.png" },
       { name: "Goldfish", value: 6, rarity: "Common", desc: "A classic golden freshwater companion.", img: "https://i.postimg.cc/VkD2cTRZ/goldfish2.png" },
       { name: "Cod", value: 7, rarity: "Common", desc: "A standard ocean fish found in cold northern waters.", img: "https://i.postimg.cc/rp8x6Fgw/cod.png" },
-      { name: "Maroon Clownfish", value: 24, rarity: "Rare", desc: "A striking clownfish variant with deep maroon hues and bright white bars.", img: "https://i.postimg.cc/3rFTcy29/maroon-clownfish.png" },
-      { name: "Carp", value: 20, rarity: "Rare", desc: "A large freshwater fish celebrated for its strength.", img: "https://i.postimg.cc/N0gmhfb0/carp.png" },
-      { name: "Neon Tetra", value: 22, rarity: "Rare", desc: "A glowing tropical fish with iridescent stripes.", img: "https://i.postimg.cc/TPRg8YQ2/neon-tetra.png" },
-      { name: "Salmon", value: 25, rarity: "Rare", desc: "A migratory swimmer traveling upstream through rivers.", img: "https://i.postimg.cc/bvzkXNLz/salmon.png" },
-      { name: "Surgeonfish", value: 28, rarity: "Rare", desc: "A bright blue marine swimmer with defensive spines.", img: "https://i.postimg.cc/BvqHWQNS/surgeonfish.png" },
-      { name: "Betta Fish", value: 80, rarity: "Epic", desc: "A vibrant and elegant freshwater fish with flowing fins.", img: "https://i.postimg.cc/T2J64ynq/betta-fish.png" },
-      { name: "Barreleye Fish", value: 55, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
-      { name: "Electric Eel", value: 75, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
-      { name: "Coelacanth", value: 120, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
-      { name: "Bluefin Tuna", value: 65, rarity: "Epic", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
-      { name: "Manta ray", value: 160, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
-      { name: "Great White Shark", value: 220, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
-      { name: "Swordfish", value: 650, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
-      { name: "Whale Shark", value: 850, rarity: "Mythic", desc: "The massive yet gentle giant filter-feeder of the deep sea.", img: "https://i.postimg.cc/HW9ghJbQ/whale-shark.png" },
-      { name: "Leafy Seadragon", value: 450, rarity: "Mythic", desc: "A master of camouflage adorned with leaf-like appendages.", img: "https://i.postimg.cc/rwsYSdfb/leafy-seadragon.png" },
-      { name: "Megamouth Shark", value: 700, rarity: "Mythic", desc: "An elusive deep-water giant with glowing lips.", img: "https://i.postimg.cc/WbXHFmwx/megamouth-shark.png" },
-      { name: "Basking Shark", value: 1200, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
-      { name: "Oarfish", value: 2000, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
+      { name: "Maroon Clownfish", value: 26, rarity: "Rare", desc: "A striking clownfish variant with deep maroon hues and bright white bars.", img: "https://i.postimg.cc/3rFTcy29/maroon-clownfish.png" },
+      { name: "Carp", value: 22, rarity: "Rare", desc: "A large freshwater fish celebrated for its strength.", img: "https://i.postimg.cc/N0gmhfb0/carp.png" },
+      { name: "Neon Tetra", value: 24, rarity: "Rare", desc: "A glowing tropical fish with iridescent stripes.", img: "https://i.postimg.cc/TPRg8YQ2/neon-tetra.png" },
+      { name: "Salmon", value: 28, rarity: "Rare", desc: "A migratory swimmer traveling upstream through rivers.", img: "https://i.postimg.cc/bvzkXNLz/salmon.png" },
+      { name: "Surgeonfish", value: 30, rarity: "Rare", desc: "A bright blue marine swimmer with defensive spines.", img: "https://i.postimg.cc/BvqHWQNS/surgeonfish.png" },
+      { name: "Betta Fish", value: 100, rarity: "Epic", desc: "A vibrant and elegant freshwater fish with flowing fins.", img: "https://i.postimg.cc/T2J64ynq/betta-fish.png" },
+      { name: "Barreleye Fish", value: 70, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
+      { name: "Electric Eel", value: 90, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
+      { name: "Coelacanth", value: 115, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
+      { name: "Bluefin Tuna", value: 80, rarity: "Epic", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
+      { name: "Manta ray", value: 220, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
+      { name: "Great White Shark", value: 280, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
+      { name: "Swordfish", value: 750, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
+      { name: "Whale Shark", value: 900, rarity: "Mythic", desc: "The massive yet gentle giant filter-feeder of the deep sea.", img: "https://i.postimg.cc/HW9ghJbQ/whale-shark.png" },
+      { name: "Leafy Seadragon", value: 600, rarity: "Mythic", desc: "A master of camouflage adorned with leaf-like appendages.", img: "https://i.postimg.cc/rwsYSdfb/leafy-seadragon.png" },
+      { name: "Megamouth Shark", value: 820, rarity: "Mythic", desc: "An elusive deep-water giant with glowing lips.", img: "https://i.postimg.cc/WbXHFmwx/megamouth-shark.png" },
+      { name: "Basking Shark", value: 2100, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
+      { name: "Oarfish", value: 2500, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
       { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A mysterious fish from ancient and divine waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
       { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
@@ -2360,7 +2363,7 @@
                   <strong>${fData.username || 'Player'}</strong>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
-                  <span id="dm-unread-${fUid}" style="display:${unreadCount > 0 ? 'inline-flex' : 'none'};align-items:center;justify-content:center;background:#ef4444;color:white;border-radius:999px;padding:5px 9px;font-size:.75rem;font-weight:700;white-space:nowrap;">${unreadCount} unread</span>
+                  <span id="dm-unread-${fUid}" style="display:${unreadCount > 0 ? 'inline-flex' : 'none'};align-items:center;justify-content:center;background:#ef4444;color:white;border-radius:999px;padding:5px 10px;font-size:.75rem;font-weight:700;white-space:nowrap;">${unreadCount} Unread message</span>
                   <button type="button" class="modal-action-btn" style="background:#1e3a8a; padding:6px 12px; font-size:0.8rem; width:auto;" onclick="openChatWithFriend('${fUid}', '${fData.username}')">Open DM</button>
                   <button type="button" class="modal-action-btn" style="background:#e74c3c; padding:6px 10px; font-size:0.8rem; width:auto;" onclick="removeFriend('${fUid}', '${fData.username}')">Remove</button>
                 </div>
@@ -2393,9 +2396,105 @@
       }
     }
 
+    let unreadCountsByFriend = {};
+    let dmUnreadListeners = [];
+
+    function updateUnreadBadgesUI() {
+      let totalUnread = 0;
+      Object.entries(unreadCountsByFriend).forEach(([fUid, count]) => {
+        const c = Number(count) || 0;
+        totalUnread += c;
+        const badge = document.getElementById(`dm-unread-${fUid}`);
+        if (badge) {
+          if (c > 0) {
+            badge.style.display = 'inline-flex';
+            badge.textContent = `${c} Unread message`;
+          } else {
+            badge.style.display = 'none';
+            badge.textContent = '0 Unread message';
+          }
+        }
+      });
+
+      const friendsBtn = document.getElementById('btn-friends');
+      if (friendsBtn) {
+        friendsBtn.textContent = totalUnread > 0
+          ? `Friends & DMs (${totalUnread} Unread message)`
+          : 'Friends & DMs';
+      }
+    }
+
+    function stopUnreadDirectMessageListeners() {
+      dmUnreadListeners.forEach(unsub => { try { unsub(); } catch (e) {} });
+      dmUnreadListeners = [];
+      unreadCountsByFriend = {};
+      updateUnreadBadgesUI();
+    }
+
+    function startUnreadDirectMessageListeners(friendsUids) {
+      stopUnreadDirectMessageListeners();
+      const user = auth.currentUser;
+      if (!user || !Array.isArray(friendsUids)) return;
+
+      friendsUids.forEach(fUid => {
+        if (!fUid) return;
+        const chatId = getChatId(user.uid, fUid);
+        const chatRef = db.collection('directChats').doc(chatId);
+
+        let lastReadId = null;
+        let latestDocs = [];
+
+        const recompute = () => {
+          const isChatCurrentlyOpen =
+            document.getElementById('modal-chat-dm')?.style.display === 'flex' &&
+            activeChatFriendUid === fUid;
+
+          if (isChatCurrentlyOpen) {
+            unreadCountsByFriend[fUid] = 0;
+            updateUnreadBadgesUI();
+            return;
+          }
+
+          let afterMarker = !lastReadId;
+          if (lastReadId && !latestDocs.some(d => d.id === lastReadId)) {
+            afterMarker = true;
+          }
+          let unread = 0;
+          latestDocs.forEach(d => {
+            if (d.id === lastReadId) {
+              afterMarker = true;
+              return;
+            }
+            const msg = d.data() || {};
+            if (afterMarker && msg.senderUid && msg.senderUid !== user.uid) {
+              unread++;
+            }
+          });
+          unreadCountsByFriend[fUid] = unread;
+          updateUnreadBadgesUI();
+        };
+
+        const unsubDoc = chatRef.onSnapshot(docSnap => {
+          const readMap = docSnap.exists ? (docSnap.data().lastReadMessageIds || {}) : {};
+          lastReadId = readMap[user.uid] || null;
+          recompute();
+        }, () => {});
+
+        const unsubMsgs = chatRef.collection('messages').orderBy('createdAt', 'asc').onSnapshot(msgSnap => {
+          latestDocs = msgSnap.docs;
+          recompute();
+        }, () => {});
+
+        dmUnreadListeners.push(unsubDoc, unsubMsgs);
+      });
+    }
+
     async function getUnreadDirectMessageCount(friendUid) {
       const user = auth.currentUser;
       if (!user || !friendUid) return 0;
+      if (typeof unreadCountsByFriend[friendUid] === 'number') {
+        return unreadCountsByFriend[friendUid];
+      }
       try {
         const chatId = getChatId(user.uid, friendUid);
         const chatRef = db.collection('directChats').doc(chatId);
@@ -2405,7 +2504,7 @@
         ]);
         const readMap = chatDoc.exists ? (chatDoc.data().lastReadMessageIds || {}) : {};
         const lastReadId = readMap[user.uid] || null;
-        let afterReadMarker = !lastReadId;
+        let afterReadMarker = !lastReadId || !messagesSnap.docs.some(d => d.id === lastReadId);
         let unread = 0;
         messagesSnap.forEach(messageDoc => {
           if (messageDoc.id === lastReadId) {
@@ -2414,6 +2513,8 @@
           }
           if (afterReadMarker && messageDoc.data().senderUid !== user.uid) unread++;
         });
+        unreadCountsByFriend[friendUid] = unread;
+        updateUnreadBadgesUI();
         return unread;
       } catch (err) {
         console.warn('Could not count unread DMs:', err);
@@ -2424,15 +2525,12 @@
     async function markDirectMessagesAsRead(friendUid, latestMessageId) {
       const user = auth.currentUser;
       if (!user || !friendUid || !latestMessageId) return;
+      unreadCountsByFriend[friendUid] = 0;
+      updateUnreadBadgesUI();
       try {
         await db.collection('directChats').doc(getChatId(user.uid, friendUid)).set({
           lastReadMessageIds: { [user.uid]: latestMessageId }
         }, { merge: true });
-        const badge = document.getElementById(`dm-unread-${friendUid}`);
-        if (badge) {
-          badge.style.display = 'none';
-          badge.textContent = '0 unread';
-        }
       } catch (err) {
         console.warn('Could not update DM read marker:', err);
       }
@@ -2740,7 +2838,14 @@
       document.getElementById('index-fish-img').src = fish.img;
       document.getElementById('index-fish-name').innerText = fish.name;
       document.getElementById('index-fish-desc').innerText = fish.desc;
-      document.getElementById('index-fish-value').innerText = `Raw value: 💰 ${fish.value}`;
+      const valEl = document.getElementById('index-fish-value');
+      if (fish.isLimited || fish.name === "Legacy Fish" || fish.name === "Goldfish Snack") {
+        valEl.innerText = "";
+        valEl.style.display = "none";
+      } else {
+        valEl.style.display = "block";
+        valEl.innerText = `Raw value: 💰 ${fish.value}`;
+      }
       document.getElementById('index-rarity').innerText = fish.rarity;
       
       const badge = document.getElementById('index-rarity');
@@ -3790,36 +3895,39 @@
           let chosenPool = standardFishes;
 
           if (usedBaitThisCast) {
-            // Worm Bait is now only a tiny nudge over normal odds.
-            // Mini Tuna Cube is the premium bait, with a clear Epic boost.
+            // Rebalanced probabilities by rarity with Bait
             const roll = Math.random() * 100;
             let targetRarity = 'Common';
             if (usedBaitType === 'cube') {
-              if (roll < 0.10) targetRarity = 'Divine';
-              else if (roll < 0.60) targetRarity = 'Mythic';
-              else if (roll < 4.00) targetRarity = 'Legendary';
-              else if (roll < 24.00) targetRarity = 'Epic';
-              else if (roll < 60.00) targetRarity = 'Rare';
+              // Mini Tuna Cube: Divine 0.35%, Mythic 1.65% (2.0%), Legendary 7.0% (9.0%), Epic 23.0% (32.0%), Rare 38.0% (70.0%), Common 30.0%
+              if (roll < 0.35) targetRarity = 'Divine';
+              else if (roll < 2.00) targetRarity = 'Mythic';
+              else if (roll < 9.00) targetRarity = 'Legendary';
+              else if (roll < 32.00) targetRarity = 'Epic';
+              else if (roll < 70.00) targetRarity = 'Rare';
             } else if (usedBaitType === 'worm') {
-              if (roll < 0.05) targetRarity = 'Divine';
-              else if (roll < 0.30) targetRarity = 'Mythic';
-              else if (roll < 1.60) targetRarity = 'Legendary';
-              else if (roll < 6.00) targetRarity = 'Epic';
-              else if (roll < 27.00) targetRarity = 'Rare';
+              // Worm Bait: Divine 0.12%, Mythic 0.68% (0.8%), Legendary 3.2% (4.0%), Epic 12.0% (16.0%), Rare 34.0% (50.0%), Common 50.0%
+              if (roll < 0.12) targetRarity = 'Divine';
+              else if (roll < 0.80) targetRarity = 'Mythic';
+              else if (roll < 4.00) targetRarity = 'Legendary';
+              else if (roll < 16.00) targetRarity = 'Epic';
+              else if (roll < 50.00) targetRarity = 'Rare';
             }
 
             let rarityPool = standardFishes.filter(f => f.rarity === targetRarity);
             if (rarityPool.length === 0) rarityPool = standardFishes.filter(f => f.rarity === 'Common');
             if (rarityPool.length > 0) chosenPool = rarityPool;
           } else {
+            // Standard Rebalanced Probabilities:
+            // Divine: 0.08% | Mythic: 0.42% (0.50%) | Legendary: 2.00% (2.50%) | Epic: 7.50% (10.00%) | Rare: 25.00% (35.00%) | Common: 65.00%
             const tierRoll = Math.random() * 100;
             let targetRarity = "Common";
-            if (tierRoll < 0.05) targetRarity = "Divine";      
-            else if (tierRoll < 0.3) targetRarity = "Mythic";    
-            else if (tierRoll < 1.5) targetRarity = "Legendary"; 
-            else if (tierRoll < 6.0) targetRarity = "Epic";      
-            else if (tierRoll < 25.0) targetRarity = "Rare";     
-            else targetRarity = "Common";                        
+            if (tierRoll < 0.08) targetRarity = "Divine";
+            else if (tierRoll < 0.50) targetRarity = "Mythic";
+            else if (tierRoll < 2.50) targetRarity = "Legendary";
+            else if (tierRoll < 10.00) targetRarity = "Epic";
+            else if (tierRoll < 35.00) targetRarity = "Rare";
+            else targetRarity = "Common";
 
             let rarityPool = standardFishes.filter(f => f.rarity === targetRarity);
             if (rarityPool.length === 0) rarityPool = standardFishes.filter(f => f.rarity === "Common");
@@ -4797,19 +4905,55 @@
 
     listenToNews();
 
-    async function getUidByUsername(username) {
-      const snapshot = await db.collection('jugadores').where('username', '==', username).get();
-      if (snapshot.empty) return null;
-      let uid = null;
-      snapshot.forEach(doc => { uid = doc.id; });
-      return uid;
+    async function findPlayerDocByUsername(rawUsername) {
+      const username = String(rawUsername || '').trim();
+      if (!username) return null;
+
+      const candidates = Array.from(new Set([
+        username,
+        username.toLowerCase(),
+        username.toUpperCase(),
+        username.charAt(0).toUpperCase() + username.slice(1).toLowerCase()
+      ]));
+
+      for (const candidate of candidates) {
+        try {
+          const snap = await db.collection('jugadores').where('username', '==', candidate).limit(1).get();
+          if (!snap.empty) return snap.docs[0];
+        } catch (e) {}
+      }
+
+      try {
+        const directDoc = await db.collection('jugadores').doc(username).get();
+        if (directDoc.exists) return directDoc;
+      } catch (e) {}
+
+      try {
+        const allPlayers = await db.collection('jugadores').get();
+        const wanted = username.toLocaleLowerCase();
+        const found = allPlayers.docs.find(doc => {
+          const stored = String((doc.data() || {}).username || '').trim().toLocaleLowerCase();
+          return stored === wanted || doc.id.toLocaleLowerCase() === wanted;
+        });
+        if (found) return found;
+      } catch (e) {}
+
+      return null;
     }
+
+    async function getUidByUsername(username) {
+      const doc = await findPlayerDocByUsername(username);
+      return doc ? doc.id : null;
+    }
+
+    let adminInventoryLookupSeq = 0;
 
     async function loadTargetUserInventoryForAdmin() {
       const usernameEl = document.getElementById('adminTargetUsername');
       const listContainer = document.getElementById('admin-target-fishes-list');
       if (!usernameEl || !listContainer) return;
 
+      const reqSeq = ++adminInventoryLookupSeq;
       const username = usernameEl.value.trim();
       const statCoins = document.getElementById('admin-stat-coins');
       const statTanks = document.getElementById('admin-stat-tanks');
@@ -4837,20 +4981,8 @@
       listContainer.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Loading inventory...</p>';
 
       try {
-        // Try the indexed exact match first, then fall back to a collection scan
-        // so older profiles / username casing differences do not hide inventory.
-        let targetDoc = null;
-        const exact = await db.collection('jugadores').where('username', '==', username).limit(1).get();
-        if (!exact.empty) targetDoc = exact.docs[0];
-
-        if (!targetDoc) {
-          const allPlayers = await db.collection('jugadores').get();
-          const wanted = username.toLocaleLowerCase();
-          targetDoc = allPlayers.docs.find(doc => {
-            const stored = String((doc.data() || {}).username || '').trim().toLocaleLowerCase();
-            return stored === wanted || doc.id === username;
-          }) || null;
-        }
+        const targetDoc = await findPlayerDocByUsername(username);
+        if (reqSeq !== adminInventoryLookupSeq) return;
 
         if (!targetDoc) {
           listContainer.innerHTML = '<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">User not found. Check the exact username.</p>';
@@ -4869,8 +5001,6 @@
         setText(statRooms, `Aquarium Rooms: ${Number(data.aquariumRoomsOwned) || 1}`);
         setText(statBaits, `Baits: ${Number(data.wormBaitsCount) || 0}`);
 
-        // Normal game profiles store fishes as an array. Also tolerate legacy
-        // object-shaped inventories instead of crashing the entire admin panel.
         const rawFishes = data.fishes;
         const fishes = Array.isArray(rawFishes)
           ? rawFishes
@@ -4892,7 +5022,12 @@
             </div>
           `).join('');
         }
+
+        if (typeof renderAdminBaitsAndCosmeticsLists === 'function') {
+          renderAdminBaitsAndCosmeticsLists(data);
+        }
       } catch (err) {
+        if (reqSeq !== adminInventoryLookupSeq) return;
         console.error('Admin: failed to load target fish inventory:', err);
         listContainer.innerHTML = `<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">Could not load inventory: ${escapeHtml(err && err.message ? err.message : 'Unknown error')}</p>`;
       }
@@ -5446,6 +5581,7 @@
             document.getElementById('user-avatar').src = "https://via.placeholder.com/40";
           }
           updateFriendRequestsCount();
+          startUnreadDirectMessageListeners(data.friends || []);
         } catch(e) {
           console.error("Error loading user session:", e);
         }
@@ -5463,6 +5599,7 @@
         if (backpackInline) backpackInline.style.display = 'none';
         adminBtn.style.display = 'none';
         if (dailyTimerInterval) clearInterval(dailyTimerInterval);
+        stopUnreadDirectMessageListeners();
       }
       
       if (document.getElementById('modal-news').style.display === 'flex') {
@@ -5502,18 +5639,18 @@
 
   // New creatures are part of the existing fish catalogue and retain the exact supplied image URLs.
   const newCreatures = [
-    {name:'Clam', value:90, rarity:'Rare', desc:'A quiet ocean dweller that filters tiny particles from the water. It slowly creeps across the aquarium sand and rests with its shell partly buried.', img:IMG.clam, creatureType:'sand'},
-    {name:'Sea Urchin', value:110, rarity:'Rare', desc:'A spiny little grazer that explores the seabed for algae. It carefully crawls over the sand instead of swimming through the water.', img:IMG.urchin, creatureType:'sand'},
-    {name:'Jellyfish', value:500, rarity:'Mythic', desc:'A delicate, translucent drifter that pulses its bell to glide through the water. Its trailing tentacles sway gently with every current.', img:IMG.jelly, creatureType:'jelly'},
-    {name:'Turtle', value:200, rarity:'Legendary', desc:'A peaceful sea turtle with a sturdy shell and powerful flippers. It glides calmly through the aquarium, occasionally changing direction as it explores.', img:IMG.turtle, creatureType:'turtle'},
-    {name:'Octopus', value:1500, rarity:'Divine', desc:'An intelligent deep-sea explorer with eight flexible arms. It gently bobs through the water while its tentacles curl and uncurl as it investigates its surroundings.', img:IMG.octopus, creatureType:'octopus'}
+    {name:'Clam', value:38, rarity:'Rare', desc:'A quiet ocean dweller that filters tiny particles from the water. It slowly creeps across the aquarium sand and rests with its shell partly buried.', img:IMG.clam, creatureType:'sand'},
+    {name:'Sea Urchin', value:42, rarity:'Rare', desc:'A spiny little grazer that explores the seabed for algae. It carefully crawls over the sand instead of swimming through the water.', img:IMG.urchin, creatureType:'sand'},
+    {name:'Jellyfish', value:680, rarity:'Mythic', desc:'A delicate, translucent drifter that pulses its bell to glide through the water. Its trailing tentacles sway gently with every current.', img:IMG.jelly, creatureType:'jelly'},
+    {name:'Turtle', value:250, rarity:'Legendary', desc:'A peaceful sea turtle with a sturdy shell and powerful flippers. It glides calmly through the aquarium, occasionally changing direction as it explores.', img:IMG.turtle, creatureType:'turtle'},
+    {name:'Octopus', value:1800, rarity:'Divine', desc:'An intelligent deep-sea explorer with eight flexible arms. It gently bobs through the water while its tentacles curl and uncurl as it investigates its surroundings.', img:IMG.octopus, creatureType:'octopus'}
   ];
   newCreatures.push(
-    {name:'Lobster', value:900, rarity:'Mythic', desc:'A powerful crustacean that lives among rocky reefs and ocean crevices. Its strong claws help it defend its territory and search for food along the seafloor.', img:'https://i.postimg.cc/K87V474j/lobster.png', creatureType:'sand'},
-    {name:'Hermit Crab', value:65, rarity:'Rare', desc:'A small crab that protects its soft body inside an empty shell. It wanders across the seabed, carrying its home wherever it goes and searching for tiny bits of food.', img:'https://i.postimg.cc/RVxxFZGk/hermit-crab2.png', creatureType:'sand'},
+    {name:'Lobster', value:950, rarity:'Mythic', desc:'A powerful crustacean that lives among rocky reefs and ocean crevices. Its strong claws help it defend its territory and search for food along the seafloor.', img:'https://i.postimg.cc/K87V474j/lobster.png', creatureType:'sand'},
+    {name:'Hermit Crab', value:32, rarity:'Rare', desc:'A small crab that protects its soft body inside an empty shell. It wanders across the seabed, carrying its home wherever it goes and searching for tiny bits of food.', img:'https://i.postimg.cc/RVxxFZGk/hermit-crab2.png', creatureType:'sand'},
     {name:'Crab', value:12, rarity:'Common', desc:'A familiar coastal crustacean with a hard shell and two sturdy claws. It moves sideways across the ocean floor while searching the sand and rocks for food.', img:'https://i.postimg.cc/dVRXDRD1/crab.png', creatureType:'sand'},
-    {name:'Seahorse', value:550, rarity:'Legendary', desc:'A delicate marine creature with a curled tail and a horse-like head. It drifts upright through seagrass and uses its tail to hold onto plants when currents become strong.', img:'https://i.postimg.cc/Hk0Kj0jY/seahorse.png', creatureType:'sand'},
-    {name:'Sponge', value:75, rarity:'Rare', desc:'A colorful filter-feeding animal attached to rocks on the ocean floor. It draws water through its porous body, taking in tiny food particles while providing shelter for small sea life.', img:'https://i.postimg.cc/Jz3gt3th/sponge.png', creatureType:'sand'}
+    {name:'Seahorse', value:320, rarity:'Legendary', desc:'A delicate marine creature with a curled tail and a horse-like head. It drifts upright through seagrass and uses its tail to hold onto plants when currents become strong.', img:'https://i.postimg.cc/Hk0Kj0jY/seahorse.png', creatureType:'sand'},
+    {name:'Sponge', value:35, rarity:'Rare', desc:'A colorful filter-feeding animal attached to rocks on the ocean floor. It draws water through its porous body, taking in tiny food particles while providing shelter for small sea life.', img:'https://i.postimg.cc/Jz3gt3th/sponge.png', creatureType:'sand'}
   );
   newCreatures.forEach(n => { if (!ALLOWED_FISH_TYPES.some(f => f.name === n.name)) ALLOWED_FISH_TYPES.push(n); });
 
@@ -6357,7 +6494,7 @@
   };
 
   const originalTargetInventoryLoader=window.loadTargetUserInventoryForAdmin;
-  window.loadTargetUserInventoryForAdmin=async function(){if(originalTargetInventoryLoader)await originalTargetInventoryLoader();try{const username=document.getElementById('adminTargetUsername')?.value.trim();if(!username)return;const uid=await getUidByUsername(username);if(!uid)return;const d=(await db.collection('jugadores').doc(uid).get()).data()||{};const cubes=document.getElementById('admin-stat-cubes'),cos=document.getElementById('admin-stat-cosmetics');if(cubes){cubes.style.display='block';cubes.textContent=`Mini Tuna Cubes: ${d.miniTunaCubesCount||0}`;}if(cos){cos.style.display='block';cos.textContent=`Cosmetics: ${Object.entries(d.cosmeticsInventory||{}).filter(([,v])=>v>0).map(([k,v])=>`${k} x${v}`).join(', ')||'None'}`;}renderAdminBaitsAndCosmeticsLists(d);}catch(e){console.warn('Admin inventory stats unavailable',e);}};
+  window.loadTargetUserInventoryForAdmin=async function(){if(originalTargetInventoryLoader)await originalTargetInventoryLoader();};
 
   // Promo codes support multiple exact-name Fish, Bait and Cosmetic rewards.
   window.addPromoRewardRow=function(){
