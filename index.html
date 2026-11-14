@@ -1194,7 +1194,6 @@
           <h3 id="profile-modal-name" style="margin:0; font-size:1.2rem;">Username</h3>
           <p id="profile-joined-date" style="margin:2px 0; font-size:0.75rem; color:#64748b; font-weight:bold;">Joined in: -</p>
           <p id="verification-status" style="margin:3px 0; font-size:0.8rem; color:#e74c3c; display:none;">Email not verified</p>
-          <p id="verification-timer" style="margin:2px 0 0 0; font-size:0.75rem; color:#c0392b; font-weight:bold; display:none;">Auto-deletion in: Calculating...</p>
           <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="profile-coins">0</span> | 🐟 Fish: <span id="profile-fish-count">0</span></p>
         </div>
       </div>
@@ -1706,7 +1705,6 @@
     let selectedFishToBotSell = null;
     let adminSelectedFishToRemove = "";
     let isCurrentBanPerma = true;
-    let verificationTimerInterval = null;
     let isMandatoryRulesView = false;
     let hasUserAcceptedRulesLocal = false;
     let dailyTimerInterval = null;
@@ -2448,7 +2446,6 @@
     function closeAllModals() {
       if (isMandatoryRulesView) return;
       stopFishAnimations();
-      if (verificationTimerInterval) clearInterval(verificationTimerInterval);
       document.querySelectorAll('.modal-overlay').forEach(el => {
         if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
       });
@@ -4166,11 +4163,9 @@
       try {
         await user.reload();
         const statusEl = document.getElementById('verification-status');
-        const timerEl = document.getElementById('verification-timer');
         const joinedDateEl = document.getElementById('profile-joined-date');
         
-        if (verificationTimerInterval) clearInterval(verificationTimerInterval);
-
+  
         const doc = await db.collection('jugadores').doc(user.uid).get();
         if (doc.exists) {
           const data = doc.data();
@@ -4184,14 +4179,11 @@
           const newPassEl = document.getElementById('profile-new-password');
           if (newPassEl) newPassEl.value = "";
 
-          let createdAtMs = Date.now();
           if (data.createdAt) {
             const createdAtDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
-            createdAtMs = createdAtDate.getTime();
             joinedDateEl.innerText = `Joined in: ${createdAtDate.toLocaleDateString()}`;
           } else if (user.metadata && user.metadata.creationTime) {
             const createdAtDate = new Date(user.metadata.creationTime);
-            createdAtMs = createdAtDate.getTime();
             joinedDateEl.innerText = `Joined in: ${createdAtDate.toLocaleDateString()}`;
           } else {
             joinedDateEl.innerText = `Joined in: Recent`;
@@ -4205,7 +4197,6 @@
           if (user.emailVerified) {
             statusEl.innerText = "Email verified";
             statusEl.style.color = "#2ecc71";
-            timerEl.style.display = 'none';
 
             if (!data.isVerifiedEmail) {
               db.collection('jugadores').doc(user.uid).update({ isVerifiedEmail: true }).catch(() => {});
@@ -4213,28 +4204,6 @@
           } else {
             statusEl.innerText = "Email not verified";
             statusEl.style.color = "#e74c3c";
-            timerEl.style.display = 'block';
-
-            const deletionTimeMs = createdAtMs + (3 * 24 * 60 * 60 * 1000);
-
-            const updateTimerDisplay = () => {
-              const now = Date.now();
-              const diff = deletionTimeMs - now;
-
-              if (diff <= 0) {
-                timerEl.innerText = "Auto-deletion: Account scheduled for deletion!";
-                clearInterval(verificationTimerInterval);
-              } else {
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const secs = Math.floor((diff % (1000 * 60)) / 1000);
-                timerEl.innerText = `Auto-deletion in: ${days}d ${hours}h ${mins}m ${secs}s`;
-              }
-            };
-
-            updateTimerDisplay();
-            verificationTimerInterval = setInterval(updateTimerDisplay, 1000);
           }
         }
       } catch (err) {
