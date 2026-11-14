@@ -1779,6 +1779,7 @@
     let captureProgress = 30;
     let pendingCaughtFish = null;
     let usedBaitThisCast = false;
+    let usedBaitType = ''; 
 
     const ALLOWED_FISH_TYPES = [
       { name: "Sardine", value: 5, rarity: "Common", desc: "A small, silvery fish that moves in large schools.", img: "https://i.postimg.cc/c1BSbKfF/sardine.png" },
@@ -1797,7 +1798,7 @@
       { name: "Barreleye Fish", value: 55, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
       { name: "Electric Eel", value: 75, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
       { name: "Coelacanth", value: 120, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
-      { name: "Bluefin Tuna", value: 65, rarity: "Rare", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
+      { name: "Bluefin Tuna", value: 65, rarity: "Epic", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
       { name: "Manta ray", value: 160, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
       { name: "Great White Shark", value: 220, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
       { name: "Swordfish", value: 650, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
@@ -2045,27 +2046,40 @@
           }
         }
 
-        const rewardCoins = 300;
-        const rewardBaits = 2;
-        const luckTank = Math.random() < 0.15;
+        // Pick from a weighted variety of daily rewards instead of always
+        // granting the same 300 coins + 2 Worm Baits.
+        const dailyRewardPool = [
+          { coins: 150 },
+          { coins: 250, baits: 1 },
+          { coins: 400 },
+          { coins: 500 },
+          { baits: 3 },
+          { baits: 4 },
+          { coins: 200, cubes: 2 },
+          { coins: 350, cubes: 1 },
+          { coins: 200, baits: 2 },
+          { coins: 300, baits: 2 },
+          { coins: 150, miniTanks: 1 },
+          { coins: 250, cubes: 3 }
+        ];
+        const reward = dailyRewardPool[Math.floor(Math.random() * dailyRewardPool.length)];
 
-        let updateData = {
-          coins: firebase.firestore.FieldValue.increment(rewardCoins),
-          wormBaitsCount: firebase.firestore.FieldValue.increment(rewardBaits),
+        const updateData = {
           lastDailyClaim: firebase.firestore.FieldValue.serverTimestamp()
         };
-
-        if (luckTank) {
-          updateData.miniTanksCount = firebase.firestore.FieldValue.increment(1);
-        }
+        if (reward.coins) updateData.coins = firebase.firestore.FieldValue.increment(reward.coins);
+        if (reward.baits) updateData.wormBaitsCount = firebase.firestore.FieldValue.increment(reward.baits);
+        if (reward.cubes) updateData.miniTunaCubesCount = firebase.firestore.FieldValue.increment(reward.cubes);
+        if (reward.miniTanks) updateData.miniTanksCount = firebase.firestore.FieldValue.increment(reward.miniTanks);
 
         await docRef.update(updateData);
 
-        let msg = `Daily Reward Claimed! +${rewardCoins} 💰, +${rewardBaits} Worm Baits`;
-        if (luckTank) {
-          msg += ` & LUCKY! +1 Mini Tank!`;
-        }
-        showToast(msg);
+        const rewardParts = [];
+        if (reward.coins) rewardParts.push(`+${reward.coins} 💰`);
+        if (reward.baits) rewardParts.push(`+${reward.baits} Worm Baits`);
+        if (reward.cubes) rewardParts.push(`+${reward.cubes} Mini Tuna Cubes`);
+        if (reward.miniTanks) rewardParts.push(`+${reward.miniTanks} Mini Tank`);
+        showToast(`Daily Reward Claimed! ${rewardParts.join(', ')}`);
         updateGameHUD();
         startDailyTimer(new Date());
       } catch (err) {
@@ -3753,13 +3767,16 @@
         const cubesCount = data.miniTunaCubesCount || 0;
 
         usedBaitThisCast = false;
+        usedBaitType = '';
         if (equippedBait === 'worm' && baitsCount > 0) {
           await playerRef.update({ wormBaitsCount: baitsCount - 1, isBaitActive: false, equippedBait: '' });
           usedBaitThisCast = true;
+          usedBaitType = 'worm';
           showToast("Worm Bait consumed for this cast!");
         } else if (equippedBait === 'cube' && cubesCount > 0) {
           await playerRef.update({ miniTunaCubesCount: cubesCount - 1, equippedBait: '' });
           usedBaitThisCast = true;
+          usedBaitType = 'cube';
           showToast("Mini Tuna Cube consumed for this cast!");
         }
 
@@ -3773,16 +3790,27 @@
           let chosenPool = standardFishes;
 
           if (usedBaitThisCast) {
-            if (rand < 0.45) {
-              const divineMythic = standardFishes.filter(f => f.rarity === 'Divine' || f.rarity === 'Mythic' || f.rarity === 'Legendary');
-              if (divineMythic.length > 0) chosenPool = divineMythic;
-            } else if (rand < 0.85) {
-              const rareEpic = standardFishes.filter(f => f.rarity === 'Rare' || f.rarity === 'Epic');
-              if (rareEpic.length > 0) chosenPool = rareEpic;
-            } else {
-              const commonPool = standardFishes.filter(f => f.rarity === 'Common');
-              if (commonPool.length > 0) chosenPool = commonPool;
+            // Worm Bait is now only a tiny nudge over normal odds.
+            // Mini Tuna Cube is the premium bait, with a clear Epic boost.
+            const roll = Math.random() * 100;
+            let targetRarity = 'Common';
+            if (usedBaitType === 'cube') {
+              if (roll < 0.10) targetRarity = 'Divine';
+              else if (roll < 0.60) targetRarity = 'Mythic';
+              else if (roll < 4.00) targetRarity = 'Legendary';
+              else if (roll < 24.00) targetRarity = 'Epic';
+              else if (roll < 60.00) targetRarity = 'Rare';
+            } else if (usedBaitType === 'worm') {
+              if (roll < 0.05) targetRarity = 'Divine';
+              else if (roll < 0.30) targetRarity = 'Mythic';
+              else if (roll < 1.60) targetRarity = 'Legendary';
+              else if (roll < 6.00) targetRarity = 'Epic';
+              else if (roll < 27.00) targetRarity = 'Rare';
             }
+
+            let rarityPool = standardFishes.filter(f => f.rarity === targetRarity);
+            if (rarityPool.length === 0) rarityPool = standardFishes.filter(f => f.rarity === 'Common');
+            if (rarityPool.length > 0) chosenPool = rarityPool;
           } else {
             const tierRoll = Math.random() * 100;
             let targetRarity = "Common";
@@ -3931,6 +3959,7 @@
       }
       pendingCaughtFish = null;
       usedBaitThisCast = false;
+      usedBaitType = '';
     }
 
     async function buyMiniTank() {
@@ -4777,73 +4806,95 @@
     }
 
     async function loadTargetUserInventoryForAdmin() {
-      const username = document.getElementById('adminTargetUsername').value.trim();
+      const usernameEl = document.getElementById('adminTargetUsername');
       const listContainer = document.getElementById('admin-target-fishes-list');
-      
+      if (!usernameEl || !listContainer) return;
+
+      const username = usernameEl.value.trim();
       const statCoins = document.getElementById('admin-stat-coins');
       const statTanks = document.getElementById('admin-stat-tanks');
       const statRooms = document.getElementById('admin-stat-rooms');
       const statBaits = document.getElementById('admin-stat-baits');
-
       const baitsListEl = document.getElementById('admin-target-baits-list');
       const cosListEl = document.getElementById('admin-target-cosmetics-list');
+
+      const setText = (el, value) => { if (el) el.innerText = value; };
+      const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+      }[ch]));
+
       if (!username) {
-        listContainer.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view fishes...</p>';
-        if (baitsListEl) baitsListEl.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view baits...</p>';
-        if (cosListEl) cosListEl.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view cosmetics...</p>';
-        statCoins.innerText = '💰 Coins: 0';
-        statTanks.innerText = 'Mini Tanks: 0';
-        statRooms.innerText = 'Aquarium Rooms: 1';
-        statBaits.innerText = 'Baits: 0';
+        listContainer.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Select a target username above to view fishes...</p>';
+        if (baitsListEl) baitsListEl.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Select a target username above to view baits...</p>';
+        if (cosListEl) cosListEl.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Select a target username above to view cosmetics...</p>';
+        setText(statCoins, '💰 Coins: 0');
+        setText(statTanks, 'Mini Tanks: 0');
+        setText(statRooms, 'Aquarium Rooms: 1');
+        setText(statBaits, 'Baits: 0');
         return;
       }
 
+      listContainer.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Loading inventory...</p>';
+
       try {
-        const targetUid = await getUidByUsername(username);
-        if (!targetUid) {
-          listContainer.innerHTML = '<p style="font-size:0.8rem; color:#e74c3c; text-align:center; margin:10px 0;">User not found.</p>';
-          if (baitsListEl) baitsListEl.innerHTML = '<p style="font-size:0.8rem; color:#e74c3c; text-align:center; margin:10px 0;">User not found.</p>';
-          if (cosListEl) cosListEl.innerHTML = '<p style="font-size:0.8rem; color:#e74c3c; text-align:center; margin:10px 0;">User not found.</p>';
-          statCoins.innerText = '💰 Coins: 0';
-          statTanks.innerText = 'Mini Tanks: 0';
-          statRooms.innerText = 'Aquarium Rooms: 1';
-          statBaits.innerText = 'Baits: 0';
+        // Try the indexed exact match first, then fall back to a collection scan
+        // so older profiles / username casing differences do not hide inventory.
+        let targetDoc = null;
+        const exact = await db.collection('jugadores').where('username', '==', username).limit(1).get();
+        if (!exact.empty) targetDoc = exact.docs[0];
+
+        if (!targetDoc) {
+          const allPlayers = await db.collection('jugadores').get();
+          const wanted = username.toLocaleLowerCase();
+          targetDoc = allPlayers.docs.find(doc => {
+            const stored = String((doc.data() || {}).username || '').trim().toLocaleLowerCase();
+            return stored === wanted || doc.id === username;
+          }) || null;
+        }
+
+        if (!targetDoc) {
+          listContainer.innerHTML = '<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">User not found. Check the exact username.</p>';
+          if (baitsListEl) baitsListEl.innerHTML = '<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">User not found.</p>';
+          if (cosListEl) cosListEl.innerHTML = '<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">User not found.</p>';
+          setText(statCoins, '💰 Coins: 0');
+          setText(statTanks, 'Mini Tanks: 0');
+          setText(statRooms, 'Aquarium Rooms: 1');
+          setText(statBaits, 'Baits: 0');
           return;
         }
 
-        const doc = await db.collection('jugadores').doc(targetUid).get();
-        if (doc.exists) {
-          const data = doc.data();
-          statCoins.innerText = `💰 Coins: ${data.coins || 0}`;
-          statTanks.innerText = `Mini Tanks: ${data.miniTanksCount || 0}`;
-          statRooms.innerText = `Aquarium Rooms: ${data.aquariumRoomsOwned || 1}`;
-          statBaits.innerText = `Baits: ${data.wormBaitsCount || 0}`;
+        const data = targetDoc.data() || {};
+        setText(statCoins, `💰 Coins: ${Number(data.coins) || 0}`);
+        setText(statTanks, `Mini Tanks: ${Number(data.miniTanksCount) || 0}`);
+        setText(statRooms, `Aquarium Rooms: ${Number(data.aquariumRoomsOwned) || 1}`);
+        setText(statBaits, `Baits: ${Number(data.wormBaitsCount) || 0}`);
 
-          const fishes = data.fishes || [];
-          if (fishes.length === 0) {
-            listContainer.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">User has no fishes.</p>';
-            return;
-          }
+        // Normal game profiles store fishes as an array. Also tolerate legacy
+        // object-shaped inventories instead of crashing the entire admin panel.
+        const rawFishes = data.fishes;
+        const fishes = Array.isArray(rawFishes)
+          ? rawFishes
+          : (rawFishes && typeof rawFishes === 'object' ? Object.values(rawFishes) : []);
 
-          let fishCounts = {};
-          fishes.forEach(f => {
-            if (!fishCounts[f.name]) fishCounts[f.name] = 0;
-            fishCounts[f.name]++;
-          });
+        const fishCounts = {};
+        fishes.forEach(fish => {
+          const name = typeof fish === 'string' ? fish : fish && fish.name;
+          if (name) fishCounts[name] = (fishCounts[name] || 0) + 1;
+        });
 
-          let html = '';
-          Object.entries(fishCounts).forEach(([fishName, count]) => {
-            html += `
-              <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 6px 10px; border-radius: 6px; margin-bottom: 5px; border: 1px solid #cbd5e1;">
-                <span style="font-size: 0.85rem;"><strong>${fishName}</strong> (x${count})</span>
-                <button type="button" class="modal-action-btn" style="background:#e74c3c; padding: 3px 8px; font-size: 0.75rem; width: auto;" onclick="promptAdminRemoveFish('${fishName}')">Delete</button>
-              </div>
-            `;
-          });
-          listContainer.innerHTML = html;
+        if (!Object.keys(fishCounts).length) {
+          listContainer.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">User has no fishes in the inventory.</p>';
+        } else {
+          listContainer.innerHTML = Object.entries(fishCounts).map(([fishName, count]) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#ffffff;padding:6px 10px;border-radius:6px;margin-bottom:5px;border:1px solid #cbd5e1;">
+              <span style="font-size:0.85rem;"><strong>${escapeHtml(fishName)}</strong> (x${count})</span>
+              <button type="button" class="modal-action-btn" style="background:#e74c3c;padding:3px 8px;font-size:0.75rem;width:auto;" onclick="promptAdminRemoveFish(${JSON.stringify(fishName).replace(/</g, '\\u003c')})">Delete</button>
+            </div>
+          `).join('');
         }
       } catch (err) {
-        listContainer.innerHTML = '<p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Error loading inventory.</p>';
+        console.error('Admin: failed to load target fish inventory:', err);
+        listContainer.innerHTML = `<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">Could not load inventory: ${escapeHtml(err && err.message ? err.message : 'Unknown error')}</p>`;
       }
     }
 
@@ -6686,7 +6737,7 @@
       // Sandcastle is anchored with bottom:28%, so its ground line is
       // at 72% of the inner tank viewport. Sand creatures crawl ON that line:
       // their top coordinate is the ground line minus their own image height.
-      const sandGroundY = h * 0.72;
+      const sandGroundY = h * 0.72 + (name === 'Sponge' ? 5 : 0);
       let minY = isSandCreature
         ? sandGroundY - ih + 3.5
         : h * (isJelly ? 0.22 : 0.20);
