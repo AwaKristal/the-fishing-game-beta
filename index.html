@@ -4727,7 +4727,28 @@
           return;
         }
 
-        const data = targetDoc.data() || {};
+        let data = targetDoc.data() || {};
+        // Migrate legacy Mini Tung Cube entries out of cosmetics: this item is bait only.
+        const legacyCosmetics = data.cosmeticsInventory && typeof data.cosmeticsInventory === 'object' ? { ...data.cosmeticsInventory } : {};
+        const legacyTungKey = Object.keys(legacyCosmetics).find(k => String(k).trim().toLowerCase() === 'mini tung cube');
+        const legacyTungCount = legacyTungKey ? Math.max(0, Number(legacyCosmetics[legacyTungKey]) || 0) : 0;
+        const legacyPlacedMap = data.aquariumCosmeticsMap && typeof data.aquariumCosmeticsMap === 'object' ? { ...data.aquariumCosmeticsMap } : {};
+        let removedLegacyPlacement = false;
+        for (const roomKey of Object.keys(legacyPlacedMap)) {
+          if (!Array.isArray(legacyPlacedMap[roomKey])) continue;
+          legacyPlacedMap[roomKey] = legacyPlacedMap[roomKey].map(item => {
+            if (String(item || '').trim().toLowerCase() === 'mini tung cube') { removedLegacyPlacement = true; return null; }
+            return item;
+          });
+        }
+        if (legacyTungKey || removedLegacyPlacement) {
+          if (legacyTungKey) delete legacyCosmetics[legacyTungKey];
+          const repair = { cosmeticsInventory: legacyCosmetics };
+          if (legacyTungCount > 0) repair.miniTungCubesCount = (Number(data.miniTungCubesCount) || 0) + legacyTungCount;
+          if (removedLegacyPlacement) repair.aquariumCosmeticsMap = legacyPlacedMap;
+          await targetDoc.ref.update(repair);
+          data = { ...data, ...repair };
+        }
         setText(statCoins, `💰 Coins: ${Number(data.coins) || 0}`);
         const tanksInInventory = Math.max(0, Number(data.miniTanksCount) || 0);
         const tanksMap = data.aquariumTanksMap && typeof data.aquariumTanksMap === 'object'
@@ -6425,7 +6446,7 @@
     }
     if(cosEl){
       const inv=d.cosmeticsInventory||{};
-      const items=Object.entries(inv).filter(([,v])=>v>0);
+      const items=Object.entries(inv).filter(([name,v])=>String(name).trim().toLowerCase()!=='mini tung cube'&&v>0);
       cosEl.innerHTML=items.length?items.map(([k,v])=>`
         <div style="display:flex;justify-content:space-between;align-items:center;background:#ffffff;padding:6px 10px;border-radius:6px;margin-bottom:5px;border:1px solid #cbd5e1;">
           <span style="font-size:0.85rem;"><strong>${esc(k)}</strong> (x${v})</span>
@@ -6480,6 +6501,7 @@
           if(!key)throw Error('Unknown bait. Use Worm Bait, Mini Tuna Cube, or Mini Tung Cube.');
           u[key]=(d[key]||0)+qty;
         }else{
+          if(/^mini tung cube$/i.test(name))throw Error('Mini Tung Cube is bait, not a cosmetic.');
           const inv={...(d.cosmeticsInventory||{})};inv[name]=(inv[name]||0)+qty;u.cosmeticsInventory=inv;
         }
         tx.update(ref,u);
@@ -6504,7 +6526,7 @@
           const key=/^worm bait$/i.test(name)?'wormBaitsCount':/^mini tuna cube$/i.test(name)?'miniTunaCubesCount':/^mini tung cube$/i.test(name)?'miniTungCubesCount':null;
           if(!key)throw Error('Unknown bait. Use Worm Bait, Mini Tuna Cube, or Mini Tung Cube.');
           u[key]=(d[key]||0)+1;
-        }else{const inv={...(d.cosmeticsInventory||{})};inv[name]=(inv[name]||0)+1;u.cosmeticsInventory=inv;}
+        }else{if(/^mini tung cube$/i.test(name))throw Error('Mini Tung Cube is bait, not a cosmetic.');const inv={...(d.cosmeticsInventory||{})};inv[name]=(inv[name]||0)+1;u.cosmeticsInventory=inv;}
         tx.update(ref,u);
       });
       showToast(`Granted 1 ${name} to ${username}.`);
