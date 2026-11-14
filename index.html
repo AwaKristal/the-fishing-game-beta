@@ -1375,7 +1375,7 @@
   <div id="modal-index" class="modal-overlay">
     <div class="modal-card" style="max-width: 440px; text-align: center;">
       <button class="modal-close" onclick="closeAllModals()">✖</button>
-      <h2>Fish Index</h2>
+      <h2>Index</h2>
       <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 12px;">Discover all the fish species available in the game.</p>
       
       <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px;">
@@ -1394,7 +1394,8 @@
         <img id="index-fish-img" src="" alt="Fish" style="width: 110px; height: 110px; object-fit: contain; margin-bottom: 10px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));">
         
         <h3 id="index-fish-name" style="margin: 0 0 5px 0; font-size: 1.2rem; color: #1e3a8a;">Fish Name</h3>
-        <p id="index-fish-desc" style="font-size: 0.9rem; color: #475569; margin: 0 0 15px 0; padding: 0 10px; min-height: 40px;">Description goes here...</p>
+        <p id="index-fish-desc" style="font-size: 0.9rem; color: #475569; margin: 0 0 8px 0; padding: 0 10px; min-height: 40px;">Description goes here...</p>
+        <p id="index-fish-value" style="font-size: 0.95rem; color: #b45309; font-weight: 800; margin: 0 0 15px;">Raw value: 💰 0</p>
         
         <div style="display: flex; justify-content: space-between; width: 100%; position: absolute; top: 50%; transform: translateY(-50%); padding: 0 10px; pointer-events: none;">
           <button onclick="changeIndexFish(-1)" style="pointer-events: auto; background: rgba(255, 255, 255, 0.9); border: 1px solid #cbd5e1; color: #1e3a8a; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">◀</button>
@@ -1808,6 +1809,20 @@
       { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A mysterious fish from ancient and divine waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
       { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
+
+    window.getFishCookedValue = function(baseValue, cooking) {
+      const base = Number(baseValue) || 0;
+      if (!cooking) return base;
+      const multiplier = p => {
+        const n = Number(p) || 0;
+        if (n <= 0) return 1.00;
+        if (n <= 45) return 1.08;
+        if (n <= 60) return 1.25;
+        if (n <= 85) return 0.90;
+        return 0.70;
+      };
+      return Math.max(1, Math.round(base * (multiplier(cooking.side1) + multiplier(cooking.side2)) / 2));
+    };
 
     function checkCooldown() {
       const now = Date.now();
@@ -2697,6 +2712,7 @@
         document.getElementById('index-fish-img').src = "";
         document.getElementById('index-fish-name').innerText = "No fish found";
         document.getElementById('index-fish-desc').innerText = "No fishes available for this rarity yet.";
+        document.getElementById('index-fish-value').innerText = "";
         document.getElementById('index-rarity').innerText = "-";
         document.getElementById('index-counter').innerText = "0 / 0";
         return;
@@ -2710,6 +2726,7 @@
       document.getElementById('index-fish-img').src = fish.img;
       document.getElementById('index-fish-name').innerText = fish.name;
       document.getElementById('index-fish-desc').innerText = fish.desc;
+      document.getElementById('index-fish-value').innerText = `Raw value: 💰 ${fish.value}`;
       document.getElementById('index-rarity').innerText = fish.rarity;
       
       const badge = document.getElementById('index-rarity');
@@ -2994,7 +3011,7 @@
             const s2 = ck.side2 <= 0 ? 'Raw' : ck.side2 <= 45 ? 'Slightly Cooked' : ck.side2 <= 60 ? 'Well Cooked' : ck.side2 <= 85 ? 'Overcooked' : 'Burnt';
             const isWellCooked = s1 === 'Well Cooked' && s2 === 'Well Cooked';
             const isGood = ['Slightly Cooked', 'Well Cooked'].includes(s1) && ['Slightly Cooked', 'Well Cooked'].includes(s2);
-            const val = isGood ? Math.round(fishObj.value * (isWellCooked ? 1.15 : 1.08)) : fishObj.value;
+            const val = window.getFishCookedValue(fishObj.value, ck);
             html += `
               <div style="background: #fff7ed; border: 1px solid #fdba74; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative;">
                 <span style="position: absolute; top: 6px; left: 8px; background: #d97706; color: white; font-size: 0.62rem; font-weight: bold; padding: 1px 5px; border-radius: 6px;">Cooked</span>
@@ -3176,18 +3193,8 @@
             if (fishes[i].name === fishName) removedFish.push(fishes.splice(i, 1)[0]);
           }
           if (removedFish.length !== qtyInput) throw new Error('Fish inventory changed. Please try again.');
-          totalCoinsEarned = removedFish.reduce((sum, f) => {
-            const c = f.cooking;
-            if (c) {
-              const st1 = c.side1 <= 0 ? 'Raw' : c.side1 <= 45 ? 'Slightly Cooked' : c.side1 <= 60 ? 'Well Cooked' : c.side1 <= 85 ? 'Overcooked' : 'Burnt';
-              const st2 = c.side2 <= 0 ? 'Raw' : c.side2 <= 45 ? 'Slightly Cooked' : c.side2 <= 60 ? 'Well Cooked' : c.side2 <= 85 ? 'Overcooked' : 'Burnt';
-              if (['Slightly Cooked','Well Cooked'].includes(st1) && ['Slightly Cooked','Well Cooked'].includes(st2)) {
-                const ideal = st1 === 'Well Cooked' && st2 === 'Well Cooked';
-                return sum + Math.round(fishValue * (ideal ? 1.15 : 1.08));
-              }
-            }
-            return sum + fishValue;
-          }, 0);
+          totalCoinsEarned = removedFish.reduce((sum, f) =>
+            sum + window.getFishCookedValue(fishValue, f.cooking), 0);
 
           transaction.update(playerRef, {
             coins: firebase.firestore.FieldValue.increment(totalCoinsEarned),
@@ -3259,11 +3266,7 @@
               keptFishes.push(f);
             } else {
               const baseValue = fishObj ? fishObj.value : 5;
-              const c = f.cooking;
-              if (c && ['Cooked','Well Cooked'].includes(c.stage1) && ['Cooked','Well Cooked'].includes(c.stage2)) {
-                const ideal = c.side1 >= 40 && c.side1 <= 60 && c.side2 >= 40 && c.side2 <= 60;
-                totalCoinsEarned += Math.round(baseValue * (ideal ? 1.15 : 1.08));
-              } else totalCoinsEarned += baseValue;
+              totalCoinsEarned += window.getFishCookedValue(baseValue, f.cooking);
               soldCount++;
             }
           }
@@ -5454,6 +5457,13 @@
     {name:'Turtle', value:200, rarity:'Legendary', desc:'A peaceful sea turtle with a sturdy shell and powerful flippers. It glides calmly through the aquarium, occasionally changing direction as it explores.', img:IMG.turtle, creatureType:'turtle'},
     {name:'Octopus', value:1500, rarity:'Divine', desc:'An intelligent deep-sea explorer with eight flexible arms. It gently bobs through the water while its tentacles curl and uncurl as it investigates its surroundings.', img:IMG.octopus, creatureType:'octopus'}
   ];
+  newCreatures.push(
+    {name:'Lobster', value:900, rarity:'Mythic', desc:'A powerful crustacean that lives among rocky reefs and ocean crevices. Its strong claws help it defend its territory and search for food along the seafloor.', img:'https://i.postimg.cc/K87V474j/lobster.png', creatureType:'sand'},
+    {name:'Hermit Crab', value:65, rarity:'Rare', desc:'A small crab that protects its soft body inside an empty shell. It wanders across the seabed, carrying its home wherever it goes and searching for tiny bits of food.', img:'https://i.postimg.cc/RVxxFZGk/hermit-crab2.png', creatureType:'sand'},
+    {name:'Crab', value:12, rarity:'Common', desc:'A familiar coastal crustacean with a hard shell and two sturdy claws. It moves sideways across the ocean floor while searching the sand and rocks for food.', img:'https://i.postimg.cc/dVRXDRD1/crab.png', creatureType:'sand'},
+    {name:'Seahorse', value:550, rarity:'Legendary', desc:'A delicate marine creature with a curled tail and a horse-like head. It drifts upright through seagrass and uses its tail to hold onto plants when currents become strong.', img:'https://i.postimg.cc/Hk0Kj0jY/seahorse.png', creatureType:'sand'},
+    {name:'Sponge', value:75, rarity:'Rare', desc:'A colorful filter-feeding animal attached to rocks on the ocean floor. It draws water through its porous body, taking in tiny food particles while providing shelter for small sea life.', img:'https://i.postimg.cc/Jz3gt3th/sponge.png', creatureType:'sand'}
+  );
   newCreatures.forEach(n => { if (!ALLOWED_FISH_TYPES.some(f => f.name === n.name)) ALLOWED_FISH_TYPES.push(n); });
 
   function injectStyles() {
@@ -6562,7 +6572,7 @@
         const s1=stage(ck.side1),s2=stage(ck.side2);
         const ideal=s1==='Well Cooked'&&s2==='Well Cooked';
         const good=['Slightly Cooked','Well Cooked'].includes(s1)&&['Slightly Cooked','Well Cooked'].includes(s2);
-        const value=good?Math.round(base*(ideal?1.15:1.08)):base;
+        const value=window.getFishCookedValue(base,ck);
         html+=`
           <div style="background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
             <span style="position:absolute;top:4px;left:6px;background:#d97706;color:white;font-size:0.62rem;font-weight:bold;padding:1px 5px;border-radius:6px;">Cooked</span>
@@ -6648,7 +6658,7 @@
 
     const tankViewport = img.parentElement;
     const name = img.alt || '';
-    const isSandCreature = name === 'Clam' || name === 'Sea Urchin';
+    const isSandCreature = name === 'Clam' || name === 'Sea Urchin' || name === 'Sponge';
     const isJelly = name === 'Jellyfish';
     const isTurtle = name === 'Turtle';
     const isOctopus = name === 'Octopus';
@@ -6701,7 +6711,7 @@
       let y = isSandCreature
         ? rand(b.minY, b.maxY)
         : rand(b.minY, Math.max(b.minY, b.maxY));
-      let vx = (isSandCreature ? rand(0.07, 0.16) : rand(0.25, isTurtle ? 0.75 : 1.15)) * (Math.random() < 0.5 ? -1 : 1);
+      let vx = (isSandCreature ? rand(0.025, 0.06) : rand(0.25, isTurtle ? 0.75 : 1.15)) * (Math.random() < 0.5 ? -1 : 1);
       let vy = isSandCreature ? 0 : rand(0.12, isJelly ? 0.48 : 0.72) * (Math.random() < 0.5 ? -1 : 1);
       let choiceIn = Math.floor(rand(18, 75));
       let pause = 0;
@@ -6735,14 +6745,14 @@
               ? (Math.random() < 0.5 ? 0 : Math.PI)
               : rand(-Math.PI, Math.PI);
 
-            let speed = isSandCreature ? rand(0.07, 0.16)
+            let speed = isSandCreature ? rand(0.025, 0.06)
               : isTurtle ? rand(0.25, 0.65)
               : isJelly ? rand(0.22, 0.58)
               : isOctopus ? rand(0.45, 0.95)
               : rand(0.35, 0.85);
 
-            if (Math.random() < (isSandCreature ? 0.015 : 0.22)) {
-              speed *= rand(isSandCreature ? 1.15 : 1.7, isSandCreature ? 1.35 : 2.4);
+            if (!isSandCreature && Math.random() < 0.22) {
+              speed *= rand(1.7, 2.4);
               burst = Math.floor(rand(8, 18));
             } else {
               burst = 0;
@@ -6751,7 +6761,7 @@
             vx = Math.cos(angle) * speed;
             vy = isSandCreature ? 0 : Math.sin(angle) * speed * (isJelly ? 0.75 : 0.65);
             choiceIn = Math.floor(rand(20, 80));
-            if (Math.random() < (isSandCreature ? 0.08 : 0.17)) pause = Math.floor(rand(isSandCreature ? 10 : 6, isSandCreature ? 28 : 22));
+            if (Math.random() < (isSandCreature ? 0.12 : 0.17)) pause = Math.floor(rand(isSandCreature ? 18 : 6, isSandCreature ? 45 : 22));
           }
 
           if (burst > 0) burst--;
