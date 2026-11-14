@@ -1472,7 +1472,7 @@
 
         <div id="ach-glu-glu" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; opacity: 0.5;">
           <div>
-            <h4 style="margin: 0 0 3px 0; font-size: 1rem; color: #1e3a8a;">I see you behind that glass.</h4>
+            <h4 style="margin: 0 0 3px 0; font-size: 1rem; color: #1e3a8a;">I see you behind that glass</h4>
             <p style="margin: 0 0 3px 0; font-size: 0.85rem; color: #1f2937; font-weight: bold;">You're trapped lol.</p>
             <span style="font-size: 0.75rem; color: #64748b;">Buy a Mini Tank.</span>
           </div>
@@ -1490,7 +1490,7 @@
 
         <div id="ach-divine" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; opacity: 0.5;">
           <div>
-            <h4 style="margin: 0 0 3px 0; font-size: 1rem; color: #1e3a8a;">Divine i say</h4>
+            <h4 style="margin: 0 0 3px 0; font-size: 1rem; color: #1e3a8a;">Came for iron, and found gold...</h4>
             <p style="margin: 0 0 3px 0; font-size: 0.85rem; color: #1f2937; font-weight: bold;">Beautiful.</p>
             <span style="font-size: 0.75rem; color: #64748b;">Catch a divine rarity fish.</span>
           </div>
@@ -2615,7 +2615,7 @@
           if (tankBought && !achievements.gluGluTank) {
             achievements.gluGluTank = true;
             updated = true;
-            window.showAchievementUnlocked("I see you behind that glass.","You\'re trapped lol.","Buy a Mini Tank.");
+            window.showAchievementUnlocked("I see you behind that glass","You\'re trapped lol.","Buy a Mini Tank.");
           }
 
           if (usedBait && !achievements.wormBaitAch) {
@@ -2627,7 +2627,7 @@
           if (caughtDivine && !achievements.divineAch) {
             achievements.divineAch = true;
             updated = true;
-            window.showAchievementUnlocked('Divine i say','Beautiful.','Catch a Divine fish.');
+            window.showAchievementUnlocked('Came for iron, and found gold...','Beautiful.','Catch a Divine fish.');
           }
 
           if (updated) {
