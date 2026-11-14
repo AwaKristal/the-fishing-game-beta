@@ -6398,7 +6398,8 @@
     if(baitsEl){
       const baits=[
         {name:'Worm Bait',count:d.wormBaitsCount||0},
-        {name:'Mini Tuna Cube',count:d.miniTunaCubesCount||0}
+        {name:'Mini Tuna Cube',count:d.miniTunaCubesCount||0},
+        {name:'Mini Tung Cube',count:d.miniTungCubesCount||0}
       ].filter(b=>b.count>0);
       baitsEl.innerHTML=baits.length?baits.map(b=>`
         <div style="display:flex;justify-content:space-between;align-items:center;background:#ffffff;padding:6px 10px;border-radius:6px;margin-bottom:5px;border:1px solid #cbd5e1;">
@@ -6432,7 +6433,7 @@
         const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');
         const d=snap.data()||{},u={};
         if(kind==='bait'){
-          const key=/^worm bait$/i.test(name)?'wormBaitsCount':'miniTunaCubesCount';
+          const key=/^worm bait$/i.test(name)?'wormBaitsCount':/^mini tung cube$/i.test(name)?'miniTungCubesCount':'miniTunaCubesCount';
           u[key]=Math.max(0,(d[key]||0)-qty);
         }else{
           const inv={...(d.cosmeticsInventory||{})};
@@ -6734,8 +6735,8 @@
       // Sandcastle is anchored with bottom:28%, so its ground line is
       // at 72% of the inner tank viewport. Sand creatures crawl ON that line:
       // their top coordinate is the ground line minus their own image height.
-      const mobileGroundOffset = name === 'Clam' && window.matchMedia('(max-width: 768px)').matches ? 5 : 0;
-      const sandGroundY = h * 0.72 + (name === 'Sponge' ? 5 : 0) + mobileGroundOffset;
+      const clamGroundOffset = name === 'Clam' ? 5 : 0;
+      const sandGroundY = h * 0.72 + (name === 'Sponge' ? 5 : 0) + clamGroundOffset;
       let minY = isSandCreature
         ? sandGroundY - ih + 3.5
         : h * (isJelly ? 0.22 : 0.20);
