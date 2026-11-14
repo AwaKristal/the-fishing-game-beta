@@ -898,7 +898,7 @@
       <div id="rules-scroll-container" style="max-height: 280px; overflow-y: auto; padding-right: 5px;" onscroll="checkRulesScroll()">
         <div class="rule-item">
           <div class="rule-title">1. Respect within the community</div>
-          <div class="rule-desc">The use of offensive, toxic, discriminatory topics or offensive language in profiles (pfp, username, bio) and chat is strictly prohibited.</div>
+          <div class="rule-desc">Offensive, toxic, or discriminatory content and language in profiles (pfp, username, bio) are strictly prohibited.</div>
         </div>
 
         <div class="rule-item">
@@ -1435,7 +1435,9 @@
       
       <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
         <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #1e3a8a;">Items Owned</h3>
-        <p id="backpack-tanks-count" style="margin: 3px 0; font-size: 0.85rem;">Mini Tanks Bought: 0</p>
+        <p id="backpack-tanks-count" style="margin: 3px 0; font-size: 0.85rem;">Mini Tanks: 0</p>
+        <p id="backpack-tanks-inventory" style="margin: 3px 0; font-size: 0.85rem;">Mini Tanks in inventory: 0</p>
+        <p id="backpack-tanks-placed" style="margin: 3px 0; font-size: 0.85rem;">Mini Tanks placed: 0</p>
         <p id="backpack-rooms-count" style="margin: 3px 0; font-size: 0.85rem;">Aquarium Rooms Owned: 1</p>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; border-top: 1px solid #cbd5e1; padding-top: 8px;">
           <span id="backpack-baits-count" style="font-size: 0.85rem; font-weight: bold; color: #27ae60;">Baits</span>
@@ -1563,7 +1565,7 @@
       <div class="form-group">
         <label>Give Bait (e.g. Worm Bait or Mini Tuna Cube)</label>
         <div style="display:flex; gap:8px;">
-          <input type="text" id="adminBaitName" placeholder="Bait name..." autocomplete="off" style="flex:2;">
+          <input type="text" id="adminBaitName" placeholder="Worm Bait, Mini Tuna Cube, or Mini Tung Cube (admin only)" autocomplete="off" style="flex:2;">
           <input type="number" id="adminBaitQty" placeholder="Qty" value="1" min="1" autocomplete="off" style="flex:1;">
         </div>
       </div>
@@ -1675,6 +1677,8 @@
       grill: 'https://i.postimg.cc/BQSTqp4L/grill.png',
       grillTop: 'https://i.postimg.cc/sDjYVmsW/grill-up.png',
       sandcastle: 'https://i.postimg.cc/28kQzGrh/sand-castle.png',
+      verity: 'https://i.postimg.cc/5NZw5zYy/verity.png',
+      miniTungCube: 'https://i.postimg.cc/Xv51c37B/mini-tung-cube.png',
       tunaCube: 'https://i.postimg.cc/TYdVR0f5/mini-tuna-cube.png'
     };
     window.IMG = IMG;
@@ -3282,7 +3286,7 @@
         slotEl.innerHTML = `
           <div style="position: relative; width: 100%; height: 100%; overflow: hidden;">
             <img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Tank" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; pointer-events: none;">
-            ${decoration === 'Sandcastle' ? `<img class="aquarium-sandcastle" src="${IMG.sandcastle}" alt="Sandcastle" style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 28%; width: 34px; height: 34px; object-fit: contain; object-position:center bottom; z-index: 2; pointer-events: none;">` : ''}
+            ${['Sandcastle','Verity'].includes(decoration) ? `<img class="aquarium-${decoration.toLowerCase()}" src="${decoration === 'Sandcastle' ? IMG.sandcastle : IMG.verity}" alt="${decoration}" style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 28%; width: 34px; height: 34px; object-fit: contain; object-position:center bottom; z-index: 2; pointer-events: none;">` : ''}
             <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; z-index: 3; pointer-events: none;">
           </div>
         `;
@@ -3421,6 +3425,7 @@
           });
           
           showToast(`${fishName} placed in tank!`);
+          loadBackpackData();
           document.getElementById('modal-select-fish').style.display = 'none';
           renderAquarium(data.username || "My", fishes, tanksMap, data.aquariumCosmeticsMap || {});
         }
@@ -3454,6 +3459,7 @@
             });
 
             showToast("Tank removed and returned to your inventory.");
+            loadBackpackData();
           }
 
           document.getElementById('modal-select-fish').style.display = 'none';
@@ -3579,6 +3585,7 @@
         const equippedBait = data.equippedBait || (data.isBaitActive ? 'worm' : '');
         const baitsCount = data.wormBaitsCount || 0;
         const cubesCount = data.miniTunaCubesCount || 0;
+        const tungCubesCount = data.miniTungCubesCount || 0;
 
         usedBaitThisCast = false;
         usedBaitType = '';
@@ -3592,6 +3599,11 @@
           usedBaitThisCast = true;
           usedBaitType = 'cube';
           showToast("Mini Tuna Cube consumed for this cast!");
+        } else if (equippedBait === 'tung' && tungCubesCount > 0) {
+          await playerRef.update({ miniTungCubesCount: tungCubesCount - 1, equippedBait: '' });
+          usedBaitThisCast = true;
+          usedBaitType = 'tung';
+          showToast("Mini Tung Cube consumed for this cast!");
         }
 
         setTimeout(() => {
@@ -3607,7 +3619,7 @@
             // Rebalanced probabilities by rarity with Bait
             const roll = Math.random() * 100;
             let targetRarity = 'Common';
-            if (usedBaitType === 'cube') {
+            if (usedBaitType === 'cube' || usedBaitType === 'tung') {
               // Mini Tuna Cube: Divine 0.35%, Mythic 1.65% (2.0%), Legendary 7.0% (9.0%), Epic 23.0% (32.0%), Rare 38.0% (70.0%), Common 30.0%
               if (roll < 0.35) targetRarity = 'Divine';
               else if (roll < 2.00) targetRarity = 'Mythic';
@@ -3931,7 +3943,10 @@
           const baitsCount = data.wormBaitsCount || 0;
           const isBaitActive = data.isBaitActive || false;
 
-          document.getElementById('backpack-tanks-count').innerText = `Mini Tanks Bought: ${tanksCount}`;
+          const placedTanks=Object.values(data.aquariumTanksMap||{}).flat().filter(Boolean).length;
+          document.getElementById('backpack-tanks-count').innerText = `Mini Tanks: ${tanksCount+placedTanks}`;
+          document.getElementById('backpack-tanks-inventory').innerText = `Mini Tanks in inventory: ${tanksCount}`;
+          document.getElementById('backpack-tanks-placed').innerText = `Mini Tanks placed: ${placedTanks}`;
           document.getElementById('backpack-rooms-count').innerText = `Aquarium Rooms Owned: ${roomsCount}`;
           document.getElementById('backpack-baits-count').innerText = `Baits: ${baitsCount}`;
           
@@ -5560,7 +5575,8 @@
     {id:'worm',name:'Worm Bait',price:250,img:'https://i.postimg.cc/KYgqH6Sn/worm-bait.png',buy:async r=>r.update({wormBaitsCount:firebase.firestore.FieldValue.increment(1)})},
     {id:'room',name:'Aquarium Room',price:2000,img:'https://i.postimg.cc/qMyRXL7Z/add.png',buy:async r=>r.update({aquariumRoomsOwned:firebase.firestore.FieldValue.increment(1)})},
     {id:'grill',name:'Grill',price:2500,img:IMG.grill,buy:async (r,d)=>{if(d.grillOwned)throw Error('You already own a Grill.');r.update({grillOwned:true})}},
-    {id:'sandcastle',name:'Sandcastle',price:500,img:IMG.sandcastle,buy:async r=>r.update({})}
+    {id:'sandcastle',name:'Sandcastle',price:500,img:IMG.sandcastle,buy:async r=>r.update({})},
+    {id:'verity',name:'Verity',price:350,img:IMG.verity,buy:async r=>r.update({})}
   ];
   // Correct cosmetic purchase uses a transaction so the map is merged, not replaced.
   async function buyShopItem(id){
@@ -5577,7 +5593,7 @@
         if(id==='worm')updates.wormBaitsCount=(d.wormBaitsCount||0)+1;
         if(id==='room')updates.aquariumRoomsOwned=(d.aquariumRoomsOwned||1)+1;
         if(id==='grill')updates.grillOwned=true;
-        if(id==='sandcastle'){const inv={...(d.cosmeticsInventory||{})};inv.Sandcastle=(inv.Sandcastle||0)+1;updates.cosmeticsInventory=inv;}
+        if(id==='sandcastle'||id==='verity'){const inv={...(d.cosmeticsInventory||{})};const cosmeticName=id==='sandcastle'?'Sandcastle':'Verity';inv[cosmeticName]=(inv[cosmeticName]||0)+1;updates.cosmeticsInventory=inv;}
         tx.update(ref,updates);
       });
       showToast(`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); updateGameHUD(); loadBackpackData();
@@ -5595,13 +5611,14 @@
   // Bait selection and consumption: only one Equip Bait control, both bait types persist.
   async function openBaitSelector(){
     try{const d=(await playerRef().get()).data()||{};const active=d.equippedBait||'';
-      document.getElementById('bait-options').innerHTML=[['worm','Worm Bait',d.wormBaitsCount||0,'https://i.postimg.cc/KYgqH6Sn/worm-bait.png'],['cube','Mini Tuna Cube',d.miniTunaCubesCount||0,IMG.tunaCube]].map(([id,n,q,img])=>`<div class="rebuild-item"><img src="${img}"><strong>${n}</strong><p>Owned: ${q}</p><p>${active===id?'Equipped':''}</p><button class="rebuild-btn" onclick="equipBaitType('${id}')">${active===id?'Equipped':'Equip'}</button></div>`).join('');
+      const available=[['worm','Worm Bait',d.wormBaitsCount||0,'https://i.postimg.cc/KYgqH6Sn/worm-bait.png'],['cube','Mini Tuna Cube',d.miniTunaCubesCount||0,IMG.tunaCube],['tung','Mini Tung Cube',d.miniTungCubesCount||0,IMG.miniTungCube]].filter(([,n,q])=>Number(q)>0);
+       document.getElementById('bait-options').innerHTML=available.map(([id,n,q,img])=>`<div class="rebuild-item"><img src="${img}"><strong>${n}</strong><p>Owned: ${q}</p><p>${active===id?'Equipped':''}</p><button class="rebuild-btn" onclick="equipBaitType('${id}')">${active===id?'Equipped':'Equip'}</button></div>`).join('')||'<p>You do not own any bait yet.</p>';
       document.getElementById('modal-equip-bait').style.display='flex';
     }catch(e){showToast(e.message);}
   }
   async function equipBaitType(type){
-    try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};const q=type==='worm'?(d.wormBaitsCount||0):(d.miniTunaCubesCount||0);if(q<=0)throw Error('You do not own this bait.');tx.update(ref,{equippedBait:type,isBaitActive:type==='worm'});});
-      showToast(type==='worm'?'Worm Bait equipped.':'Mini Tuna Cube equipped.');openBaitSelector();loadBackpackData();
+    try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};const q=type==='worm'?(d.wormBaitsCount||0):type==='cube'?(d.miniTunaCubesCount||0):type==='tung'?(d.miniTungCubesCount||0):0;if(q<=0)throw Error('You do not own this bait.');tx.update(ref,{equippedBait:type,isBaitActive:type==='worm'});});
+      showToast(type==='worm'?'Worm Bait equipped.':type==='tung'?'Mini Tung Cube equipped.':'Mini Tuna Cube equipped.');openBaitSelector();loadBackpackData();
     }catch(e){showToast(e.message);}
   }
   window.openBaitSelector=openBaitSelector;window.equipBaitType=equipBaitType;
@@ -5703,7 +5720,10 @@
   window.openBobTrade=openBobTrade;window.startBobTrade=startBobTrade;window.claimBobReward=claimBobReward;
 
   // Cosmetic inventory and aquarium placement.
-  async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const n=inv.Sandcastle||0;const cMap=d.aquariumCosmeticsMap||{};const placedCount=Object.values(cMap).flat().filter(x=>x==='Sandcastle').length;document.getElementById('cosmetic-inventory').innerHTML=`<div class="rebuild-item"><img src="${IMG.sandcastle}"><strong>Sandcastle</strong><p>In bag: ${n} | Placed: ${placedCount}</p><small>To place or remove it, select a tank in your Aquarium and use the cosmetic selector.</small></div>`;document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
+  // Register future Mini Tank-compatible cosmetics here; placement and the achievement share this catalog.
+  const TANK_PLACEABLE_COSMETICS = { Sandcastle: IMG.sandcastle, Verity: IMG.verity };
+  const isTankPlaceableCosmetic = name => Object.prototype.hasOwnProperty.call(TANK_PLACEABLE_COSMETICS, name);
+  async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const cMap=d.aquariumCosmeticsMap||{};const names=['Sandcastle','Verity'];document.getElementById('cosmetic-inventory').innerHTML=names.map(name=>{const n=inv[name]||0,placedCount=Object.values(cMap).flat().filter(x=>x===name).length,img=name==='Sandcastle'?IMG.sandcastle:IMG.verity;return `<div class="rebuild-item"><img src="${img}"><strong>${name}</strong><p>In bag: ${n} | Placed: ${placedCount}</p><small>To place or remove it, select a tank in your Aquarium and use the cosmetic selector.</small></div>`;}).join('');document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
   async function quickToggleCosmeticTank(cosName){try{const ref=playerRef();await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');const d=snap.data()||{};const inv={...(d.cosmeticsInventory||{})};const tMap={...(d.aquariumTanksMap||{})};const cMap={...(d.aquariumCosmeticsMap||{})};let removed=false;for(const rKey of Object.keys(cMap)){const arr=[...(cMap[rKey]||[])];const idx=arr.indexOf(cosName);if(idx!==-1){arr[idx]=null;cMap[rKey]=arr;inv[cosName]=(inv[cosName]||0)+1;removed=true;break;}}if(!removed){if((inv[cosName]||0)<=0)throw Error('You do not own this cosmetic.');let placed=false;const roomKeys=Object.keys(tMap).length?Object.keys(tMap):['room_0'];for(const rKey of roomKeys){const tArr=tMap[rKey]||[];const cArr=[...(cMap[rKey]||new Array(8).fill(null))];const slotIdx=tArr.findIndex((fish,i)=>fish&&!cArr[i]);if(slotIdx!==-1){cArr[slotIdx]=cosName;cMap[rKey]=cArr;inv[cosName]-=1;placed=true;break;}}if(!placed)throw Error('Place a fish in a Mini Tank in your Aquarium first!');}tx.update(ref,{aquariumCosmeticsMap:cMap,cosmeticsInventory:inv});});showToast('Cosmetic updated!');openCosmeticsInventory();loadBackpackData();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{});}}catch(e){showToast(e.message);}}
   window.quickToggleCosmeticTank=quickToggleCosmeticTank;
   async function toggleSandcastle(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},inv={...(d.cosmeticsInventory||{})};const equipped=!!d.aquariumSandcastle;if(!equipped&&(inv.Sandcastle||0)<=0)throw Error('You do not own a Sandcastle. Buy one in the Shop.');tx.update(ref,{aquariumSandcastle:!equipped});});showToast('Aquarium decoration updated.');if(typeof openCosmeticsInventory==='function'&&document.getElementById('modal-cosmetics').style.display==='flex')openCosmeticsInventory();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{});} }catch(e){showToast(e.message);}}
@@ -5713,9 +5733,9 @@
       const d=(await playerRef().get()).data()||{}, inv=d.cosmeticsInventory||{}, room=`room_${currentAquariumRoomIndex}`;
       const placed=((d.aquariumCosmeticsMap||{})[room]||[])[selectedShelfIndex]||null;
       const options=document.getElementById('tank-cosmetic-options');
-      const available=Object.entries(inv).filter(([name,count])=>(Number(count)||0)>0);
+      const available=Object.entries(inv).filter(([name,count])=>isTankPlaceableCosmetic(name)&&(Number(count)||0)>0);
       let html=available.map(([name,count])=>{
-        const img=name==='Sandcastle'?IMG.sandcastle:'';
+        const img=TANK_PLACEABLE_COSMETICS[name];
         return `<div class="rebuild-item"><img src="${img}" alt="${esc(name)}"><strong>${esc(name)}</strong><p>Owned: ${count}</p><button class="rebuild-btn" onclick="selectTankCosmetic('${esc(name)}')">Place</button></div>`;
       }).join('');
       if(placed)html+=`<div class="rebuild-item"><strong>${esc(placed)}</strong><p>Currently placed in this tank</p><button class="rebuild-btn red" onclick="removeSelectedTankCosmetic()">Remove</button></div>`;
@@ -5724,35 +5744,93 @@
     }catch(e){showToast('Could not load cosmetics: '+e.message);}
   }
   async function selectTankCosmetic(name){
-    if(name!=='Sandcastle'){showToast('This cosmetic is not available for tank placement yet.');return;}
-    closeRebuildModal('modal-tank-cosmetic-picker');await placeSandcastleInSelectedTank();
+    if(!isTankPlaceableCosmetic(name)){showToast('This cosmetic is not available for tank placement yet.');return;}
+    closeRebuildModal('modal-tank-cosmetic-picker');await placeCosmeticInSelectedTank(name);
   }
   async function removeSelectedTankCosmetic(){closeRebuildModal('modal-tank-cosmetic-picker');await placeSandcastleInSelectedTank();}
   window.openTankCosmeticPicker=openTankCosmeticPicker;window.selectTankCosmetic=selectTankCosmetic;window.removeSelectedTankCosmetic=removeSelectedTankCosmetic;
 
-  async function placeSandcastleInSelectedTank(){
-    try{
-      const ref=playerRef();
-      await db.runTransaction(async tx=>{
-        const snap=await tx.get(ref),d=snap.data()||{},inv={...(d.cosmeticsInventory||{})};
-        const roomKey=`room_${currentAquariumRoomIndex}`,slot=selectedShelfIndex;
-        const tanksMap=d.aquariumTanksMap||{},tanks=tanksMap[roomKey]||[];
-        if(!tanks[slot])throw Error('Place a fish in this tank first.');
-        const cosmeticMap={...(d.aquariumCosmeticsMap||{})};
-        const roomDecor=[...(cosmeticMap[roomKey]||new Array(8).fill(null))];
-        if(roomDecor[slot]==='Sandcastle'){roomDecor[slot]=null;inv.Sandcastle=(inv.Sandcastle||0)+1;}
-        else{if((inv.Sandcastle||0)<=0)throw Error('You do not own a Sandcastle.');inv.Sandcastle-=1;roomDecor[slot]='Sandcastle';}
-        cosmeticMap[roomKey]=roomDecor;
-        tx.update(ref,{aquariumCosmeticsMap:cosmeticMap,cosmeticsInventory:inv});
+  async function placeCosmeticInSelectedTank(name) {
+    if (!isTankPlaceableCosmetic(name)) return;
+
+    try {
+      const ref = playerRef();
+      let unlockedFancyAchievement = false;
+
+      await db.runTransaction(async tx => {
+        const snapshot = await tx.get(ref);
+        const data = snapshot.data() || {};
+        const inventory = { ...(data.cosmeticsInventory || {}) };
+        const roomKey = `room_${currentAquariumRoomIndex}`;
+        const slot = selectedShelfIndex;
+        const tanksMap = data.aquariumTanksMap || {};
+        const tanks = tanksMap[roomKey] || [];
+
+        if (!tanks[slot]) throw Error('Place a fish in this tank first.');
+
+        const cosmeticMap = { ...(data.aquariumCosmeticsMap || {}) };
+        const roomDecorations = [
+          ...(cosmeticMap[roomKey] || new Array(8).fill(null))
+        ];
+        const achievements = { ...(data.achievements || {}) };
+        const isRemovingSameCosmetic = roomDecorations[slot] === name;
+
+        if (isRemovingSameCosmetic) {
+          roomDecorations[slot] = null;
+          inventory[name] = (inventory[name] || 0) + 1;
+        } else {
+          if ((inventory[name] || 0) <= 0) {
+            throw Error(`You do not own a ${name}.`);
+          }
+
+          if (roomDecorations[slot]) {
+            const replacedCosmetic = roomDecorations[slot];
+            inventory[replacedCosmetic] = (inventory[replacedCosmetic] || 0) + 1;
+          }
+
+          inventory[name] -= 1;
+          roomDecorations[slot] = name;
+
+          if (!achievements.youLookFancy) {
+            achievements.youLookFancy = true;
+            unlockedFancyAchievement = true;
+          }
+        }
+
+        cosmeticMap[roomKey] = roomDecorations;
+        tx.update(ref, {
+          aquariumCosmeticsMap: cosmeticMap,
+          cosmeticsInventory: inventory,
+          achievements
+        });
       });
+
+      if (unlockedFancyAchievement) {
+        window.showAchievementUnlocked(
+          'You look fancy!',
+          'Richest kid in town.',
+          'Put a cosmetic in a Mini Tank.'
+        );
+      }
+
       showToast('Tank decoration updated.');
-      document.getElementById('modal-select-fish').style.display='none';
-      const d=(await ref.get()).data();
-      renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{});
+      document.getElementById('modal-select-fish').style.display = 'none';
+
+      const updatedData = (await ref.get()).data();
+      renderAquarium(
+        updatedData.username || 'My',
+        updatedData.fishes || [],
+        updatedData.aquariumTanksMap || {},
+        updatedData.aquariumCosmeticsMap || {}
+      );
       loadBackpackData();
-    }catch(e){showToast(e.message);}
+    } catch (error) {
+      showToast(error.message);
+    }
   }
-  window.placeSandcastleInSelectedTank=placeSandcastleInSelectedTank;
+   async function placeSandcastleInSelectedTank(){return placeCosmeticInSelectedTank('Sandcastle');}
+   window.placeCosmeticInSelectedTank=placeCosmeticInSelectedTank;
+   window.placeSandcastleInSelectedTank=placeSandcastleInSelectedTank;
 
   // Customizable Multi-Item Bundle Make Offer & Functional Market Buy
   let offerBundle = [];
@@ -5769,8 +5847,8 @@
   }
 
   function getItemIcon(kind, name){
-    if(kind==='cosmetic') return IMG.sandcastle;
-    if(kind==='bait') return /^mini tuna cube$/i.test(name)?IMG.tunaCube:'https://i.postimg.cc/KYgqH6Sn/worm-bait.png';
+    if(kind==='cosmetic') return TANK_PLACEABLE_COSMETICS[name] || '';
+    if(kind==='bait') return /^mini tung cube$/i.test(name)?IMG.miniTungCube:/^mini tuna cube$/i.test(name)?IMG.tunaCube:'https://i.postimg.cc/KYgqH6Sn/worm-bait.png';
     const meta=ALLOWED_FISH_TYPES.find(f=>f.name===name);
     return meta?meta.img:'';
   }
@@ -6234,7 +6312,7 @@
           name=match.name;
         }else if(type==='bait'){
           const match=['Worm Bait','Mini Tuna Cube'].find(x=>x.toLowerCase()===typedName.toLowerCase());
-          if(!match)throw Error('Unknown bait. Use Worm Bait or Mini Tuna Cube.');
+          if(!match)throw Error('Unknown bait. Use Worm Bait, Mini Tuna Cube, or Mini Tung Cube.');
           name=match;
         }else if(type!=='cosmetic')throw Error('Invalid item category.');
         items.push({type,name,quantity});
@@ -6370,6 +6448,7 @@
 
   window.adminGiveNamedItem=async function(kind){
     try{
+      if(!auth.currentUser||auth.currentUser.uid!==ADMIN_UID)throw Error('Admin only.');
       const username=document.getElementById('adminTargetUsername').value.trim();
       const name=(document.getElementById(kind==='bait'?'adminBaitName':'adminCosmeticName')?.value||'').trim();
       const qty=safeInt(document.getElementById(kind==='bait'?'adminBaitQty':'adminCosmeticQty')?.value||'1')||1;
@@ -6380,8 +6459,8 @@
         const snap=await tx.get(ref);if(!snap.exists)throw Error('Player profile not found.');
         const d=snap.data()||{},u={};
         if(kind==='bait'){
-          const key=/^worm bait$/i.test(name)?'wormBaitsCount':/^mini tuna cube$/i.test(name)?'miniTunaCubesCount':null;
-          if(!key)throw Error('Unknown bait. Use Worm Bait or Mini Tuna Cube.');
+          const key=/^worm bait$/i.test(name)?'wormBaitsCount':/^mini tuna cube$/i.test(name)?'miniTunaCubesCount':/^mini tung cube$/i.test(name)?'miniTungCubesCount':null;
+          if(!key)throw Error('Unknown bait. Use Worm Bait, Mini Tuna Cube, or Mini Tung Cube.');
           u[key]=(d[key]||0)+qty;
         }else{
           const inv={...(d.cosmeticsInventory||{})};inv[name]=(inv[name]||0)+qty;u.cosmeticsInventory=inv;
@@ -6394,6 +6473,7 @@
     }catch(e){showToast('Admin grant failed: '+e.message+' (check Firestore admin update rules).');}
   };
   window.adminGiveRebuildItem=async function(kind){
+    if(!auth.currentUser||auth.currentUser.uid!==ADMIN_UID){showToast('Admin only.');return;}
     const username=document.getElementById('adminTargetUsername').value.trim();
     const name=(document.getElementById(kind==='bait'?'admin-rebuild-bait-name':'admin-rebuild-cosmetic-name')?.value||'').trim();
     if(!username||!name){showToast('Enter recipient username and exact item name.');return;}
@@ -6404,8 +6484,8 @@
         const snap=await tx.get(ref);if(!snap.exists)throw Error('Player profile not found.');
         const d=snap.data()||{},u={};
         if(kind==='bait'){
-          const key=/^worm bait$/i.test(name)?'wormBaitsCount':/^mini tuna cube$/i.test(name)?'miniTunaCubesCount':null;
-          if(!key)throw Error('Unknown bait. Use Worm Bait or Mini Tuna Cube.');
+          const key=/^worm bait$/i.test(name)?'wormBaitsCount':/^mini tuna cube$/i.test(name)?'miniTunaCubesCount':/^mini tung cube$/i.test(name)?'miniTungCubesCount':null;
+          if(!key)throw Error('Unknown bait. Use Worm Bait, Mini Tuna Cube, or Mini Tung Cube.');
           u[key]=(d[key]||0)+1;
         }else{const inv={...(d.cosmeticsInventory||{})};inv[name]=(inv[name]||0)+1;u.cosmeticsInventory=inv;}
         tx.update(ref,u);
@@ -6430,7 +6510,10 @@
       const baitsCount=d.wormBaitsCount||0;
       const cubesCount=d.miniTunaCubesCount||0;
       const bait=d.equippedBait||(d.isBaitActive?'worm':'');
-      document.getElementById('backpack-tanks-count').innerText=`Mini Tanks Bought: ${tanksCount}`;
+      const placedTanks=Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean).length;
+       document.getElementById('backpack-tanks-count').innerText=`Mini Tanks: ${tanksCount+placedTanks}`;
+       document.getElementById('backpack-tanks-inventory').innerText=`Mini Tanks in inventory: ${tanksCount}`;
+       document.getElementById('backpack-tanks-placed').innerText=`Mini Tanks placed: ${placedTanks}`;
       document.getElementById('backpack-rooms-count').innerText=`Aquarium Rooms Owned: ${roomsCount}`;
       const baitLabel=document.getElementById('backpack-baits-count');if(baitLabel)baitLabel.remove();
       const toggleBtn=document.getElementById('backpack-bait-toggle-btn');
@@ -6488,22 +6571,95 @@
   // New achievement UI and existing achievement loader augmentation.
   function addSpecialAchievements(){
     const list=document.getElementById('achievements-list');
-    if(!list||document.getElementById('ach-cook-master'))return;
-    [
-      ['cook-master','Call me master master','One, two FLIP!','Cook a fish.'],
-      ['bob-master',"That's what you get",'Hope i get a better one!','Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.'],
-      ['ding-ready',"Ding, its ready!",'Tastes better than before.','Burn a fish in the grill.']
-    ].forEach(([id,name,desc,obj])=>{
-      const el=document.createElement('div');
-      el.id='ach-'+id;
-      el.style.cssText='background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:0.5;';
-      el.innerHTML=`<div><h4 style="margin:0 0 3px 0;font-size:1rem;color:#1e3a8a;">${esc(name)}</h4><p style="margin:0 0 3px 0;font-size:0.85rem;color:#1f2937;font-weight:bold;">${esc(desc)}</p><span style="font-size:0.75rem;color:#64748b;">${esc(obj)}</span></div><div id="status-${id}" style="margin-left:auto;font-weight:bold;color:#e74c3c;font-size:0.85rem;">Locked</div>`;
-      list.appendChild(el);
+    if (!list) return;
+
+    const specialAchievements = [
+      {
+        id: 'cook-master',
+        name: 'Call me master master',
+        description: 'One, two FLIP!',
+        objective: 'Cook a fish.'
+      },
+      {
+        id: 'bob-master',
+        name: "That's what you get",
+        description: 'Hope i get a better one!',
+        objective: 'Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.'
+      },
+      {
+        id: 'ding-ready',
+        name: 'Ding, its ready!',
+        description: 'Tastes better than before.',
+        objective: 'Burn a fish in the grill.'
+      },
+      {
+        id: 'you-look-fancy',
+        name: 'You look fancy!',
+        description: 'Richest kid in town.',
+        objective: 'Put a cosmetic in a Mini Tank.'
+      }
+    ];
+
+    specialAchievements.forEach(({ id, name, description, objective }) => {
+      if (document.getElementById(`ach-${id}`)) return;
+
+      const card = document.createElement('div');
+      card.id = `ach-${id}`;
+      card.style.cssText = 'background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:0.5;';
+      card.innerHTML = `
+        <div>
+          <h4 style="margin:0 0 3px;font-size:1rem;color:#1e3a8a;">${esc(name)}</h4>
+          <p style="margin:0 0 3px;font-size:0.85rem;color:#1f2937;font-weight:bold;">${esc(description)}</p>
+          <span style="font-size:0.75rem;color:#64748b;">${esc(objective)}</span>
+        </div>
+        <div id="status-${id}" style="margin-left:auto;font-weight:bold;color:#e74c3c;font-size:0.85rem;">Locked</div>`;
+      list.appendChild(card);
     });
   }
   let recaptchaReady=false;
   function renderVisibleRecaptcha(){if(!recaptchaReady||!window.grecaptcha||typeof grecaptcha.render!=='function')return;const modal=document.getElementById('modal-account');if(!modal||modal.style.display!=='flex')return;const login=document.getElementById('form-login'),register=document.getElementById('form-register');try{if(login&&login.style.display!=='none'&&recaptchaLoginId===null){const node=document.getElementById('recaptcha-login');if(node&&node.childElementCount===0)recaptchaLoginId=grecaptcha.render(node,{sitekey:RECAPTCHA_SITE_KEY});}if(register&&register.style.display!=='none'&&recaptchaRegisterId===null){const node=document.getElementById('recaptcha-register');if(node&&node.childElementCount===0)recaptchaRegisterId=grecaptcha.render(node,{sitekey:RECAPTCHA_SITE_KEY});}}catch(e){console.error('reCAPTCHA render error:',e);}}
-  const origOpenModal=window.openModal;window.openModal=function(id){if(origOpenModal)origOpenModal(id);if(id==='modal-account')setTimeout(renderVisibleRecaptcha,150);if(id==='modal-achievements'){addSpecialAchievements();if(auth.currentUser)playerRef().get().then(s=>{const a=(s.data()||{}).achievements||{};[['cook-master','cookMaster'],['bob-master','bobMaster'],['ding-ready','dingReady']].forEach(([id,k])=>{const card=document.getElementById('ach-'+id);const e=document.getElementById('status-'+id);const done=!!a[k];if(card){card.style.opacity=done?'1':'0.5';card.style.borderColor=done?'#2ecc71':'#cbd5e1';}if(e){e.textContent=done?'Completed':'Locked';e.style.color=done?'#2ecc71':'#e74c3c';}});}).catch(()=>{});}if(id==='modal-backpack')setTimeout(()=>window.loadBackpackData&&window.loadBackpackData(),0);};
+  const origOpenModal = window.openModal;
+  window.openModal = function (id) {
+    if (origOpenModal) origOpenModal(id);
+
+    if (id === 'modal-account') {
+      setTimeout(renderVisibleRecaptcha, 150);
+    }
+
+    if (id === 'modal-achievements') {
+      addSpecialAchievements();
+      if (auth.currentUser) {
+        playerRef().get().then(snapshot => {
+          const achievements = (snapshot.data() || {}).achievements || {};
+          const achievementStatus = [
+            ['cook-master', 'cookMaster'],
+            ['bob-master', 'bobMaster'],
+            ['ding-ready', 'dingReady'],
+            ['you-look-fancy', 'youLookFancy']
+          ];
+
+          achievementStatus.forEach(([id, key]) => {
+            const card = document.getElementById(`ach-${id}`);
+            const status = document.getElementById(`status-${id}`);
+            const completed = !!achievements[key];
+
+            if (card) {
+              card.style.opacity = completed ? '1' : '0.5';
+              card.style.borderColor = completed ? '#2ecc71' : '#cbd5e1';
+            }
+            if (status) {
+              status.textContent = completed ? 'Completed' : 'Locked';
+              status.style.color = completed ? '#2ecc71' : '#e74c3c';
+            }
+          });
+        }).catch(error => console.error('Could not load achievements:', error));
+      }
+    }
+
+    if (id === 'modal-backpack') {
+      setTimeout(() => window.loadBackpackData && window.loadBackpackData(), 0);
+    }
+  };
   const origSwitchAuthTab=window.switchAuthTab;window.switchAuthTab=function(tab){if(origSwitchAuthTab)origSwitchAuthTab(tab);setTimeout(renderVisibleRecaptcha,150);};
 
 
