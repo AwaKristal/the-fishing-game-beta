@@ -3369,7 +3369,7 @@
         listEl.innerHTML = html;
       }
       const decoBtn=document.getElementById('place-sandcastle-in-tank-btn');
-      if(decoBtn){const data=(await db.collection('jugadores').doc(user.uid).get()).data()||{};const room=`room_${currentAquariumRoomIndex}`;const arr=(data.aquariumCosmeticsMap||{})[room]||[];const ownedCount=(data.cosmeticsInventory||{}).Sandcastle||0;const isPlaced=arr[selectedShelfIndex]==='Sandcastle';decoBtn.textContent=isPlaced?'Remove Cosmetic (Sandcastle)':`Place Cosmetic (${ownedCount} owned)`;decoBtn.disabled=!isPlaced&&ownedCount<=0;}
+      if(decoBtn){const data=(await db.collection('jugadores').doc(user.uid).get()).data()||{};const room=`room_${currentAquariumRoomIndex}`;const arr=(data.aquariumCosmeticsMap||{})[room]||[];const placedCosmetic=arr[selectedShelfIndex]||null;decoBtn.textContent=placedCosmetic?'Remove/Change Cosmetic':'Place Cosmetic';decoBtn.disabled=false;}
       document.getElementById('modal-select-fish').style.display = 'flex';
     }
 
@@ -5747,7 +5747,7 @@
     if(!isTankPlaceableCosmetic(name)){showToast('This cosmetic is not available for tank placement yet.');return;}
     closeRebuildModal('modal-tank-cosmetic-picker');await placeCosmeticInSelectedTank(name);
   }
-  async function removeSelectedTankCosmetic(){closeRebuildModal('modal-tank-cosmetic-picker');await placeSandcastleInSelectedTank();}
+  async function removeSelectedTankCosmetic(){try{const d=(await playerRef().get()).data()||{},room=`room_${currentAquariumRoomIndex}`,placed=((d.aquariumCosmeticsMap||{})[room]||[])[selectedShelfIndex];if(!placed){closeRebuildModal('modal-tank-cosmetic-picker');return;}closeRebuildModal('modal-tank-cosmetic-picker');await placeCosmeticInSelectedTank(placed);}catch(e){showToast('Could not remove cosmetic: '+e.message);}}
   window.openTankCosmeticPicker=openTankCosmeticPicker;window.selectTankCosmetic=selectTankCosmetic;window.removeSelectedTankCosmetic=removeSelectedTankCosmetic;
 
   async function placeCosmeticInSelectedTank(name) {
