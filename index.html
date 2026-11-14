@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -721,45 +721,7 @@
       line-height: 1.4;
     }
 
-    /* Estilos del Chat DM */
-    .chat-box-container {
-      display: flex;
-      flex-direction: column;
-      height: 320px;
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      padding: 10px;
-      overflow: hidden;
-    }
-    .chat-messages-area {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding-right: 5px;
-    }
-    .chat-bubble {
-      max-width: 80%;
-      padding: 8px 12px;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      position: relative;
-      word-break: break-word;
-    }
-    .chat-bubble.sent {
-      align-self: flex-end;
-      background: #1e3a8a;
-      color: #ffffff;
-      border-bottom-right-radius: 2px;
-    }
-    .chat-bubble.received {
-      align-self: flex-start;
-      background: #e2e8f0;
-      color: #1f2937;
-      border-bottom-left-radius: 2px;
-    }
+    
 
     #toast-container {
       position: fixed;
@@ -817,12 +779,12 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.3 BETA</div>
+      <div class="version-tag">v.1.0.0.3</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -842,7 +804,7 @@
           <img src="https://i.postimg.cc/Kjf35Nc8/account.png" alt="Account">
         </button>
       </div>
-      <button id="btn-friends" class="modal-action-btn" style="display:none; width:auto; padding: 6px 12px; font-size: 0.85rem; background:#8e44ad;" onclick="openFriendsModal()">Friends & DMs</button>
+      <button id="btn-friends" class="modal-action-btn" style="display:none; width:auto; padding: 6px 12px; font-size: 0.85rem; background:#8e44ad;" onclick="openFriendsModal()">Friends</button>
     </div>
     <button id="btn-logout" class="modal-action-btn" style="display:none; width:auto; padding: 6px 12px; font-size: 0.85rem;" onclick="logout()">Log out</button>
   </div>
@@ -967,20 +929,20 @@
     </div>
   </div>
 
-  <!-- Modal Friends & DMs -->
+  <!-- Modal Friends -->
   <div id="modal-friends" class="modal-overlay">
     <div class="modal-card" style="max-width: 550px;">
       <button class="modal-close" onclick="closeAllModals()">✖</button>
-      <h2>Friends & Direct Messages</h2>
+      <h2>Friends</h2>
       
       <div class="tab-container">
-        <button id="tab-friends-list-btn" class="tab-btn active" onclick="switchFriendsTab('list')">Friends Chat</button>
+        <button id="tab-friends-list-btn" class="tab-btn active" onclick="switchFriendsTab('list')">My Friends</button>
         <button id="tab-friends-add-btn" class="tab-btn" onclick="switchFriendsTab('add')">Add Friend</button>
         <button id="tab-friends-req-btn" class="tab-btn" onclick="switchFriendsTab('requests')">Requests (<span id="friend-req-count">0</span>)</button>
       </div>
 
       <div id="friends-list-section">
-        <p style="font-size:0.85rem; color:#64748b; margin-bottom:10px;">Select a friend to open direct messages:</p>
+        <p style="font-size:0.85rem; color:#64748b; margin-bottom:10px;">Select a friend to open their profile:</p>
         <div id="friends-list-container" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
           <p style="color:#64748b; text-align:center;">Loading friends...</p>
         </div>
@@ -998,25 +960,6 @@
         <div id="friend-requests-container" style="max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
           <p style="color:#64748b; text-align:center;">Loading requests...</p>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal Direct Chat DM -->
-  <div id="modal-chat-dm" class="modal-overlay" style="z-index: 1050;">
-    <div class="modal-card" style="max-width: 480px;">
-      <button class="modal-close" onclick="document.getElementById('modal-chat-dm').style.display='none'">✖</button>
-      <h3 style="margin-top:0;" id="chat-dm-title">Chat with Friend</h3>
-      
-      <div class="chat-box-container">
-        <div id="chat-messages-area" class="chat-messages-area">
-          <p style="color:#64748b; text-align:center; font-size:0.8rem;">Loading messages...</p>
-        </div>
-      </div>
-
-      <div style="display: flex; gap: 8px; margin-top: 10px;">
-        <input type="text" id="chatMessageInput" placeholder="Type a message..." style="flex:1; padding:10px; border-radius:8px; border:1px solid #cbd5e1;" autocomplete="off" onkeydown="if(event.key==='Enter') sendDirectMessage()">
-        <button type="button" class="modal-action-btn" style="width:auto; padding:10px 18px; background:#1e3a8a;" onclick="sendDirectMessage()">Send</button>
       </div>
     </div>
   </div>
@@ -1275,6 +1218,11 @@
         <div class="form-group">
           <label>Current Password (Required to change details)</label>
           <input type="password" id="profile-current-password" placeholder="Enter password to confirm" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>Change Account Email</label>
+          <input type="email" id="profile-edit-email" placeholder="New email address..." autocomplete="email">
+          <small style="color:#64748b;">Firebase will send a verification link to the new address.</small>
         </div>
         <div class="form-group">
           <label>Change Password (Optional)</label>
@@ -1722,15 +1670,11 @@
   <div id="toast-container"></div>
 
   <script>
+    // Shared UI, cooking, and item artwork.
+    // Catchable creature images are defined once in ALLOWED_FISH_TYPES below.
     const IMG = {
-      clam: 'https://i.postimg.cc/BQSTqp46/clam.png',
-      urchin: 'https://i.postimg.cc/15mG9Bsg/sea-urchin.png',
-      jelly: 'https://i.postimg.cc/J4rN1xMt/jellyfish.png',
-      turtle: 'https://i.postimg.cc/g0wMdW8S/turtle2.png',
-      octopus: 'https://i.postimg.cc/Qx8QXmhH/octopus.png',
       grill: 'https://i.postimg.cc/BQSTqp4L/grill.png',
       grillTop: 'https://i.postimg.cc/sDjYVmsW/grill-up.png',
-      cook: 'https://i.postimg.cc/2y6St1Nb/cook-button.png',
       sandcastle: 'https://i.postimg.cc/28kQzGrh/sand-castle.png',
       tunaCube: 'https://i.postimg.cc/TYdVR0f5/mini-tuna-cube.png'
     };
@@ -1768,11 +1712,6 @@
     let dailyTimerInterval = null;
     let lastActionTimestamp = 0;
 
-    // Amigos y DM
-    let activeChatFriendUid = null;
-    let activeChatFriendName = "";
-    let chatUnsubscribe = null;
-
     let isMouseDown = false;
     let minigameLoop = null;
     let catchBarY = 0;
@@ -1785,33 +1724,48 @@
     let usedBaitType = ''; 
 
     const ALLOWED_FISH_TYPES = [
-      { name: "Sardine", value: 5, rarity: "Common", desc: "A small, silvery fish that moves in large schools.", img: "https://i.postimg.cc/c1BSbKfF/sardine.png" },
-      { name: "Opah", value: 10, rarity: "Common", desc: "A large, colorful deep-water fish known for its distinct round body.", img: "https://i.postimg.cc/sxhg04JM/opah.png" },
-      { name: "Clownfish", value: 8, rarity: "Common", desc: "A small, vibrant orange fish with white stripes.", img: "https://i.postimg.cc/ry3jHGkf/clownfish.png" },
-      { name: "Guppy", value: 4, rarity: "Common", desc: "A tiny, active freshwater fish featuring a colorful tail fin.", img: "https://i.postimg.cc/VkcRfY5g/guppy.png" },
-      { name: "Tilapia", value: 9, rarity: "Common", desc: "A sturdy cichlid fish found in warm regions.", img: "https://i.postimg.cc/zXTCP9pD/tilapia.png" },
-      { name: "Goldfish", value: 6, rarity: "Common", desc: "A classic golden freshwater companion.", img: "https://i.postimg.cc/VkD2cTRZ/goldfish2.png" },
-      { name: "Cod", value: 7, rarity: "Common", desc: "A standard ocean fish found in cold northern waters.", img: "https://i.postimg.cc/rp8x6Fgw/cod.png" },
-      { name: "Maroon Clownfish", value: 26, rarity: "Rare", desc: "A striking clownfish variant with deep maroon hues and bright white bars.", img: "https://i.postimg.cc/3rFTcy29/maroon-clownfish.png" },
-      { name: "Carp", value: 22, rarity: "Rare", desc: "A large freshwater fish celebrated for its strength.", img: "https://i.postimg.cc/N0gmhfb0/carp.png" },
-      { name: "Neon Tetra", value: 24, rarity: "Rare", desc: "A glowing tropical fish with iridescent stripes.", img: "https://i.postimg.cc/TPRg8YQ2/neon-tetra.png" },
-      { name: "Salmon", value: 28, rarity: "Rare", desc: "A migratory swimmer traveling upstream through rivers.", img: "https://i.postimg.cc/bvzkXNLz/salmon.png" },
-      { name: "Surgeonfish", value: 30, rarity: "Rare", desc: "A bright blue marine swimmer with defensive spines.", img: "https://i.postimg.cc/BvqHWQNS/surgeonfish.png" },
-      { name: "Betta Fish", value: 100, rarity: "Epic", desc: "A vibrant and elegant freshwater fish with flowing fins.", img: "https://i.postimg.cc/T2J64ynq/betta-fish.png" },
-      { name: "Barreleye Fish", value: 70, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
-      { name: "Electric Eel", value: 90, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
-      { name: "Coelacanth", value: 115, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
-      { name: "Bluefin Tuna", value: 80, rarity: "Epic", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
-      { name: "Manta ray", value: 220, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
-      { name: "Great White Shark", value: 280, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
-      { name: "Swordfish", value: 750, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
-      { name: "Whale Shark", value: 900, rarity: "Mythic", desc: "The massive yet gentle giant filter-feeder of the deep sea.", img: "https://i.postimg.cc/HW9ghJbQ/whale-shark.png" },
-      { name: "Leafy Seadragon", value: 600, rarity: "Mythic", desc: "A master of camouflage adorned with leaf-like appendages.", img: "https://i.postimg.cc/rwsYSdfb/leafy-seadragon.png" },
-      { name: "Megamouth Shark", value: 820, rarity: "Mythic", desc: "An elusive deep-water giant with glowing lips.", img: "https://i.postimg.cc/WbXHFmwx/megamouth-shark.png" },
-      { name: "Basking Shark", value: 2100, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
-      { name: "Oarfish", value: 2500, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
-      { name: "Legacy Fish", value: 3000, rarity: "Legacy", isLimited: true, desc: "A mysterious fish from ancient and divine waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
-      { name: "Goldfish Snack", value: 5000, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
+      { name: "Sardine", value:5, rarity: "Common", desc: "A small, silvery fish that moves in large schools.", img: "https://i.postimg.cc/c1BSbKfF/sardine.png" },
+      { name: "Opah", value:9, rarity: "Common", desc: "A large, colorful deep-water fish known for its distinct round body.", img: "https://i.postimg.cc/sxhg04JM/opah.png" },
+      { name: "Clownfish", value:8, rarity: "Common", desc: "A small, vibrant orange fish with white stripes.", img: "https://i.postimg.cc/ry3jHGkf/clownfish.png" },
+      { name: "Guppy", value:4, rarity: "Common", desc: "A tiny, active freshwater fish featuring a colorful tail fin.", img: "https://i.postimg.cc/VkcRfY5g/guppy.png" },
+      { name: "Tilapia", value:9, rarity: "Common", desc: "A sturdy cichlid fish found in warm regions.", img: "https://i.postimg.cc/zXTCP9pD/tilapia.png" },
+      { name: "Goldfish", value:7, rarity: "Common", desc: "A classic golden freshwater companion.", img: "https://i.postimg.cc/VkD2cTRZ/goldfish2.png" },
+      { name: "Cod", value:8, rarity: "Common", desc: "A standard ocean fish found in cold northern waters.", img: "https://i.postimg.cc/rp8x6Fgw/cod.png" },
+      { name: "Crab", value:10, rarity: "Common", desc: "A hard-shelled coastal creature that walks sideways across the ocean floor.", img: "https://i.postimg.cc/dVRXDRD1/crab.png", creatureType: "sand" },
+      { name: "Maroon Clownfish", value:28, rarity: "Rare", desc: "A striking clownfish variant with deep maroon hues and bright white bars.", img: "https://i.postimg.cc/3rFTcy29/maroon-clownfish.png" },
+      { name: "Carp", value:24, rarity: "Rare", desc: "A large freshwater fish celebrated for its strength.", img: "https://i.postimg.cc/N0gmhfb0/carp.png" },
+      { name: "Neon Tetra", value:26, rarity: "Rare", desc: "A glowing tropical fish with iridescent stripes.", img: "https://i.postimg.cc/TPRg8YQ2/neon-tetra.png" },
+      { name: "Salmon", value:30, rarity: "Rare", desc: "A migratory swimmer traveling upstream through rivers.", img: "https://i.postimg.cc/bvzkXNLz/salmon.png" },
+      { name: "Surgeonfish", value:32, rarity: "Rare", desc: "A bright blue marine swimmer with defensive spines.", img: "https://i.postimg.cc/BvqHWQNS/surgeonfish.png" },
+      { name: "Clam", value:45, rarity: "Rare", desc: "A small shellfish that filters food from the water and rests partly buried in the sand.", img: "https://i.postimg.cc/BQSTqp46/clam.png", creatureType: "sand" },
+      { name: "Sea Urchin", value:50, rarity: "Rare", desc: "A spiny sea creature that slowly crawls along the seabed in search of algae.", img: "https://i.postimg.cc/15mG9Bsg/sea-urchin.png", creatureType: "sand" },
+      { name: "Hermit Crab", value:35, rarity: "Rare", desc: "A small crab that carries an empty shell as its portable home.", img: "https://i.postimg.cc/RVxxFZGk/hermit-crab2.png", creatureType: "sand" },
+      { name: "Sponge", value:40, rarity: "Rare", desc: "A colorful sea animal that filters tiny food particles from passing water.", img: "https://i.postimg.cc/Jz3gt3th/sponge.png", creatureType: "sand" },
+      { name: "Pufferfish", value:38, rarity: "Rare", desc: "A round reef fish that inflates its body when it feels threatened.", img: "https://i.postimg.cc/RZJhCnqt/pufferfish.png", creatureType: "fish" },
+      { name: "Shrimp", value:28, rarity: "Rare", desc: "A small crustacean that scuttles along the seabed in search of food.", img: "https://i.postimg.cc/4xHy4hn7/shrimp.png", creatureType: "sand" },
+      { name: "Betta Fish", value:95, rarity: "Epic", desc: "A vibrant and elegant freshwater fish with flowing fins.", img: "https://i.postimg.cc/T2J64ynq/betta-fish.png" },
+      { name: "Barreleye Fish", value:75, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
+      { name: "Electric Eel", value:110, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
+      { name: "Coelacanth", value:125, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
+      { name: "Bluefin Tuna", value:100, rarity: "Epic", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
+      { name: "Manta ray", value:280, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
+      { name: "Great White Shark", value:350, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
+      { name: "Turtle", value:350, rarity: "Legendary", desc: "A peaceful sea turtle that glides through the water with its powerful flippers.", img: "https://i.postimg.cc/g0wMdW8S/turtle2.png", creatureType: "turtle" },
+      { name: "Seahorse", value:300, rarity: "Legendary", desc: "A tiny upright swimmer that uses its curled tail to grip seagrass.", img: "https://i.postimg.cc/Hk0Kj0jY/seahorse.png", creatureType: "sand" },
+      { name: "Penguin", value:320, rarity: "Legendary", desc: "A flightless seabird that dives expertly through cold ocean waters.", img: "https://i.postimg.cc/T3512Wh5/penguin.png", creatureType: "fish" },
+      { name: "Dolphin", value:420, rarity: "Legendary", desc: "A clever, social swimmer known for its speed and playful leaps.", img: "https://i.postimg.cc/x1N8jbqL/dolphin.png", creatureType: "fish" },
+      { name: "Swordfish", value:750, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
+      { name: "Whale Shark", value:900, rarity: "Mythic", desc: "The massive yet gentle giant filter-feeder of the deep sea.", img: "https://i.postimg.cc/HW9ghJbQ/whale-shark.png" },
+      { name: "Leafy Seadragon", value:650, rarity: "Mythic", desc: "A master of camouflage adorned with leaf-like appendages.", img: "https://i.postimg.cc/rwsYSdfb/leafy-seadragon.png" },
+      { name: "Megamouth Shark", value:820, rarity: "Mythic", desc: "An elusive deep-water giant with glowing lips.", img: "https://i.postimg.cc/WbXHFmwx/megamouth-shark.png" },
+      { name: "Jellyfish", value:700, rarity: "Mythic", desc: "A translucent drifter that glides through the water with its trailing tentacles.", img: "https://i.postimg.cc/J4rN1xMt/jellyfish.png", creatureType: "jelly" },
+      { name: "Lobster", value:850, rarity: "Mythic", desc: "A strong crustacean with powerful claws that searches for food along rocky reefs.", img: "https://i.postimg.cc/K87V474j/lobster.png", creatureType: "sand" },
+      { name: "Basking Shark", value:1800, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
+      { name: "Oarfish", value:2200, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
+      { name: "Octopus", value:2000, rarity: "Divine", desc: "An intelligent sea creature with eight flexible arms that curl as it explores.", img: "https://i.postimg.cc/Qx8QXmhH/octopus.png", creatureType: "octopus" },
+      { name: "Killer Whale", value:1900, rarity: "Divine", desc: "A powerful ocean predator that travels and hunts in close-knit pods.", img: "https://i.postimg.cc/P5vJf8Nw/killer-whale.png", creatureType: "fish" },
+      { name: "Legacy Fish", value:4500, rarity: "Legacy", isLimited: true, desc: "A mysterious fish from ancient and divine waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
+      { name: "Goldfish Snack", value:6500, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
 
     window.getFishCookedValue = function(baseValue, cooking) {
@@ -2131,7 +2085,7 @@
       }, 1000);
     }
 
-    /* SISTEMA DE AMIGOS Y CHAT DMS */
+    /* FRIENDS: requests, list and profile shortcuts */
     function openFriendsModal() {
       openModal('modal-friends');
       switchFriendsTab('list');
@@ -2184,8 +2138,7 @@
         const friendsList = myData.friends || [];
 
         if (friendsList.includes(viewingTargetUid)) {
-          document.getElementById('modal-view-profile').style.display = 'none';
-          openChatWithFriend(viewingTargetUid, viewingTargetUsername);
+          showToast("You are already friends with this player.");
         } else {
           document.getElementById('addFriendUsernameInput').value = viewingTargetUsername;
           openFriendsModal();
@@ -2355,7 +2308,6 @@
           if (friendDoc.exists) {
             const fData = friendDoc.data();
             const avatar = fData.photoURL || 'https://via.placeholder.com/35';
-            const unreadCount = await getUnreadDirectMessageCount(fUid);
             html += `
               <div style="background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; gap:8px;">
                 <div style="display:flex; align-items:center; gap:10px; min-width:0;">
@@ -2363,8 +2315,7 @@
                   <strong>${fData.username || 'Player'}</strong>
                 </div>
                 <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
-                  <span id="dm-unread-${fUid}" style="display:${unreadCount > 0 ? 'inline-flex' : 'none'};align-items:center;justify-content:center;background:#ef4444;color:white;border-radius:999px;padding:5px 10px;font-size:.75rem;font-weight:700;white-space:nowrap;">${unreadCount} Unread message</span>
-                  <button type="button" class="modal-action-btn" style="background:#1e3a8a; padding:6px 12px; font-size:0.8rem; width:auto;" onclick="openChatWithFriend('${fUid}', '${fData.username}')">Open DM</button>
+                  <button type="button" class="modal-action-btn" style="background:#1e3a8a; padding:6px 12px; font-size:0.8rem; width:auto;" onclick="openFriendProfile('${fUid}')">View Profile</button>
                   <button type="button" class="modal-action-btn" style="background:#e74c3c; padding:6px 10px; font-size:0.8rem; width:auto;" onclick="removeFriend('${fUid}', '${fData.username}')">Remove</button>
                 </div>
               </div>
@@ -2374,6 +2325,26 @@
         container.innerHTML = html;
       } catch (err) {
         container.innerHTML = '<p style="color:#e74c3c; text-align:center;">Error loading friends.</p>';
+      }
+    }
+
+    async function openFriendProfile(friendUid) {
+      try {
+        const snap = await db.collection('jugadores').doc(friendUid).get();
+        if (!snap.exists) { showToast('Friend profile not found.'); return; }
+        const d = snap.data() || {};
+        let createdAtIso = '';
+        if (d.createdAt && d.createdAt.toDate) createdAtIso = d.createdAt.toDate().toISOString();
+        await viewOtherProfile(
+          d.username || 'Player', d.bio || 'No bio', Number(d.coins) || 0,
+          Array.isArray(d.fishes) ? d.fishes.length : 0,
+          d.photoURL || 'https://via.placeholder.com/40', friendUid,
+          d.fishes || [], d.aquariumTanksMap || {room_0:new Array(8).fill(null)},
+          createdAtIso, d.email || ''
+        );
+        document.getElementById('modal-friends').style.display = 'none';
+      } catch (err) {
+        showToast('Could not open friend profile: ' + err.message);
       }
     }
 
@@ -2396,266 +2367,8 @@
       }
     }
 
-    let unreadCountsByFriend = {};
-    let dmUnreadListeners = [];
-
-    function updateUnreadBadgesUI() {
-      let totalUnread = 0;
-      Object.entries(unreadCountsByFriend).forEach(([fUid, count]) => {
-        const c = Number(count) || 0;
-        totalUnread += c;
-        const badge = document.getElementById(`dm-unread-${fUid}`);
-        if (badge) {
-          if (c > 0) {
-            badge.style.display = 'inline-flex';
-            badge.textContent = `${c} Unread message`;
-          } else {
-            badge.style.display = 'none';
-            badge.textContent = '0 Unread message';
-          }
-        }
-      });
-
-      const friendsBtn = document.getElementById('btn-friends');
-      if (friendsBtn) {
-        friendsBtn.textContent = totalUnread > 0
-          ? `Friends & DMs (${totalUnread} Unread message)`
-          : 'Friends & DMs';
-      }
-    }
-
-    function stopUnreadDirectMessageListeners() {
-      dmUnreadListeners.forEach(unsub => { try { unsub(); } catch (e) {} });
-      dmUnreadListeners = [];
-      unreadCountsByFriend = {};
-      updateUnreadBadgesUI();
-    }
-
-    function startUnreadDirectMessageListeners(friendsUids) {
-      stopUnreadDirectMessageListeners();
-      const user = auth.currentUser;
-      if (!user || !Array.isArray(friendsUids)) return;
-
-      friendsUids.forEach(fUid => {
-        if (!fUid) return;
-        const chatId = getChatId(user.uid, fUid);
-        const chatRef = db.collection('directChats').doc(chatId);
-
-        let lastReadId = null;
-        let latestDocs = [];
-
-        const recompute = () => {
-          const isChatCurrentlyOpen =
-            document.getElementById('modal-chat-dm')?.style.display === 'flex' &&
-            activeChatFriendUid === fUid;
-
-          if (isChatCurrentlyOpen) {
-            unreadCountsByFriend[fUid] = 0;
-            updateUnreadBadgesUI();
-            return;
-          }
-
-          let afterMarker = !lastReadId;
-          if (lastReadId && !latestDocs.some(d => d.id === lastReadId)) {
-            afterMarker = true;
-          }
-          let unread = 0;
-          latestDocs.forEach(d => {
-            if (d.id === lastReadId) {
-              afterMarker = true;
-              return;
-            }
-            const msg = d.data() || {};
-            if (afterMarker && msg.senderUid && msg.senderUid !== user.uid) {
-              unread++;
-            }
-          });
-          unreadCountsByFriend[fUid] = unread;
-          updateUnreadBadgesUI();
-        };
-
-        const unsubDoc = chatRef.onSnapshot(docSnap => {
-          const readMap = docSnap.exists ? (docSnap.data().lastReadMessageIds || {}) : {};
-          lastReadId = readMap[user.uid] || null;
-          recompute();
-        }, () => {});
-
-        const unsubMsgs = chatRef.collection('messages').orderBy('createdAt', 'asc').onSnapshot(msgSnap => {
-          latestDocs = msgSnap.docs;
-          recompute();
-        }, () => {});
-
-        dmUnreadListeners.push(unsubDoc, unsubMsgs);
-      });
-    }
-
-    async function getUnreadDirectMessageCount(friendUid) {
-      const user = auth.currentUser;
-      if (!user || !friendUid) return 0;
-      if (typeof unreadCountsByFriend[friendUid] === 'number') {
-        return unreadCountsByFriend[friendUid];
-      }
-      try {
-        const chatId = getChatId(user.uid, friendUid);
-        const chatRef = db.collection('directChats').doc(chatId);
-        const [chatDoc, messagesSnap] = await Promise.all([
-          chatRef.get(),
-          chatRef.collection('messages').orderBy('createdAt', 'asc').get()
-        ]);
-        const readMap = chatDoc.exists ? (chatDoc.data().lastReadMessageIds || {}) : {};
-        const lastReadId = readMap[user.uid] || null;
-        let afterReadMarker = !lastReadId || !messagesSnap.docs.some(d => d.id === lastReadId);
-        let unread = 0;
-        messagesSnap.forEach(messageDoc => {
-          if (messageDoc.id === lastReadId) {
-            afterReadMarker = true;
-            return;
-          }
-          if (afterReadMarker && messageDoc.data().senderUid !== user.uid) unread++;
-        });
-        unreadCountsByFriend[friendUid] = unread;
-        updateUnreadBadgesUI();
-        return unread;
-      } catch (err) {
-        console.warn('Could not count unread DMs:', err);
-        return 0;
-      }
-    }
-
-    async function markDirectMessagesAsRead(friendUid, latestMessageId) {
-      const user = auth.currentUser;
-      if (!user || !friendUid || !latestMessageId) return;
-      unreadCountsByFriend[friendUid] = 0;
-      updateUnreadBadgesUI();
-      try {
-        await db.collection('directChats').doc(getChatId(user.uid, friendUid)).set({
-          lastReadMessageIds: { [user.uid]: latestMessageId }
-        }, { merge: true });
-      } catch (err) {
-        console.warn('Could not update DM read marker:', err);
-      }
-    }
-
-    function getChatId(uid1, uid2) {
-      return uid1 < uid2 ? `${uid1}_${uid2}` : `${uid2}_${uid1}`;
-    }
-
-    function openChatWithFriend(friendUid, friendName) {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      activeChatFriendUid = friendUid;
-      activeChatFriendName = friendName;
-
-      document.getElementById('chat-dm-title').innerText = `Chat with ${friendName}`;
-      document.getElementById('modal-chat-dm').style.display = 'flex';
-
-      const chatId = getChatId(user.uid, friendUid);
-
-      if (chatUnsubscribe) chatUnsubscribe();
-
-      const messagesArea = document.getElementById('chat-messages-area');
-      messagesArea.innerHTML = '<p style="color:#64748b; text-align:center; font-size:0.8rem;">Loading messages...</p>';
-
-      chatUnsubscribe = db.collection('directChats').doc(chatId).collection('messages')
-        .orderBy('createdAt', 'asc')
-        .onSnapshot(snapshot => {
-          messagesArea.innerHTML = '';
-          if (snapshot.empty) {
-            messagesArea.innerHTML = '<p style="color:#64748b; text-align:center; font-size:0.8rem;">No messages yet. Say hi!</p>';
-            return;
-          }
-
-          const latestMessageDoc = snapshot.docs[snapshot.docs.length - 1];
-          if (latestMessageDoc) markDirectMessagesAsRead(friendUid, latestMessageDoc.id);
-
-          snapshot.forEach(doc => {
-            const msg = doc.data();
-            const isMe = msg.senderUid === user.uid;
-
-            const messageRow = document.createElement('div');
-            messageRow.style.cssText = `width:100%;display:flex;align-items:center;gap:7px;justify-content:${isMe ? 'flex-end' : 'flex-start'};`;
-
-            const bubble = document.createElement('div');
-            bubble.className = `chat-bubble ${isMe ? 'sent' : 'received'}`;
-            bubble.innerHTML = `<span>${escapeHtml(msg.text || '')}</span>`;
-            messageRow.appendChild(bubble);
-
-            // Only the sender sees a delete control on their own messages.
-            if (isMe) {
-              const deleteButton = document.createElement('button');
-              deleteButton.type = 'button';
-              deleteButton.className = 'dm-delete-message-btn';
-              deleteButton.textContent = '🗑️';
-              deleteButton.title = 'Delete your message';
-              deleteButton.setAttribute('aria-label', 'Delete your message');
-              deleteButton.style.cssText = 'flex:0 0 auto;border:0;background:transparent;padding:5px 3px;cursor:pointer;font-size:14px;line-height:1;opacity:.68;border-radius:7px;';
-              deleteButton.addEventListener('mouseenter', () => { deleteButton.style.opacity = '1'; });
-              deleteButton.addEventListener('mouseleave', () => { deleteButton.style.opacity = '.68'; });
-              deleteButton.addEventListener('click', () => deleteDirectMessage(doc.id, deleteButton));
-              messageRow.appendChild(deleteButton);
-            }
-
-            messagesArea.appendChild(messageRow);
-          });
-
-          messagesArea.scrollTop = messagesArea.scrollHeight;
-        });
-    }
-
-    async function deleteDirectMessage(messageId, button) {
-      const user = auth.currentUser;
-      if (!user || !activeChatFriendUid || !messageId) return;
-      if (button) button.disabled = true;
-      try {
-        const chatId = getChatId(user.uid, activeChatFriendUid);
-        const messageRef = db.collection('directChats').doc(chatId).collection('messages').doc(messageId);
-        const messageSnap = await messageRef.get();
-        if (!messageSnap.exists) {
-          showToast('This message was already deleted.');
-          return;
-        }
-        if (messageSnap.data().senderUid !== user.uid) {
-          showToast('You can only delete your own messages.');
-          return;
-        }
-        await messageRef.delete();
-        showToast('Message deleted.');
-      } catch (err) {
-        console.error('Error deleting DM:', err);
-        showToast('Could not delete message.');
-      } finally {
-        if (button) button.disabled = false;
-      }
-    }
-
     function escapeHtml(text) {
       return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
-
-    async function sendDirectMessage() {
-      const user = auth.currentUser;
-      if (!user || !activeChatFriendUid) return;
-
-      const input = document.getElementById('chatMessageInput');
-      const text = input.value.trim();
-      if (!text) return;
-
-      input.value = '';
-      const chatId = getChatId(user.uid, activeChatFriendUid);
-      const myDoc = await db.collection('jugadores').doc(user.uid).get();
-      const myName = myDoc.exists ? myDoc.data().username : "Player";
-
-      try {
-        await db.collection('directChats').doc(chatId).collection('messages').add({
-          senderUid: user.uid,
-          senderName: myName,
-          text: text,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      } catch (err) {
-        showToast("Error sending message.");
-      }
     }
 
     function openAdminWarningPrompt() {
@@ -2736,7 +2449,6 @@
       if (isMandatoryRulesView) return;
       stopFishAnimations();
       if (verificationTimerInterval) clearInterval(verificationTimerInterval);
-      if (chatUnsubscribe) chatUnsubscribe();
       document.querySelectorAll('.modal-overlay').forEach(el => {
         if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
       });
@@ -3573,7 +3285,7 @@
         slotEl.innerHTML = `
           <div style="position: relative; width: 100%; height: 100%; overflow: hidden;">
             <img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Tank" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; pointer-events: none;">
-            ${decoration === 'Sandcastle' ? `<img src="${IMG.sandcastle}" alt="Sandcastle" style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 28%; width: 34px; height: 34px; object-fit: contain; object-position:center bottom; z-index: 2; pointer-events: none;">` : ''}
+            ${decoration === 'Sandcastle' ? `<img class="aquarium-sandcastle" src="${IMG.sandcastle}" alt="Sandcastle" style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 28%; width: 34px; height: 34px; object-fit: contain; object-position:center bottom; z-index: 2; pointer-events: none;">` : ''}
             <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; z-index: 3; pointer-events: none;">
           </div>
         `;
@@ -4331,7 +4043,14 @@
       const pass = document.getElementById('login-password').value;
 
       try {
-        await auth.signInWithEmailAndPassword(email, pass);
+        const credential = await auth.signInWithEmailAndPassword(email, pass);
+        if (!credential.user.emailVerified) {
+          await auth.signOut();
+          grecaptcha.reset(recaptchaLoginId);
+          showToast("Verify your email before entering the game. Use Resend Verification Email.");
+          openModal('modal-account');
+          return;
+        }
         grecaptcha.reset(recaptchaLoginId);
         closeAllModals();
       } catch (err) {
@@ -4409,7 +4128,8 @@
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-        showToast("Account created! Verification email sent.");
+        showToast("Account created! Verification email sent. Verify your address before logging in.");
+        await auth.signOut();
         closeAllModals();
         grecaptcha.reset(recaptchaRegisterId);
       } catch (err) {
@@ -4532,6 +4252,8 @@
       const newUsername = document.getElementById('profile-edit-username').value.trim();
       const currentPassword = document.getElementById('profile-current-password').value;
       const newPassword = document.getElementById('profile-new-password') ? document.getElementById('profile-new-password').value : "";
+      const newEmail = (document.getElementById('profile-edit-email')?.value || '').trim();
+      const isChangingEmail = !!newEmail && newEmail.toLowerCase() !== String(user.email || '').toLowerCase();
       const newBio = document.getElementById('profile-edit-bio').value;
       const fileInput = document.getElementById('profile-edit-avatar').files[0];
 
@@ -4547,7 +4269,7 @@
         const isChangingUsername = newUsername && newUsername !== currentUsername;
         const isChangingPassword = newPassword.length >= 6;
 
-        if (isChangingUsername || isChangingPassword) {
+        if (isChangingUsername || isChangingPassword || isChangingEmail) {
           if (!currentPassword) {
             showToast("Enter your current password to confirm profile changes.");
             return;
@@ -4593,6 +4315,26 @@
         if (isChangingPassword) {
           await user.updatePassword(newPassword);
           showToast("Password updated successfully! Logging out from all sessions...");
+          await auth.signOut();
+          closeAllModals();
+          return;
+        }
+
+        if (isChangingEmail) {
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+            showToast("Enter a valid email address.");
+            return;
+          }
+          if (typeof user.verifyBeforeUpdateEmail === 'function') {
+            await user.verifyBeforeUpdateEmail(newEmail);
+            showToast("Verification link sent to the new email. Your account email will change after you confirm it.");
+            document.getElementById('profile-edit-email').value = "";
+            return;
+          }
+          await user.updateEmail(newEmail);
+          await user.sendEmailVerification();
+          await docRef.update({ email: newEmail });
+          showToast("Email updated. Verify the new address using the link we sent. Please log in again.");
           await auth.signOut();
           closeAllModals();
           return;
@@ -4795,7 +4537,7 @@
             const myDoc = await db.collection('jugadores').doc(currentUser.uid).get();
             const friendsList = (myDoc.data() || {}).friends || [];
             if (friendsList.includes(uid)) {
-              btnRef.innerText = "DM";
+              btnRef.innerText = "Friends";
               btnRef.style.background = "#1e3a8a";
             } else {
               btnRef.innerText = "Add Friend";
@@ -5484,6 +5226,14 @@
       const backpackInline = document.getElementById('backpack-badge-inline');
 
       if (user) {
+        if (!user.emailVerified) {
+          const registrationForm = document.getElementById('form-register');
+          if (registrationForm && registrationForm.style.display !== 'none') return;
+          await auth.signOut();
+          showToast("Email verification required. Check your inbox or resend the verification email.");
+          openModal('modal-account');
+          return;
+        }
         closeAllModals(); 
         initDailyTimerSync();
         try {
@@ -5581,7 +5331,7 @@
             document.getElementById('user-avatar').src = "https://via.placeholder.com/40";
           }
           updateFriendRequestsCount();
-          startUnreadDirectMessageListeners(data.friends || []);
+
         } catch(e) {
           console.error("Error loading user session:", e);
         }
@@ -5599,7 +5349,7 @@
         if (backpackInline) backpackInline.style.display = 'none';
         adminBtn.style.display = 'none';
         if (dailyTimerInterval) clearInterval(dailyTimerInterval);
-        stopUnreadDirectMessageListeners();
+
       }
       
       if (document.getElementById('modal-news').style.display === 'flex') {
@@ -5637,22 +5387,7 @@
   let grillTimer = null, grillSaveTimer = null, grillState = null, grillHot = true;
   let selectedOffer = null, shopPage = 0;
 
-  // New creatures are part of the existing fish catalogue and retain the exact supplied image URLs.
-  const newCreatures = [
-    {name:'Clam', value:38, rarity:'Rare', desc:'A quiet ocean dweller that filters tiny particles from the water. It slowly creeps across the aquarium sand and rests with its shell partly buried.', img:IMG.clam, creatureType:'sand'},
-    {name:'Sea Urchin', value:42, rarity:'Rare', desc:'A spiny little grazer that explores the seabed for algae. It carefully crawls over the sand instead of swimming through the water.', img:IMG.urchin, creatureType:'sand'},
-    {name:'Jellyfish', value:680, rarity:'Mythic', desc:'A delicate, translucent drifter that pulses its bell to glide through the water. Its trailing tentacles sway gently with every current.', img:IMG.jelly, creatureType:'jelly'},
-    {name:'Turtle', value:250, rarity:'Legendary', desc:'A peaceful sea turtle with a sturdy shell and powerful flippers. It glides calmly through the aquarium, occasionally changing direction as it explores.', img:IMG.turtle, creatureType:'turtle'},
-    {name:'Octopus', value:1800, rarity:'Divine', desc:'An intelligent deep-sea explorer with eight flexible arms. It gently bobs through the water while its tentacles curl and uncurl as it investigates its surroundings.', img:IMG.octopus, creatureType:'octopus'}
-  ];
-  newCreatures.push(
-    {name:'Lobster', value:950, rarity:'Mythic', desc:'A powerful crustacean that lives among rocky reefs and ocean crevices. Its strong claws help it defend its territory and search for food along the seafloor.', img:'https://i.postimg.cc/K87V474j/lobster.png', creatureType:'sand'},
-    {name:'Hermit Crab', value:32, rarity:'Rare', desc:'A small crab that protects its soft body inside an empty shell. It wanders across the seabed, carrying its home wherever it goes and searching for tiny bits of food.', img:'https://i.postimg.cc/RVxxFZGk/hermit-crab2.png', creatureType:'sand'},
-    {name:'Crab', value:12, rarity:'Common', desc:'A familiar coastal crustacean with a hard shell and two sturdy claws. It moves sideways across the ocean floor while searching the sand and rocks for food.', img:'https://i.postimg.cc/dVRXDRD1/crab.png', creatureType:'sand'},
-    {name:'Seahorse', value:320, rarity:'Legendary', desc:'A delicate marine creature with a curled tail and a horse-like head. It drifts upright through seagrass and uses its tail to hold onto plants when currents become strong.', img:'https://i.postimg.cc/Hk0Kj0jY/seahorse.png', creatureType:'sand'},
-    {name:'Sponge', value:35, rarity:'Rare', desc:'A colorful filter-feeding animal attached to rocks on the ocean floor. It draws water through its porous body, taking in tiny food particles while providing shelter for small sea life.', img:'https://i.postimg.cc/Jz3gt3th/sponge.png', creatureType:'sand'}
-  );
-  newCreatures.forEach(n => { if (!ALLOWED_FISH_TYPES.some(f => f.name === n.name)) ALLOWED_FISH_TYPES.push(n); });
+  // All catchable creatures are defined together in ALLOWED_FISH_TYPES above.
 
   function injectStyles() {
     if (document.getElementById('rebuild-systems-css')) return;
@@ -5683,7 +5418,7 @@
       @keyframes creatureOctopus{0%,100%{transform:translateY(5px) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
       #grill-fish-stage{position:relative;min-height:250px;background-size:100% 100%;background-position:center;background-repeat:no-repeat;border-radius:10px;overflow:hidden;touch-action:none}
       #grill-fish-stage .grill-fish{position:absolute;width:100px;height:75px;object-fit:contain;left:35%;top:38%;cursor:grab;touch-action:none;user-select:none}
-      .aquarium-sandcastle{position:absolute;z-index:2;width:34px;height:34px;object-fit:contain;object-position:center bottom;left:42%;bottom:28%;transform:translateY(0);pointer-events:none}
+      @media (max-width:768px){.aquarium-sandcastle{bottom:calc(28% - 5px)!important;}}\n      .aquarium-sandcastle{position:absolute;z-index:2;width:34px;height:34px;object-fit:contain;object-position:center bottom;left:42%;bottom:28%;transform:translateY(0);pointer-events:none}
       #modal-aquarium .swimming-fish-0,#modal-aquarium .swimming-fish-1,#modal-aquarium .swimming-fish-2,#modal-aquarium .swimming-fish-3,#modal-aquarium .swimming-fish-4,#modal-aquarium .swimming-fish-5,#modal-aquarium .swimming-fish-6,#modal-aquarium .swimming-fish-7{z-index:3 !important}
       @media(max-width:480px){.rebuild-card{padding:12px}#grill-fish-stage{min-height:205px}}
     `; document.head.appendChild(st);
@@ -6874,7 +6609,8 @@
       // Sandcastle is anchored with bottom:28%, so its ground line is
       // at 72% of the inner tank viewport. Sand creatures crawl ON that line:
       // their top coordinate is the ground line minus their own image height.
-      const sandGroundY = h * 0.72 + (name === 'Sponge' ? 5 : 0);
+      const mobileGroundOffset = name === 'Clam' && window.matchMedia('(max-width: 768px)').matches ? 5 : 0;
+      const sandGroundY = h * 0.72 + (name === 'Sponge' ? 5 : 0) + mobileGroundOffset;
       let minY = isSandCreature
         ? sandGroundY - ih + 3.5
         : h * (isJelly ? 0.22 : 0.20);
