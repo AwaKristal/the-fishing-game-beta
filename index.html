@@ -2238,25 +2238,85 @@
     }
 
     async function acceptTradeInvitation(requestId) {
+      const uid = auth.currentUser?.uid;
+      if (!uid) { showToast('Please sign in again.'); return; }
+
       try {
-        const reqRef=db.collection('tradeRequests').doc(requestId);
-        const sessionRef=db.collection('tradeSessions').doc(requestId);
-        let sessionId=requestId;
-        await db.runTransaction(async tx=>{
-          const reqSnap=await tx.get(reqRef);
-          if(!reqSnap.exists) throw new Error('Trade invitation not found.');
-          const req=reqSnap.data(), uid=auth.currentUser.uid;
-          if(req.receiverUid!==uid) throw new Error('Only the invited player can accept.');
-          if(req.status!=='pending') throw new Error('Invitation is no longer pending.');
-          const aRef=db.collection('jugadores').doc(req.senderUid), bRef=db.collection('jugadores').doc(req.receiverUid);
-          const [a,b]=await Promise.all([tx.get(aRef),tx.get(bRef)]);
-          const pa=a.data()||{}, pb=b.data()||{};
-          if(!pa.tradeOwned||!pb.tradeOwned || !(pa.friends||[]).includes(req.receiverUid) || !(pb.friends||[]).includes(req.senderUid)) throw new Error('Both players need Trade Pass and mutual friendship.');
-          tx.update(reqRef,{status:'accepted',respondedAt:firebase.firestore.FieldValue.serverTimestamp()});
-          tx.set(sessionRef,{participants:[req.senderUid,req.receiverUid],offers:{[req.senderUid]:{coins:0,items:[]},[req.receiverUid]:{coins:0,items:[]}},confirmed:{[req.senderUid]:false,[req.receiverUid]:false},status:'negotiating',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+        const reqRef = db.collection('tradeRequests').doc(requestId);
+        const sessionRef = db.collection('tradeSessions').doc(requestId);
+
+        await db.runTransaction(async tx => {
+          // Read every document before writing (required by Firestore transactions).
+          const reqSnap = await tx.get(reqRef);
+          if (!reqSnap.exists) throw new Error('Trade invitation not found.');
+
+          const req = reqSnap.data();
+          if (req.receiverUid !== uid) throw new Error('Only the invited player can accept.');
+          if (req.status !== 'pending') throw new Error('This invitation is no longer pending.');
+
+          const senderRef = db.collection('jugadores').doc(req.senderUid);
+          const receiverRef = db.collection('jugadores').doc(req.receiverUid);
+          const [senderSnap, receiverSnap, existingSessionSnap] = await Promise.all([
+            tx.get(senderRef),
+            tx.get(receiverRef),
+            tx.get(sessionRef)
+          ]);
+
+          if (!senderSnap.exists || !receiverSnap.exists) {
+            throw new Error('One of the player profiles could not be found.');
+          }
+
+          const sender = senderSnap.data() || {};
+          const receiver = receiverSnap.data() || {};
+          if (!sender.tradeOwned || !receiver.tradeOwned ||
+              !(sender.friends || []).includes(req.receiverUid) ||
+              !(receiver.friends || []).includes(req.senderUid)) {
+            throw new Error('Both players need Trade Pass and mutual friendship.');
+          }
+
+          // A previous/stranded session may already exist for this request.
+          // Do not tx.set() over it: Firestore treats that as an UPDATE,
+          // which the create-only session rule correctly rejects.
+          if (existingSessionSnap.exists) {
+            const existing = existingSessionSnap.data() || {};
+            const samePlayers = Array.isArray(existing.participants) &&
+              existing.participants.length === 2 &&
+              existing.participants.includes(req.senderUid) &&
+              existing.participants.includes(req.receiverUid);
+
+            if (!samePlayers) throw new Error('A conflicting Trade session already exists.');
+            if (existing.status !== 'negotiating') {
+              throw new Error('An old Trade session already exists. Cancel or finish that session first.');
+            }
+          } else {
+            tx.create(sessionRef, {
+              participants: [req.senderUid, req.receiverUid],
+              offers: {
+                [req.senderUid]: { coins: 0, items: [] },
+                [req.receiverUid]: { coins: 0, items: [] }
+              },
+              confirmed: {
+                [req.senderUid]: false,
+                [req.receiverUid]: false
+              },
+              status: 'negotiating',
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+
+          tx.update(reqRef, {
+            status: 'accepted',
+            respondedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
         });
-        showToast('Trade accepted! Build your offers.'); loadTradeRequests(); openTradeSession(sessionId);
-      } catch(e) { showToast('Could not open trade: '+(e.message||e)); }
+
+        showToast('Trade accepted! Build your offers.');
+        loadTradeRequests();
+        openTradeSession(requestId);
+      } catch (e) {
+        console.error('acceptTradeInvitation failed:', e);
+        showToast('Could not accept Trade: ' + (e.message || e));
+      }
     }
 
     function openTradeSession(sessionId) {
