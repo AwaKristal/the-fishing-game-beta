@@ -2602,6 +2602,10 @@
           }
 
           const finalA=receive(ta,ob,tb.incoming),finalB=receive(tb,oa,ta.incoming);
+          // This marker lets Firestore Rules verify that cross-profile writes
+          // are part of this exact, mutually confirmed trade transaction.
+          finalA.lastTradeSessionId=sessionId;
+          finalB.lastTradeSessionId=sessionId;
           tx.update(aRef,finalA);
           tx.update(bRef,finalB);
           tx.update(ref,{confirmed,status:'completed',completedAt:firebase.firestore.FieldValue.serverTimestamp()});
@@ -2622,7 +2626,7 @@
         console.error('confirmCurrentTrade failed:',e);
         const msg=e.message||String(e);
         if(msg.includes('Missing or insufficient permissions')){
-          showToast('Both confirmed, but Firestore blocks the inventory transfer. Trade completion needs a secure server function.');
+          showToast('Trade failed: Firestore rules blocked this trade. Check the updated trade rules.');
         }else{
           showToast('Trade failed: '+msg);
         }
