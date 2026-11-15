@@ -3925,7 +3925,9 @@
       db.collection('jugadores').doc(user.uid).get().then(async doc => {
         if (doc.exists) {
           const data = doc.data();
-          const tanksCount = data.miniTanksCount || 0;
+          const miniTanksCount = Math.max(0, Number(data.miniTanksCount) || 0);
+          const rockyTanksCount = Math.max(0, Number(data.rockyTanksCount) || 0);
+          const totalAvailableTanks = miniTanksCount + rockyTanksCount;
           const fishes = data.fishes || [];
           let tanksMap = data.aquariumTanksMap || {};
           const roomKey = `room_${currentAquariumRoomIndex}`;
@@ -3936,8 +3938,8 @@
             return;
           }
 
-          if (tanksCount <= 0) {
-            showToast("You need a Mini Tank in your inventory! Buy one in Bob's Shop.");
+          if (totalAvailableTanks <= 0) {
+            showToast("You need a Mini Tank or Rocky Tank in your inventory! Buy one in Bob's Shop or craft one in Clippy's Workshop.");
             return;
           }
 
