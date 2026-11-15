@@ -1562,6 +1562,15 @@
           </div>
           <div id="ach-divine-status" style="margin-left: auto; font-weight: bold; color: #e74c3c; font-size: 0.85rem;">Locked</div>
         </div>
+
+        <div id="ach-making-business" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; opacity: 0.5;">
+          <div>
+            <h4 style="margin: 0 0 3px 0; font-size: 1rem; color: #1e3a8a;">Making business</h4>
+            <p style="margin: 0 0 3px 0; font-size: 0.85rem; color: #1f2937; font-weight: bold;">A handshake.</p>
+            <span style="font-size: 0.75rem; color: #64748b;">Make a trade with someone.</span>
+          </div>
+          <div id="ach-making-business-status" style="margin-left: auto; font-weight: bold; color: #e74c3c; font-size: 0.85rem;">Locked</div>
+        </div>
       </div>
     </div>
   </div>
@@ -2319,6 +2328,22 @@
       }
     }
 
+    async function unlockMakingBusinessAchievement() {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const playerRef = db.collection('jugadores').doc(user.uid);
+        const playerSnap = await playerRef.get();
+        if (!playerSnap.exists) return;
+        const achievements = playerSnap.data().achievements || {};
+        if (achievements.makingBusiness) return;
+        await playerRef.update({ 'achievements.makingBusiness': true });
+        window.showAchievementUnlocked('Making business', 'A handshake.', 'Make a trade with someone.');
+      } catch (err) {
+        console.error('Could not unlock Making business achievement:', err);
+      }
+    }
+
     function openTradeSession(sessionId) {
       if(activeTradeUnsubscribe) activeTradeUnsubscribe();
       activeTradeSessionId=sessionId;
@@ -2355,6 +2380,7 @@
           if(cancelBtn) cancelBtn.disabled=true;
           if(!completedHandled){
             completedHandled=true;
+            unlockMakingBusinessAchievement();
             showToast('Trade completed! Items and Coins transferred.');
             refreshAfterTrade();
             loadTradeRequests();
@@ -3227,6 +3253,13 @@
           if (achievements.divineAch) {
             achItem4.style.opacity = '1'; achItem4.style.borderColor = '#2ecc71';
             achStatus4.innerHTML = 'Completed'; achStatus4.style.color = '#2ecc71';
+          }
+
+          const achItem5 = document.getElementById('ach-making-business');
+          const achStatus5 = document.getElementById('ach-making-business-status');
+          if (achievements.makingBusiness) {
+            achItem5.style.opacity = '1'; achItem5.style.borderColor = '#2ecc71';
+            achStatus5.innerHTML = 'Completed'; achStatus5.style.color = '#2ecc71';
           }
         }
       } catch (err) {
@@ -4703,7 +4736,7 @@
           isBaitActive: false,
           aquariumRoomsOwned: 1,
           aquariumTanksMap: { room_0: new Array(8).fill(null) },
-          achievements: { catchFirst: false, gluGluTank: false, wormBaitAch: false, divineAch: false, cookMaster: false, bobMaster: false },
+          achievements: { catchFirst: false, gluGluTank: false, wormBaitAch: false, divineAch: false, makingBusiness: false, cookMaster: false, bobMaster: false },
           redeemedCodes: [],
           lastUsernameChange: null,
           isBanned: false,
