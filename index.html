@@ -2298,7 +2298,7 @@
     async function cancelActiveTrade(){
       const uid=auth.currentUser?.uid, sessionId=activeTradeSessionId;
       if(!uid||!sessionId)return;
-      if(!confirm('Cancel this Trade? Both players will leave the trade.'))return;
+      showToast('Cancelling Trade...');
       try{
         const sessionRef=db.collection('tradeSessions').doc(sessionId);
         const requestRef=db.collection('tradeRequests').doc(sessionId);
