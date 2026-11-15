@@ -1428,6 +1428,7 @@
         </div>
         <div id="trade-confirm-state" style="margin:12px 0;text-align:center;font-size:.85rem;color:#64748b;"></div>
         <button id="trade-confirm-btn" type="button" class="modal-action-btn" style="background:#16a34a;" onclick="confirmCurrentTrade()">Confirm this trade</button>
+        <button id="trade-cancel-btn" type="button" class="modal-action-btn" style="background:#dc2626;margin-top:8px;" onclick="cancelActiveTrade()">Cancel Trade</button>
       </div>
     </div>
   </div>
@@ -2278,6 +2279,13 @@
         const btn=document.getElementById('trade-confirm-btn');
         btn.disabled=!!confirmed[uid] || s.status==='completed';
         btn.textContent=s.status==='completed'?'Trade completed':(confirmed[uid]?'Waiting for your friend...':'Confirm this trade');
+        if(s.status==='cancelled'){
+          document.getElementById('trade-status-message').textContent='This Trade was cancelled.';
+          document.getElementById('trade-confirm-btn').disabled=true;
+          document.getElementById('trade-confirm-btn').textContent='Trade cancelled';
+          const cancelBtn=document.getElementById('trade-cancel-btn'); if(cancelBtn) cancelBtn.disabled=true;
+          return;
+        }
         if(s.status==='completed'){
           document.getElementById('trade-status-message').textContent='Trade completed successfully!';
           showToast('Trade completed! Items and Coins transferred.');
@@ -2285,6 +2293,30 @@
         }
         await populateTradeItemSelect();
       },err=>{document.getElementById('trade-status-message').textContent='Trade session error: '+err.message;});
+    }
+
+    async function cancelActiveTrade(){
+      const uid=auth.currentUser?.uid, sessionId=activeTradeSessionId;
+      if(!uid||!sessionId)return;
+      if(!confirm('Cancel this Trade? Both players will leave the trade.'))return;
+      try{
+        const sessionRef=db.collection('tradeSessions').doc(sessionId);
+        const requestRef=db.collection('tradeRequests').doc(sessionId);
+        await db.runTransaction(async tx=>{
+          const ss=await tx.get(sessionRef);
+          if(!ss.exists)throw Error('Trade session not found.');
+          const session=ss.data();
+          if(!session.participants?.includes(uid))throw Error('You are not part of this Trade.');
+          if(session.status!=='negotiating')throw Error('This Trade can no longer be cancelled.');
+          const rs=await tx.get(requestRef);
+          if(rs.exists && rs.data().status==='accepted'){
+            tx.update(requestRef,{status:'cancelled',respondedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          }
+          tx.update(sessionRef,{status:'cancelled',cancelledAt:firebase.firestore.FieldValue.serverTimestamp()});
+        });
+        showToast('Trade cancelled.');
+        loadTradeRequests();
+      }catch(e){showToast('Could not cancel Trade: '+(e.message||e));}
     }
 
     function renderTradeOffer(offer) {
@@ -2459,13 +2491,13 @@
         if (!inDocs.length) incoming.innerHTML = '<p style="color:#64748b;text-align:center;">No incoming Trade requests.</p>';
         else incoming.innerHTML = inDocs.map(doc => {
           const r = doc.data();
-          if(r.status==='accepted') return `<div style="background:#ecfdf5;padding:10px;border-radius:8px;border:1px solid #86efac;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Trade with <strong>${escapeHtml(r.senderName || 'Player')}</strong> · Accepted</span><button type="button" class="modal-action-btn" style="background:#16a34a;padding:5px 9px;font-size:.78rem;width:auto;" onclick="openTradeSession('${doc.id}')">Open Trade</button></div>`;
+          if(r.status==='accepted') return `<div style="background:#ecfdf5;padding:10px;border-radius:8px;border:1px solid #86efac;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Trade with <strong>${escapeHtml(r.senderName || 'Player')}</strong> · Accepted</span><button type="button" class="modal-action-btn" style="background:#16a34a;padding:5px 9px;font-size:.78rem;width:auto;" onclick="openTradeSession('${doc.id}')">Open Trade</button><button type="button" class="modal-action-btn" style="background:#dc2626;padding:5px 9px;font-size:.78rem;width:auto;" onclick="cancelTradeByRequest('${doc.id}')">Cancel</button></div>`;
           return `<div style="background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Trade request from: <strong>${escapeHtml(r.senderName || 'Player')}</strong></span><div style="display:flex;gap:6px;flex-shrink:0;"><button type="button" class="modal-action-btn" style="background:#27ae60;padding:4px 8px;font-size:.75rem;width:auto;" onclick="acceptTradeInvitation('${doc.id}')">Accept</button><button type="button" class="modal-action-btn" style="background:#e74c3c;padding:4px 8px;font-size:.75rem;width:auto;" onclick="respondToTradeRequest('${doc.id}','rejected')">Decline</button></div></div>`;
         }).join('');
         if (!outDocs.length) outgoing.innerHTML = '<p style="color:#64748b;text-align:center;">You have no sent Trade requests waiting.</p>';
         else outgoing.innerHTML = outDocs.map(doc => {
           const r = doc.data();
-          if(r.status==='accepted') return `<div style="background:#ecfdf5;padding:10px;border-radius:8px;border:1px solid #86efac;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Trade with <strong>${escapeHtml(r.receiverName || 'Player')}</strong> · Accepted</span><button type="button" class="modal-action-btn" style="background:#16a34a;padding:5px 9px;font-size:.78rem;width:auto;" onclick="openTradeSession('${doc.id}')">Open Trade</button></div>`;
+          if(r.status==='accepted') return `<div style="background:#ecfdf5;padding:10px;border-radius:8px;border:1px solid #86efac;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Trade with <strong>${escapeHtml(r.receiverName || 'Player')}</strong> · Accepted</span><button type="button" class="modal-action-btn" style="background:#16a34a;padding:5px 9px;font-size:.78rem;width:auto;" onclick="openTradeSession('${doc.id}')">Open Trade</button><button type="button" class="modal-action-btn" style="background:#dc2626;padding:5px 9px;font-size:.78rem;width:auto;" onclick="cancelTradeByRequest('${doc.id}')">Cancel</button></div>`;
           return `<div style="background:#f8fafc;padding:9px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Sent to: <strong>${escapeHtml(r.receiverName || 'Player')}</strong></span><button type="button" class="modal-action-btn" style="background:#64748b;padding:4px 8px;font-size:.75rem;width:auto;" onclick="respondToTradeRequest('${doc.id}','cancelled')">Cancel</button></div>`;
         }).join('');
       } catch (err) {
@@ -2474,6 +2506,11 @@
         console.error('Trade requests error:', err);
       }
       updateTradeRequestsCount();
+    }
+
+    async function cancelTradeByRequest(requestId){
+      activeTradeSessionId=requestId;
+      await cancelActiveTrade();
     }
 
     async function respondToTradeRequest(requestId, newStatus) {
@@ -6040,7 +6077,7 @@
     el.innerHTML=SHOP_ITEMS.slice(shopPage*4,shopPage*4+4).map(i=>`<div class="rebuild-item"><img src="${i.img}"><strong>${esc(i.name)}</strong><p>${i.price} Coins</p><button class="rebuild-btn" onclick="buyShopItem('${i.id}')">Buy</button></div>`).join('');
     document.getElementById('shop-page-label').textContent=`Page ${shopPage+1} / ${Math.ceil(SHOP_ITEMS.length/4)}`;
   }
-  window.openPaginatedShop=openPaginatedShop;window.changeShopPage=changeShopPage;window.buyShopItem=buyShopItem;window.openTradeModal=openTradeModal;window.acceptTradeInvitation=acceptTradeInvitation;window.openTradeSession=openTradeSession;window.closeTradeModal=closeTradeModal;window.addTradeItemToOffer=addTradeItemToOffer;window.saveTradeCoinsOffer=saveTradeCoinsOffer;window.clearMyTradeOffer=clearMyTradeOffer;window.confirmCurrentTrade=confirmCurrentTrade;
+  window.openPaginatedShop=openPaginatedShop;window.changeShopPage=changeShopPage;window.buyShopItem=buyShopItem;window.openTradeModal=openTradeModal;window.acceptTradeInvitation=acceptTradeInvitation;window.openTradeSession=openTradeSession;window.cancelActiveTrade=cancelActiveTrade;window.cancelTradeByRequest=cancelTradeByRequest;window.closeTradeModal=closeTradeModal;window.addTradeItemToOffer=addTradeItemToOffer;window.saveTradeCoinsOffer=saveTradeCoinsOffer;window.clearMyTradeOffer=clearMyTradeOffer;window.confirmCurrentTrade=confirmCurrentTrade;
     window.respondToTradeRequest=respondToTradeRequest;
 
   // Bait selection and consumption: only one Equip Bait control, both bait types persist.
