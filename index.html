@@ -3337,41 +3337,63 @@
         });
       }
 
+      // Count fish already placed in every aquarium room. The currently
+      // selected slot is excluded because replacing its fish frees that copy.
+      const playerDoc = user ? await db.collection('jugadores').doc(user.uid).get() : null;
+      const playerData = playerDoc && playerDoc.exists ? playerDoc.data() : {};
+      const tanksMap = (playerData && playerData.aquariumTanksMap) || {};
+      const currentRoomKey = `room_${currentAquariumRoomIndex}`;
+      const displayedCounts = {};
+      Object.entries(tanksMap).forEach(([roomKey, roomTanks]) => {
+        if (!Array.isArray(roomTanks)) return;
+        roomTanks.forEach((placedFishName, slotIndex) => {
+          if (!placedFishName) return;
+          if (roomKey === currentRoomKey && slotIndex === selectedShelfIndex) return;
+          displayedCounts[placedFishName] = (displayedCounts[placedFishName] || 0) + 1;
+        });
+      });
+
       const listEl = document.getElementById('select-fish-list');
-      if (!fishes || fishes.length === 0) {
-        listEl.innerHTML = '<p style="color:#64748b; text-align:center; margin:10px 0; grid-column:1/-1;">You have no fish in your inventory!</p>';
-      } else {
-        let fishCounts = {};
-        fishes.forEach(f => {
-          if (f.cooking) return;
-          if (!fishCounts[f.name]) fishCounts[f.name] = 0;
-          fishCounts[f.name]++;
-        });
+      const rawFishCounts = {};
+      (fishes || []).forEach(f => {
+        if (f.cooking) return;
+        rawFishCounts[f.name] = (rawFishCounts[f.name] || 0) + 1;
+      });
 
-        let html = '';
-        if (Object.keys(fishCounts).length === 0) {
-          listEl.innerHTML = '<p style="color:#64748b; text-align:center; margin:10px 0; grid-column:1/-1;">No raw fish available! Cooked fish cannot be placed in the aquarium.</p>';
-        }
-        Object.entries(fishCounts).forEach(([fishName, count]) => {
-          const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === fishName) || ALLOWED_FISH_TYPES[0];
-          const isListed = marketListedFishes.includes(fishName);
+      let html = '';
+      let hasAvailableFish = false;
+      Object.entries(rawFishCounts).forEach(([fishName, ownedCount]) => {
+        const availableCount = Math.max(0, ownedCount - (displayedCounts[fishName] || 0));
+        // Do not show fish types with no copies left to place.
+        if (availableCount <= 0) return;
 
-          html += `
-            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative; ${isListed ? 'opacity: 0.6;' : 'cursor: pointer;'}" ${isListed ? '' : `onclick="assignFishToShelf('${fishName}')"`}>
-              <span style="position: absolute; top: 6px; right: 8px; background: #3498db; color: white; font-size: 0.75rem; font-weight: bold; padding: 1px 6px; border-radius: 10px;">x${count}</span>
-              <img src="${fishObj.img}" style="width: 50px; height: 50px; object-fit: contain; margin: 8px 0;">
-              <span style="font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 8px; color: #1e293b;">${fishName}</span>
-              ${isListed ? 
-                `<span style="font-size: 0.65rem; color: #c0392b; font-weight: bold; text-align: center; width: 100%;">On Market Offer</span>` :
-                `<button type="button" class="modal-action-btn" style="background:#27ae60; padding: 4px; font-size: 0.7rem; width: 100%;">Select</button>`
-              }
-            </div>
-          `;
-        });
+        const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === fishName) || ALLOWED_FISH_TYPES[0];
+        const isListed = marketListedFishes.includes(fishName);
+        if (isListed) return;
+
+        hasAvailableFish = true;
+        html += `
+          <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; position: relative; cursor: pointer;" onclick="assignFishToShelf('${fishName}')">
+            <span style="position: absolute; top: 6px; right: 8px; background: #3498db; color: white; font-size: 0.75rem; font-weight: bold; padding: 1px 6px; border-radius: 10px;">Available: x${availableCount}</span>
+            <img src="${fishObj.img}" style="width: 50px; height: 50px; object-fit: contain; margin: 8px 0;">
+            <span style="font-size: 0.85rem; font-weight: bold; text-align: center; margin-bottom: 8px; color: #1e293b;">${fishName}</span>
+            <button type="button" class="modal-action-btn" style="background:#27ae60; padding: 4px; font-size: 0.7rem; width: 100%;">Select</button>
+          </div>
+        `;
+      });
+
+      if (hasAvailableFish) {
         listEl.innerHTML = html;
+      } else if (!fishes || fishes.length === 0) {
+        listEl.innerHTML = '<p style="color:#64748b; text-align:center; margin:10px 0; grid-column:1/-1;">You have no fish in your inventory!</p>';
+      } else if (!Object.keys(rawFishCounts).length) {
+        listEl.innerHTML = '<p style="color:#64748b; text-align:center; margin:10px 0; grid-column:1/-1;">No raw fish available! Cooked fish cannot be placed in the aquarium.</p>';
+      } else {
+        listEl.innerHTML = '<p style="color:#64748b; text-align:center; margin:10px 0; grid-column:1/-1;">No fish available to place. All your raw fish are already displayed in your Aquarium or listed on the Market.</p>';
       }
+
       const decoBtn=document.getElementById('place-sandcastle-in-tank-btn');
-      if(decoBtn){const data=(await db.collection('jugadores').doc(user.uid).get()).data()||{};const room=`room_${currentAquariumRoomIndex}`;const arr=(data.aquariumCosmeticsMap||{})[room]||[];const placedCosmetic=arr[selectedShelfIndex]||null;decoBtn.textContent=placedCosmetic?'Remove/Change Cosmetic':'Place Cosmetic';decoBtn.disabled=false;}
+      if(decoBtn){const data=playerData||{};const room=`room_${currentAquariumRoomIndex}`;const arr=(data.aquariumCosmeticsMap||{})[room]||[];const placedCosmetic=arr[selectedShelfIndex]||null;decoBtn.textContent=placedCosmetic?'Remove/Change Cosmetic':'Place Cosmetic';decoBtn.disabled=false;}
       document.getElementById('modal-select-fish').style.display = 'flex';
     }
 
