@@ -1633,9 +1633,8 @@
 
       <div class="form-group">
         <label>Tank Type</label>
-        <select id="adminTankType" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
-          <option value="mini">Mini Tank</option><option value="rocky">Rocky Tank</option>
-        </select>
+        <input type="text" id="adminTankType" list="adminTankTypeSuggestions" placeholder="Type a tank name (e.g. Mini Tank)" autocomplete="off" value="Mini Tank" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
+        <datalist id="adminTankTypeSuggestions"><option value="Mini Tank"></option><option value="Rocky Tank"></option></datalist>
         <label style="margin-top:8px;display:block;">Tank Amount</label>
         <input type="number" id="adminTanksAmount" placeholder="Tanks amount" value="1" min="1" autocomplete="off">
       </div>
@@ -3832,7 +3831,7 @@
           currentAquariumRoomIndex = 0;
           
           let tanksMap = data.aquariumTanksMap || {};
-          renderAquarium(data.username || "My", data.fishes || [], tanksMap, data.aquariumCosmeticsMap || {});
+          renderAquarium(data.username || "My", data.fishes || [], tanksMap, data.aquariumCosmeticsMap || {}, data.aquariumTankTypesMap || {});
         }
       } catch (err) {
         showToast("Error loading aquarium.");
@@ -3842,11 +3841,12 @@
     function openOtherAquarium() {
       isViewingMyAquarium = false;
       let tanksMap = viewingTargetTanksMap || {};
-      renderAquarium(viewingTargetUsername, viewingTargetFishes, tanksMap, viewingTargetCosmeticsMap || {});
+      renderAquarium(viewingTargetUsername, viewingTargetFishes, tanksMap, viewingTargetCosmeticsMap || {}, viewingTargetTankTypesMap || {});
     }
 
     let viewingTargetTanksMap = {};
     let viewingTargetCosmeticsMap = {};
+    let viewingTargetTankTypesMap = {};
 
     function changeAquariumRoom(direction) {
       const maxRooms = isViewingMyAquarium ? totalAquariumRoomsOwned : Object.keys(viewingTargetTanksMap).length || 1;
@@ -3862,15 +3862,34 @@
         db.collection('jugadores').doc(user.uid).get().then(doc => {
           if (doc.exists) {
             const data = doc.data();
-            renderAquarium(data.username || "My", data.fishes || [], data.aquariumTanksMap || {}, data.aquariumCosmeticsMap || {});
+            renderAquarium(data.username || "My", data.fishes || [], data.aquariumTanksMap || {}, data.aquariumCosmeticsMap || {}, data.aquariumTankTypesMap || {});
           }
         });
       } else {
-        renderAquarium(viewingTargetUsername, viewingTargetFishes, viewingTargetTanksMap, viewingTargetCosmeticsMap || {});
+        renderAquarium(viewingTargetUsername, viewingTargetFishes, viewingTargetTanksMap, viewingTargetCosmeticsMap || {}, viewingTargetTankTypesMap || {});
       }
     }
 
-    function renderAquarium(username, fishes, tanksMap, cosmeticMap = {}) {
+    // Tank catalog: add future tank types here (id, display name, Firestore counter field, image).
+    window.TANK_TYPES = [
+      { id: 'mini', name: 'Mini Tank', field: 'miniTanksCount', img: 'https://i.postimg.cc/DZs0wKSx/tanque-mini.png' },
+      { id: 'rocky', name: 'Rocky Tank', field: 'rockyTanksCount', img: 'https://i.postimg.cc/CLntQ0cL/Tanque-piedroso.png' }
+    ];
+    function getTankType(typeId) {
+      const types = window.TANK_TYPES || [];
+      return types.find(t => t.id === typeId) || types[0];
+    }
+    function findTankTypeByName(raw) {
+      const q = String(raw || '').trim().toLowerCase();
+      if (!q) return null;
+      const types = window.TANK_TYPES || [];
+      return types.find(t => t.name.toLowerCase() === q || t.id === q || t.name.toLowerCase().replace(/\s+tank$/, '') === q) || null;
+    }
+    function getTankCount(data, tank) {
+      return Math.max(0, Number(data && data[tank.field]) || 0);
+    }
+
+    function renderAquarium(username, fishes, tanksMap, cosmeticMap = {}, tankTypesMap = {}) {
       stopFishAnimations();
       document.querySelectorAll('.modal-overlay').forEach(el => {
         if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
@@ -3890,12 +3909,13 @@
 
       const roomKey = `room_${currentAquariumRoomIndex}`;
       const safeTanks = (tanksMap && tanksMap[roomKey] && Array.isArray(tanksMap[roomKey]) && tanksMap[roomKey].length === 8) ? tanksMap[roomKey] : new Array(8).fill(null);
+      const safeTypes = (tankTypesMap && Array.isArray(tankTypesMap[roomKey])) ? tankTypesMap[roomKey] : [];
       const safeDecorations = Array.isArray(cosmeticMap[roomKey]) ? cosmeticMap[roomKey] : new Array(8).fill(null);
-      for (let i = 0; i < 4; i++) renderShelfSlot(`top-${i}`, safeTanks[i], i, safeDecorations[i]);
-      for (let i = 0; i < 4; i++) renderShelfSlot(`bot-${i}`, safeTanks[i + 4], i + 4, safeDecorations[i + 4]);
+      for (let i = 0; i < 4; i++) renderShelfSlot(`top-${i}`, safeTanks[i], i, safeDecorations[i], safeTypes[i]);
+      for (let i = 0; i < 4; i++) renderShelfSlot(`bot-${i}`, safeTanks[i + 4], i + 4, safeDecorations[i + 4], safeTypes[i + 4]);
     }
 
-    function renderShelfSlot(slotKey, fishName, shelfIndex, decoration) {
+    function renderShelfSlot(slotKey, fishName, shelfIndex, decoration, tankType) {
       const slotEl = document.getElementById(`shelf-${slotKey}`);
       if (!slotEl) return;
       
@@ -3904,9 +3924,10 @@
         slotEl.style.backgroundImage = 'none';
       } else {
         const fishObj = ALLOWED_FISH_TYPES.find(f => f.name === fishName) || ALLOWED_FISH_TYPES[0];
+        const tank = getTankType(tankType);
         slotEl.innerHTML = `
           <div style="position: relative; width: 100%; height: 100%; overflow: hidden;">
-            <img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Tank" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; pointer-events: none;">
+            <img src="${tank.img}" alt="${tank.name}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; pointer-events: none;">
             ${['Sandcastle','Verity'].includes(decoration) ? `<img class="aquarium-${decoration.toLowerCase()}" src="${decoration === 'Sandcastle' ? IMG.sandcastle : IMG.verity}" alt="${decoration}" style="position: absolute; left: 50%; transform: translateX(-50%); bottom: 28%; width: 34px; height: 34px; object-fit: contain; object-position:center bottom; z-index: 2; pointer-events: none;">` : ''}
             <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; z-index: 3; pointer-events: none;">
           </div>
@@ -3925,9 +3946,7 @@
       db.collection('jugadores').doc(user.uid).get().then(async doc => {
         if (doc.exists) {
           const data = doc.data();
-          const miniTanksCount = Math.max(0, Number(data.miniTanksCount) || 0);
-          const rockyTanksCount = Math.max(0, Number(data.rockyTanksCount) || 0);
-          const totalAvailableTanks = miniTanksCount + rockyTanksCount;
+          const totalAvailableTanks = (window.TANK_TYPES || []).reduce((total, tank) => total + getTankCount(data, tank), 0);
           const fishes = data.fishes || [];
           let tanksMap = data.aquariumTanksMap || {};
           const roomKey = `room_${currentAquariumRoomIndex}`;
@@ -3939,7 +3958,7 @@
           }
 
           if (totalAvailableTanks <= 0) {
-            showToast("You need a Mini Tank or Rocky Tank in your inventory! Buy one in Bob's Shop or craft one in Clippy's Workshop.");
+            showToast("You need a tank in your inventory! Buy one in Bob's Shop or craft one in Clippy's Workshop.");
             return;
           }
 
@@ -4034,8 +4053,10 @@
         if (doc.exists) {
           const data = doc.data();
           let tanksMap = data.aquariumTanksMap || {};
+          let tankTypesMap = data.aquariumTankTypesMap || {};
           const roomKey = `room_${currentAquariumRoomIndex}`;
           let tanks = tanksMap[roomKey] || new Array(8).fill(null);
+          let roomTankTypes = Array.isArray(tankTypesMap[roomKey]) ? tankTypesMap[roomKey].slice(0, 8) : new Array(8).fill(null);
           let fishes = data.fishes || [];
           let tanksCount = data.miniTanksCount || 0;
 
@@ -4059,20 +4080,25 @@
               return;
             }
             tanksCount -= 1;
+            roomTankTypes[selectedShelfIndex] = 'mini';
+          } else if (!roomTankTypes[selectedShelfIndex]) {
+            roomTankTypes[selectedShelfIndex] = 'mini';
           }
 
           tanks[selectedShelfIndex] = fishName;
           tanksMap[roomKey] = tanks;
+          tankTypesMap[roomKey] = roomTankTypes;
           
           await docRef.update({ 
             aquariumTanksMap: tanksMap,
+            aquariumTankTypesMap: tankTypesMap,
             miniTanksCount: tanksCount
           });
           
           showToast(`${fishName} placed in tank!`);
           loadBackpackData();
           document.getElementById('modal-select-fish').style.display = 'none';
-          renderAquarium(data.username || "My", fishes, tanksMap, data.aquariumCosmeticsMap || {});
+          renderAquarium(data.username || "My", fishes, tanksMap, data.aquariumCosmeticsMap || {}, tankTypesMap);
         }
       } catch (err) {
         showToast("Error: " + err.message);
@@ -4089,26 +4115,31 @@
         if (doc.exists) {
           const data = doc.data();
           let tanksMap = data.aquariumTanksMap || {};
+          let tankTypesMap = data.aquariumTankTypesMap || {};
           const roomKey = `room_${currentAquariumRoomIndex}`;
           let tanks = tanksMap[roomKey] || new Array(8).fill(null);
+          let roomTankTypes = Array.isArray(tankTypesMap[roomKey]) ? tankTypesMap[roomKey].slice(0, 8) : new Array(8).fill(null);
 
           if (tanks[selectedShelfIndex]) {
-            let tanksCount = (data.miniTanksCount || 0) + 1;
+            const tank = getTankType(roomTankTypes[selectedShelfIndex]);
             tanks[selectedShelfIndex] = null;
+            roomTankTypes[selectedShelfIndex] = null;
             tanksMap[roomKey] = tanks;
+            tankTypesMap[roomKey] = roomTankTypes;
 
             await docRef.update({ 
               aquariumTanksMap: tanksMap,
-              miniTanksCount: tanksCount,
+              aquariumTankTypesMap: tankTypesMap,
+              [tank.field]: (Number(data[tank.field]) || 0) + 1,
               aquariumSandcastle: false
             });
 
-            showToast("Tank removed and returned to your inventory.");
+            showToast(`${tank.name} removed and returned to your inventory.`);
             loadBackpackData();
           }
 
           document.getElementById('modal-select-fish').style.display = 'none';
-          renderAquarium(data.username || "My", data.fishes || [], tanksMap, data.aquariumCosmeticsMap || {});
+          renderAquarium(data.username || "My", data.fishes || [], tanksMap, data.aquariumCosmeticsMap || {}, tankTypesMap);
         }
       } catch (err) {
         showToast("Error: " + err.message);
@@ -5137,10 +5168,12 @@
         const targetAquariumDoc = await db.collection('jugadores').doc(uid).get();
         const targetData = targetAquariumDoc.exists ? (targetAquariumDoc.data() || {}) : {};
         viewingTargetCosmeticsMap = targetData.aquariumCosmeticsMap || {};
+        viewingTargetTankTypesMap = targetData.aquariumTankTypesMap || {};
         const pearlsEl = document.getElementById('view-profile-pearls');
         if (pearlsEl) pearlsEl.innerText = Number(targetData.pearls) || 0;
       } catch (_) {
         viewingTargetCosmeticsMap = {};
+        viewingTargetTankTypesMap = {};
         const pearlsEl = document.getElementById('view-profile-pearls');
         if (pearlsEl) pearlsEl.innerText = '0';
       }
@@ -5399,7 +5432,7 @@
           data = { ...data, ...repair };
         }
         setText(statCoins, `💰 Coins: ${Number(data.coins) || 0}`);
-        const tanksInInventory = Math.max(0, Number(data.miniTanksCount) || 0);
+        const tanksInInventory = (window.TANK_TYPES || []).reduce((total, tank) => total + getTankCount(data, tank), 0);
         const tanksMap = data.aquariumTanksMap && typeof data.aquariumTanksMap === 'object'
           ? data.aquariumTanksMap
           : {};
@@ -5407,12 +5440,12 @@
           if (!Array.isArray(roomTanks)) return total;
           return total + roomTanks.filter(Boolean).length;
         }, 0);
-        setText(statTanks, `Tanks: ${tanksInInventory + Math.max(0,Number(data.rockyTanksCount)||0) + tanksPlaced}`);
+        setText(statTanks, `Tanks: ${tanksInInventory + tanksPlaced}`);
         setText(document.getElementById('admin-stat-pearls'), `⚪ Pearls: ${Number(data.pearls)||0}`);
         setText(statRooms, `Aquarium Rooms: ${Number(data.aquariumRoomsOwned) || 1}`);
         setText(statBaits, `Baits: ${Number(data.wormBaitsCount) || 0}`);
         const tankList=document.getElementById('admin-target-tanks-list');
-        if(tankList){const mini=Math.max(0,Number(data.miniTanksCount)||0),rocky=Math.max(0,Number(data.rockyTanksCount)||0);tankList.innerHTML=[['mini','Mini Tank',mini],['rocky','Rocky Tank',rocky]].map(([type,label,count])=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:6px 9px;margin-bottom:5px;"><span><strong>${label}</strong> (x${count})</span><button type="button" class="modal-action-btn" style="background:#c0392b;width:auto;padding:4px 10px;font-size:.75rem;" ${count<=0?'disabled':''} onclick="adminRemoveOwnedTank('${type}')">Remove</button></div>`).join('');}
+        if(tankList){const owned=(window.TANK_TYPES||[]).map(tank=>({tank,count:getTankCount(data,tank)})).filter(row=>row.count>0);tankList.innerHTML=owned.length?owned.map(({tank,count})=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:6px 9px;margin-bottom:5px;"><span><strong>${tank.name}</strong> (x${count})</span><button type="button" class="modal-action-btn" style="background:#c0392b;width:auto;padding:4px 10px;font-size:.75rem;" onclick="adminRemoveOwnedTank('${tank.id}')">Remove</button></div>`).join(''):'<p style="font-size:.8rem;color:#64748b;text-align:center;margin:6px 0;">This user has no tanks in their backpack.</p>';}
 
         const rawFishes = data.fishes;
         const fishes = Array.isArray(rawFishes)
@@ -5528,15 +5561,17 @@
     async function adminModifyTankType(multiplier) {
       const username=document.getElementById('adminTargetUsername').value.trim();
       const amount=parseInt(document.getElementById('adminTanksAmount').value,10);
-      const type=document.getElementById('adminTankType').value;
+      const tank=findTankTypeByName(document.getElementById('adminTankType').value);
+      if(!tank){showToast(`Unknown tank type. Available: ${(window.TANK_TYPES||[]).map(t=>t.name).join(', ')}.`);return;}
       if(!username||!Number.isSafeInteger(amount)||amount<=0){showToast('Enter a valid username and tank amount.');return;}
-      try{const uid=await getUidByUsername(username);if(!uid)throw Error('User not found.');const ref=db.collection('jugadores').doc(uid);await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player profile not found.');const d=snap.data()||{},key=type==='rocky'?'rockyTanksCount':'miniTanksCount',current=Number(d[key])||0,next=Math.max(0,current+amount*multiplier);tx.update(ref,{[key]:next});});showToast(`${type==='rocky'?'Rocky':'Mini'} Tanks updated for ${username}.`);loadTargetUserInventoryForAdmin();}catch(e){showToast('Tank update failed: '+e.message);}
+      try{const uid=await getUidByUsername(username);if(!uid)throw Error('User not found.');const ref=db.collection('jugadores').doc(uid);await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player profile not found.');const d=snap.data()||{},current=Number(d[tank.field])||0,next=Math.max(0,current+amount*multiplier);tx.update(ref,{[tank.field]:next});});showToast(`${tank.name} updated for ${username}.`);loadTargetUserInventoryForAdmin();}catch(e){showToast('Tank update failed: '+e.message);}
     }
     async function adminRemoveOwnedTank(type){
       const username=document.getElementById('adminTargetUsername').value.trim();
       const amount=Math.max(1,parseInt(document.getElementById('adminTanksAmount').value,10)||1);
+      const tank=getTankType(type);
       if(!username)return showToast('Select a target username first.');
-      try{const uid=await getUidByUsername(username);if(!uid)throw Error('User not found.');const ref=db.collection('jugadores').doc(uid);await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player profile not found.');const d=snap.data()||{},key=type==='rocky'?'rockyTanksCount':'miniTanksCount',current=Math.max(0,Number(d[key])||0);if(current<=0)throw Error('The user has none of this tank in their backpack.');tx.update(ref,{[key]:Math.max(0,current-amount)});});showToast(`${type==='rocky'?'Rocky':'Mini'} Tank(s) removed from ${username}.`);loadTargetUserInventoryForAdmin();}catch(e){showToast('Could not remove tank: '+e.message);}
+      try{const uid=await getUidByUsername(username);if(!uid)throw Error('User not found.');const ref=db.collection('jugadores').doc(uid);await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player profile not found.');const d=snap.data()||{},current=Math.max(0,Number(d[tank.field])||0);if(current<=0)throw Error('The user has none of this tank in their backpack.');tx.update(ref,{[tank.field]:Math.max(0,current-amount)});});showToast(`${tank.name}(s) removed from ${username}.`);loadTargetUserInventoryForAdmin();}catch(e){showToast('Could not remove tank: '+e.message);}
     }
     window.adminRemoveOwnedTank=adminRemoveOwnedTank;
 
@@ -6451,9 +6486,9 @@
   window.openTanksInventory=openTanksInventory;
 
   async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const cMap=d.aquariumCosmeticsMap||{};const names=['Sandcastle','Verity'];document.getElementById('cosmetic-inventory').innerHTML=names.map(name=>{const n=inv[name]||0,placedCount=Object.values(cMap).flat().filter(x=>x===name).length,img=name==='Sandcastle'?IMG.sandcastle:IMG.verity;return `<div class="rebuild-item"><img src="${img}"><strong>${name}</strong><p>In bag: ${n} | Placed: ${placedCount}</p><small>To place or remove it, select a tank in your Aquarium and use the cosmetic selector.</small></div>`;}).join('');document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
-  async function quickToggleCosmeticTank(cosName){try{const ref=playerRef();await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');const d=snap.data()||{};const inv={...(d.cosmeticsInventory||{})};const tMap={...(d.aquariumTanksMap||{})};const cMap={...(d.aquariumCosmeticsMap||{})};let removed=false;for(const rKey of Object.keys(cMap)){const arr=[...(cMap[rKey]||[])];const idx=arr.indexOf(cosName);if(idx!==-1){arr[idx]=null;cMap[rKey]=arr;inv[cosName]=(inv[cosName]||0)+1;removed=true;break;}}if(!removed){if((inv[cosName]||0)<=0)throw Error('You do not own this cosmetic.');let placed=false;const roomKeys=Object.keys(tMap).length?Object.keys(tMap):['room_0'];for(const rKey of roomKeys){const tArr=tMap[rKey]||[];const cArr=[...(cMap[rKey]||new Array(8).fill(null))];const slotIdx=tArr.findIndex((fish,i)=>fish&&!cArr[i]);if(slotIdx!==-1){cArr[slotIdx]=cosName;cMap[rKey]=cArr;inv[cosName]-=1;placed=true;break;}}if(!placed)throw Error('Place a fish in a Mini Tank in your Aquarium first!');}tx.update(ref,{aquariumCosmeticsMap:cMap,cosmeticsInventory:inv});});showToast('Cosmetic updated!');openCosmeticsInventory();loadBackpackData();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{});}}catch(e){showToast(e.message);}}
+  async function quickToggleCosmeticTank(cosName){try{const ref=playerRef();await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');const d=snap.data()||{};const inv={...(d.cosmeticsInventory||{})};const tMap={...(d.aquariumTanksMap||{})};const cMap={...(d.aquariumCosmeticsMap||{})};let removed=false;for(const rKey of Object.keys(cMap)){const arr=[...(cMap[rKey]||[])];const idx=arr.indexOf(cosName);if(idx!==-1){arr[idx]=null;cMap[rKey]=arr;inv[cosName]=(inv[cosName]||0)+1;removed=true;break;}}if(!removed){if((inv[cosName]||0)<=0)throw Error('You do not own this cosmetic.');let placed=false;const roomKeys=Object.keys(tMap).length?Object.keys(tMap):['room_0'];for(const rKey of roomKeys){const tArr=tMap[rKey]||[];const cArr=[...(cMap[rKey]||new Array(8).fill(null))];const slotIdx=tArr.findIndex((fish,i)=>fish&&!cArr[i]);if(slotIdx!==-1){cArr[slotIdx]=cosName;cMap[rKey]=cArr;inv[cosName]-=1;placed=true;break;}}if(!placed)throw Error('Place a fish in a Mini Tank in your Aquarium first!');}tx.update(ref,{aquariumCosmeticsMap:cMap,cosmeticsInventory:inv});});showToast('Cosmetic updated!');openCosmeticsInventory();loadBackpackData();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{},d.aquariumTankTypesMap||{});}}catch(e){showToast(e.message);}}
   window.quickToggleCosmeticTank=quickToggleCosmeticTank;
-  async function toggleSandcastle(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},inv={...(d.cosmeticsInventory||{})};const equipped=!!d.aquariumSandcastle;if(!equipped&&(inv.Sandcastle||0)<=0)throw Error('You do not own a Sandcastle. Buy one in the Shop.');tx.update(ref,{aquariumSandcastle:!equipped});});showToast('Aquarium decoration updated.');if(typeof openCosmeticsInventory==='function'&&document.getElementById('modal-cosmetics').style.display==='flex')openCosmeticsInventory();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{});} }catch(e){showToast(e.message);}}
+  async function toggleSandcastle(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},inv={...(d.cosmeticsInventory||{})};const equipped=!!d.aquariumSandcastle;if(!equipped&&(inv.Sandcastle||0)<=0)throw Error('You do not own a Sandcastle. Buy one in the Shop.');tx.update(ref,{aquariumSandcastle:!equipped});});showToast('Aquarium decoration updated.');if(typeof openCosmeticsInventory==='function'&&document.getElementById('modal-cosmetics').style.display==='flex')openCosmeticsInventory();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{},d.aquariumTankTypesMap||{});} }catch(e){showToast(e.message);}}
   window.openCosmeticsInventory=openCosmeticsInventory;window.toggleSandcastle=toggleSandcastle;
   async function openTankCosmeticPicker(){
     try{
@@ -6548,7 +6583,8 @@
         updatedData.username || 'My',
         updatedData.fishes || [],
         updatedData.aquariumTanksMap || {},
-        updatedData.aquariumCosmeticsMap || {}
+        updatedData.aquariumCosmeticsMap || {},
+        updatedData.aquariumTankTypesMap || {}
       );
       loadBackpackData();
     } catch (error) {
@@ -7300,7 +7336,7 @@
 
   // Aquarium decoration layer and custom movement per creature.
   const originalRenderAquarium=window.renderAquarium;
-  window.renderAquarium=function(username,fishes,tanksMap,cosmeticMap){if(originalRenderAquarium)originalRenderAquarium(username,fishes,tanksMap,cosmeticMap);if(isViewingMyAquarium&&auth.currentUser){db.collection('jugadores').doc(auth.currentUser.uid).get().then(s=>{if(!s.exists)return;const d=s.data()||{};if(!cosmeticMap&&d.aquariumCosmeticsMap&&originalRenderAquarium)originalRenderAquarium(username,fishes,tanksMap,d.aquariumCosmeticsMap);});}};
+  window.renderAquarium=function(username,fishes,tanksMap,cosmeticMap,tankTypesMap){if(originalRenderAquarium)originalRenderAquarium(username,fishes,tanksMap,cosmeticMap,tankTypesMap);if(isViewingMyAquarium&&auth.currentUser){db.collection('jugadores').doc(auth.currentUser.uid).get().then(s=>{if(!s.exists)return;const d=s.data()||{};if(!cosmeticMap&&d.aquariumCosmeticsMap&&originalRenderAquarium)originalRenderAquarium(username,fishes,tanksMap,d.aquariumCosmeticsMap,tankTypesMap||d.aquariumTankTypesMap||{});});}};
   const animationIntervals=[];
   window.stopFishAnimations=function(){animationIntervals.forEach(clearInterval);animationIntervals.length=0;};
   window.startFishAnimation=function(shelfIndex){const im=document.querySelector(`.swimming-fish-${shelfIndex}`);if(!im)return;const n=im.alt||'';const meta=ALLOWED_FISH_TYPES.find(f=>f.name===n);im.style.position='absolute';im.style.width=n==='Turtle'?'52px':'40px';if(meta&&meta.creatureType==='sand'){im.style.bottom='2%';im.style.top='auto';im.classList.add('creature-sand');}else if(n==='Jellyfish')im.classList.add('creature-jelly');else if(n==='Turtle')im.classList.add('creature-turtle');else if(n==='Octopus')im.classList.add('creature-octopus');else{im.style.left='25%';im.style.top='35%';im.classList.add('creature-turtle');}};
@@ -7762,16 +7798,17 @@
   // Successful fishing may award a chest containing 50–100 Pearls.
   window.awardPearlChest=async function(usedBait=false){const chestChance=usedBait?0.0005:0.003;if(Math.random()>=chestChance)return;const amount=50+Math.floor(Math.random()*51);try{await playerDoc().update({pearls:firebase.firestore.FieldValue.increment(amount)});const n=document.createElement('div');n.style.cssText='position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;background:#0008;padding:15px';n.innerHTML=`<div style="background:white;border:3px solid #d6a84f;border-radius:18px;padding:22px;text-align:center;max-width:320px"><img src="${CHEST_IMG}" style="width:150px;height:130px;object-fit:contain"><h2 style="color:#8b5e16;margin:5px">Pearl Chest!</h2><p>You found <strong>⚪ ${amount} Pearls</strong>!</p><button style="background:#2563eb;color:white;border:0;border-radius:8px;padding:10px 24px" id="pearl-chest-close">Awesome!</button></div>`;document.body.appendChild(n);n.querySelector('#pearl-chest-close').onclick=()=>n.remove();}catch(e){console.error('Pearl chest award failed',e);}};
   // Add chest award to the existing successful catch handler without replacing fishing logic.
-  // Aquarium tank choice: only show a choice when the player owns a Rocky Tank.
+  // Aquarium tank choice: list every owned tank type from the shared TANK_TYPES catalog.
   const originalOpenSelect=window.openSelectFishModal;
-  window.openSelectFishModal=async function(fishes){try{const d=await getData();const rocky=Number(d.rockyTanksCount||0);const mini=Number(d.miniTanksCount||0);if(rocky>0||mini>0){const choices=[];if(mini>0)choices.push(`<div class="tank-choice-card" onclick="chooseAquariumTank('mini')"><span style="position:absolute;background:#3498db;color:white;font-size:.7rem;font-weight:bold;padding:1px 6px;border-radius:10px">Available: x${mini}</span><img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Mini Tank"><strong>Mini Tank</strong><button type="button" class="modal-action-btn">Select</button></div>`);if(rocky>0)choices.push(`<div class="tank-choice-card" onclick="chooseAquariumTank('rocky')"><span style="position:absolute;background:#3498db;color:white;font-size:.7rem;font-weight:bold;padding:1px 6px;border-radius:10px">Available: x${rocky}</span><img src="https://i.postimg.cc/CLntQ0cL/Tanque-piedroso.png" alt="Rocky Tank"><strong>Rocky Tank</strong><button type="button" class="modal-action-btn">Select</button></div>`);$('tank-choice-options').innerHTML=choices.join('');$('tank-choice-modal').style.display='flex';window.__pendingAquariumFishes=fishes;return;}chosenTankType='mini';return originalOpenSelect.call(this,fishes);}catch(e){showToast(e.message);}};
+  window.openSelectFishModal=async function(fishes){try{const d=await getData();const roomKey=`room_${currentAquariumRoomIndex}`;const slots=(d.aquariumTanksMap||{})[roomKey];if(Array.isArray(slots)&&slots[selectedShelfIndex]){chosenTankType='mini';return originalOpenSelect.call(this,fishes);}const owned=(window.TANK_TYPES||[]).map(tank=>({tank,count:Math.max(0,Number(d[tank.field])||0)})).filter(row=>row.count>0);if(owned.length){$('tank-choice-options').innerHTML=owned.map(({tank,count})=>`<div class="tank-choice-card" onclick="chooseAquariumTank('${tank.id}')"><span style="position:absolute;background:#3498db;color:white;font-size:.7rem;font-weight:bold;padding:1px 6px;border-radius:10px">Available: x${count}</span><img src="${tank.img}" alt="${tank.name}"><strong>${tank.name}</strong><button type="button" class="modal-action-btn">Select</button></div>`).join('');$('tank-choice-modal').style.display='flex';window.__pendingAquariumFishes=fishes;return;}chosenTankType='mini';return originalOpenSelect.call(this,fishes);}catch(e){showToast(e.message);}};
   window.closeTankChoice=()=>$('tank-choice-modal').style.display='none';
   window.chooseAquariumTank=function(type){chosenTankType=type;$('tank-choice-modal').style.display='none';if(originalOpenSelect)originalOpenSelect.call(window,window.__pendingAquariumFishes||[]);};
   const originalAssign=window.assignFishToShelf;
   window.assignFishToShelf=async function(fishName){
-    if(chosenTankType!=='rocky')return originalAssign.call(this,fishName);
+    const tank=getTankType(chosenTankType);
+    if(tank.id==='mini')return originalAssign.call(this,fishName);
     const user=auth.currentUser;if(!user)return;
-    try{const ref=playerDoc();await db.runTransaction(async tx=>{const snap=await tx.get(ref);const d=snap.data()||{};const fish=[...(d.fishes||[])];const idx=fish.findIndex(f=>f.name===fishName&&!f.cooking);if(idx<0)throw Error('Fish is no longer available.');const market=await db.collection('marketListings').where('sellerUid','==',user.uid).where('fishName','==',fishName).get();if(!market.empty)throw Error('This fish is listed on the Market.');const map={...(d.aquariumTanksMap||{})},room=`room_${currentAquariumRoomIndex}`,slots=[...(map[room]||new Array(8).fill(null))];if(!slots[selectedShelfIndex]){if(Number(d.rockyTanksCount||0)<=0)throw Error('No Rocky Tanks available.');tx.update(ref,{rockyTanksCount:Number(d.rockyTanksCount||0)-1});}slots[selectedShelfIndex]=fishName;map[room]=slots;tx.update(ref,{aquariumTanksMap:map});});showToast(`${fishName} placed in a Rocky Tank!`);$('modal-select-fish').style.display='none';const fresh=await getData();renderAquarium(fresh.username||'My',fresh.fishes||[],fresh.aquariumTanksMap||{},fresh.aquariumCosmeticsMap||{});loadBackpackData();chosenTankType='mini';}catch(e){showToast('Could not place fish: '+e.message);}
+    try{const ref=playerDoc();let savedTypes=null;await db.runTransaction(async tx=>{const snap=await tx.get(ref);const d=snap.data()||{};const fish=[...(d.fishes||[])];const idx=fish.findIndex(f=>f.name===fishName&&!f.cooking);if(idx<0)throw Error('Fish is no longer available.');const market=await db.collection('marketListings').where('sellerUid','==',user.uid).where('fishName','==',fishName).get();if(!market.empty)throw Error('This fish is listed on the Market.');const map={...(d.aquariumTanksMap||{})},room=`room_${currentAquariumRoomIndex}`,slots=[...(map[room]||new Array(8).fill(null))];const typesMap={...(d.aquariumTankTypesMap||{})},roomTypes=[...(Array.isArray(typesMap[room])?typesMap[room]:new Array(8).fill(null))];if(!slots[selectedShelfIndex]){const owned=Number(d[tank.field])||0;if(owned<=0)throw Error(`No ${tank.name}s available.`);tx.update(ref,{[tank.field]:owned-1});roomTypes[selectedShelfIndex]=tank.id;}else if(!roomTypes[selectedShelfIndex]){roomTypes[selectedShelfIndex]='mini';}slots[selectedShelfIndex]=fishName;map[room]=slots;typesMap[room]=roomTypes;savedTypes=typesMap;tx.update(ref,{aquariumTanksMap:map,aquariumTankTypesMap:typesMap});});showToast(`${fishName} placed in a ${tank.name}!`);$('modal-select-fish').style.display='none';const fresh=await getData();renderAquarium(fresh.username||'My',fresh.fishes||[],fresh.aquariumTanksMap||{},fresh.aquariumCosmeticsMap||{},fresh.aquariumTankTypesMap||savedTypes||{});loadBackpackData();chosenTankType='mini';}catch(e){showToast('Could not place fish: '+e.message);}
   };
   // Achievements for room purchase and Clippy exchange, plus cards in the existing list.
   function addAchievementCards(){const list=$('achievements-list');if(!list)return;const defs=[['expanding-lands','Expanding lands','These territories are now MINE!','Purchase a new Aquarium Room.'],['clippy-exchange','I give, I get',"Ok, but don't scam me.",'Successfully made an exchange with Clippy.']];defs.forEach(([id,name,desc,obj])=>{if($('ach-'+id))return;const card=document.createElement('div');card.id='ach-'+id;card.style.cssText='background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:.5';card.innerHTML=`<div><h4 style="margin:0 0 3px;color:#1e3a8a">${name}</h4><p style="margin:0 0 3px;font-weight:bold;font-size:.85rem">${desc}</p><span style="font-size:.75rem;color:#64748b">${obj}</span></div><div id="status-${id}" style="margin-left:auto;font-weight:bold;color:#e74c3c">Locked</div>`;list.appendChild(card);});}
