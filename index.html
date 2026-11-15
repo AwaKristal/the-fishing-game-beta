@@ -7686,7 +7686,7 @@
       const already=!!((after.achievements||{})[key]);
       if(already)return;
       await playerDoc().update({['achievements.'+key]:true});
-      if(id==='room')window.showAchievementUnlocked('Expanding lands','These territories are now MINE!','Buy a new aquarium room');
+      if(id==='room')window.showAchievementUnlocked('Expanding lands','These territories are now MINE!','Buy a new Aquarium Room.');
       else window.showAchievementUnlocked('Building imperium','Preparing army.','Buy a Mini Tank.');
     }catch(e){console.warn('Could not update purchase achievement:',e);}
   };
