@@ -783,6 +783,9 @@
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
+      <button class="rules-header-btn" onclick="openTutorialModal()" title="How to Play">
+        <img src="https://i.postimg.cc/NjwRPPmr/tutorial.png" alt="Tutorial">
+      </button>
     </div>
     <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
@@ -887,6 +890,23 @@
   <button id="adminBtn" class="admin-trigger-btn" onclick="openModal('modal-admin')">
     <img src="https://i.postimg.cc/L6SrYVZf/admin.png" alt="Admin Panel">
   </button>
+
+  <!-- How to Play Tutorial -->
+  <div id="modal-tutorial" class="modal-overlay" style="z-index:3500;">
+    <div class="modal-card" style="max-width:560px;">
+      <button class="modal-close" onclick="document.getElementById('modal-tutorial').style.display='none'">✖</button>
+      <h2 style="text-align:center;color:#1e3a8a;margin-top:0;">How to Play</h2>
+      <div style="display:grid;gap:10px;">
+        <div><strong>🎣 1. Go fishing</strong><p style="margin:4px 0;color:#475569;">Press Play, cast your line and catch fish. Different fish have different values.</p></div>
+        <div><strong>🎒 2. Manage your backpack</strong><p style="margin:4px 0;color:#475569;">Your catches and bait are stored in your Backpack. Equip bait to use it while fishing.</p></div>
+        <div><strong>💰 3. Earn and spend coins</strong><p style="margin:4px 0;color:#475569;">Sell fish in the Player Market or use the shop to buy useful items and upgrades.</p></div>
+        <div><strong>🐠 4. Build your aquarium</strong><p style="margin:4px 0;color:#475569;">Buy Mini Tanks, then place available fish in your aquarium. A fish already displayed cannot be placed again unless you own another one.</p></div>
+        <div><strong>👥 5. Add friends</strong><p style="margin:4px 0;color:#475569;">Search players by username, send friend requests and visit your friends' profiles and aquariums.</p></div>
+        <div><strong>🏆 6. Complete achievements</strong><p style="margin:4px 0;color:#475569;">Try different activities, collect rewards and unlock achievements as you progress.</p></div>
+      </div>
+      <button class="modal-action-btn" style="margin-top:14px;" onclick="document.getElementById('modal-tutorial').style.display='none'">Got it!</button>
+    </div>
+  </div>
 
   <!-- Rules Modal -->
   <div id="modal-rules" class="modal-overlay" style="z-index: 3500;">
@@ -1364,6 +1384,16 @@
         <span class="news-counter" id="newsCounter">0 / 0</span>
         <button id="nextNewsBtn" class="modal-action-btn" onclick="changeNews(1)">Next ▶</button>
       </div>
+    </div>
+  </div>
+
+  <div id="modal-trade" class="modal-overlay" style="z-index:3600;">
+    <div class="modal-card" style="max-width:460px;">
+      <button class="modal-close" onclick="document.getElementById('modal-trade').style.display='none'">✖</button>
+      <h2 style="text-align:center;margin-top:0;">Trade</h2>
+      <p style="text-align:center;color:#64748b;">Trading is unlocked when you and your friend both own the Trade pass.</p>
+      <p id="trade-status-message" style="text-align:center;"></p>
+      <p style="font-size:.85rem;color:#64748b;">The trade pass is an unlock. Trade offers are not enabled until the secure trade processor is deployed in Firebase.</p>
     </div>
   </div>
 
@@ -1921,6 +1951,10 @@
       document.getElementById('unread-news-badge').style.display = 'none';
     }
 
+    function openTutorialModal() {
+      document.getElementById('modal-tutorial').style.display = 'flex';
+    }
+
     function openRulesModal(isMandatory = false) {
       isMandatoryRulesView = isMandatory;
       const modal = document.getElementById('modal-rules');
@@ -2127,6 +2161,26 @@
       }
     }
 
+    async function openTradeModal(targetUid, targetName) {
+      const modal = document.getElementById('modal-trade');
+      const status = document.getElementById('trade-status-message');
+      status.textContent = 'Checking Trade passes...';
+      modal.style.display = 'flex';
+      try {
+        const me = auth.currentUser;
+        if (!me || !targetUid) throw new Error('Player not found.');
+        const refs = [db.collection('jugadores').doc(me.uid), db.collection('jugadores').doc(targetUid)];
+        const snaps = await Promise.all(refs.map(r => r.get()));
+        const mine = snaps[0].data() || {};
+        const theirs = snaps[1].data() || {};
+        const myFriends = mine.friends || [];
+        const theirFriends = theirs.friends || [];
+        if (!myFriends.includes(targetUid) || !theirFriends.includes(me.uid)) throw new Error('You must be mutual friends to trade.');
+        if (!mine.tradeOwned || !theirs.tradeOwned) throw new Error("Both players must purchase Trade from Bob\'s Shop for 1,000 Coins.");
+        status.textContent = `Trade unlocked with ${targetName}. The secure trade processor still needs to be deployed to Firebase before items or coins can be transferred.`;
+      } catch (e) { status.textContent = e.message; }
+    }
+
     async function handleProfileFriendButton() {
       const user = auth.currentUser;
       if (!user || !viewingTargetUid) return;
@@ -2142,7 +2196,7 @@
         const friendsList = myData.friends || [];
 
         if (friendsList.includes(viewingTargetUid)) {
-          showToast("You are already friends with this player.");
+          await openTradeModal(viewingTargetUid, viewingTargetUsername);
         } else {
           document.getElementById('addFriendUsernameInput').value = viewingTargetUsername;
           openFriendsModal();
@@ -4545,8 +4599,8 @@
             const myDoc = await db.collection('jugadores').doc(currentUser.uid).get();
             const friendsList = (myDoc.data() || {}).friends || [];
             if (friendsList.includes(uid)) {
-              btnRef.innerText = "Friends";
-              btnRef.style.background = "#1e3a8a";
+              btnRef.innerText = "Trade";
+              btnRef.style.background = "#16a34a";
             } else {
               btnRef.innerText = "Add Friend";
               btnRef.style.background = "#8e44ad";
@@ -5635,7 +5689,8 @@
     {id:'room',name:'Aquarium Room',price:2000,img:'https://i.postimg.cc/qMyRXL7Z/add.png',buy:async r=>r.update({aquariumRoomsOwned:firebase.firestore.FieldValue.increment(1)})},
     {id:'grill',name:'Grill',price:2500,img:IMG.grill,buy:async (r,d)=>{if(d.grillOwned)throw Error('You already own a Grill.');r.update({grillOwned:true})}},
     {id:'sandcastle',name:'Sandcastle',price:500,img:IMG.sandcastle,buy:async r=>r.update({})},
-    {id:'verity',name:'Verity',price:350,img:IMG.verity,buy:async r=>r.update({})}
+    {id:'verity',name:'Verity',price:350,img:IMG.verity,buy:async r=>r.update({})},
+    {id:'trade',name:'Trade',price:1000,img:'https://i.postimg.cc/NMG4CPhB/trade.png',buy:async r=>r.update({tradeOwned:true})}
   ];
   // Correct cosmetic purchase uses a transaction so the map is merged, not replaced.
   async function buyShopItem(id){
@@ -5647,11 +5702,13 @@
         const d=snap.data(), item=SHOP_ITEMS.find(x=>x.id===id); if(!item)throw Error('Unknown item.');
         if((d.coins||0)<item.price)throw Error(`Not enough Coins. You need ${item.price}.`);
         if(id==='grill'&&d.grillOwned)throw Error('You can own only one Grill.');
+        if(id==='trade'&&d.tradeOwned)throw Error('You already own Trade.');
         const updates={coins:(d.coins||0)-item.price};
         if(id==='miniTank')updates.miniTanksCount=(d.miniTanksCount||0)+1;
         if(id==='worm')updates.wormBaitsCount=(d.wormBaitsCount||0)+1;
         if(id==='room')updates.aquariumRoomsOwned=(d.aquariumRoomsOwned||1)+1;
         if(id==='grill')updates.grillOwned=true;
+        if(id==='trade')updates.tradeOwned=true;
         if(id==='sandcastle'||id==='verity'){const inv={...(d.cosmeticsInventory||{})};const cosmeticName=id==='sandcastle'?'Sandcastle':'Verity';inv[cosmeticName]=(inv[cosmeticName]||0)+1;updates.cosmeticsInventory=inv;}
         tx.update(ref,updates);
       });
@@ -5665,7 +5722,7 @@
     el.innerHTML=SHOP_ITEMS.slice(shopPage*4,shopPage*4+4).map(i=>`<div class="rebuild-item"><img src="${i.img}"><strong>${esc(i.name)}</strong><p>${i.price} Coins</p><button class="rebuild-btn" onclick="buyShopItem('${i.id}')">Buy</button></div>`).join('');
     document.getElementById('shop-page-label').textContent=`Page ${shopPage+1} / ${Math.ceil(SHOP_ITEMS.length/4)}`;
   }
-  window.openPaginatedShop=openPaginatedShop;window.changeShopPage=changeShopPage;window.buyShopItem=buyShopItem;
+  window.openPaginatedShop=openPaginatedShop;window.changeShopPage=changeShopPage;window.buyShopItem=buyShopItem;window.openTradeModal=openTradeModal;
 
   // Bait selection and consumption: only one Equip Bait control, both bait types persist.
   async function openBaitSelector(){
