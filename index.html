@@ -1715,10 +1715,10 @@
           <strong style="color:#1e293b;">Item Rewards</strong>
           <button type="button" class="modal-action-btn" style="background:#2980b9;padding:7px 12px;" onclick="addPromoRewardRow()">+ Add Reward</button>
         </div>
-        <p style="font-size:.82rem;color:#64748b;margin:0 0 10px;">Choose Fish, Bait, Cosmetic, Tank or Pearls, then enter the exact name and quantity.</p>
+        <p style="font-size:.82rem;color:#64748b;margin:0 0 10px;">Choose Fish, Bait, Cosmetic, Tank or Pearls. Enter the exact item name for items; for Pearls just set the amount.</p>
         <div id="adminPromoRewardRows">
           <div class="promo-reward-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
-            <select class="promo-reward-type" aria-label="Reward category" style="flex:1;min-width:105px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
+            <select class="promo-reward-type" aria-label="Reward category" onchange="syncPromoRewardRow(this)" style="flex:1;min-width:105px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
               <option value="fish">Fish</option>
               <option value="bait">Bait</option>
               <option value="cosmetic">Cosmetic</option><option value="tank">Tank</option><option value="pearls">Pearls</option>
@@ -7041,12 +7041,19 @@
   const originalTargetInventoryLoader=window.loadTargetUserInventoryForAdmin;
   window.loadTargetUserInventoryForAdmin=async function(){if(originalTargetInventoryLoader)await originalTargetInventoryLoader();};
 
-  // Promo codes support multiple exact-name Fish, Bait and Cosmetic rewards.
+  // Promo codes support multiple exact-name Fish, Bait, Cosmetic, Tank and Pearl rewards.
+  window.syncPromoRewardRow=function(selectEl){
+    const row=selectEl&&selectEl.closest('.promo-reward-row');if(!row)return;
+    const isPearls=selectEl.value==='pearls';
+    const nameInput=row.querySelector('.promo-reward-name'),qtyInput=row.querySelector('.promo-reward-qty');
+    if(nameInput){nameInput.style.display=isPearls?'none':'';if(isPearls)nameInput.value='';}
+    if(qtyInput)qtyInput.placeholder=isPearls?'Pearls amount':'Qty';
+  };
   window.addPromoRewardRow=function(){
     const wrap=document.getElementById('adminPromoRewardRows');if(!wrap)return;
     const row=document.createElement('div');row.className='promo-reward-row';
     row.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;';
-    row.innerHTML=`<select class="promo-reward-type" aria-label="Reward category" style="flex:1;min-width:105px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;"><option value="fish">Fish</option><option value="bait">Bait</option><option value="cosmetic">Cosmetic</option><option value="tank">Tank</option><option value="pearls">Pearls</option></select>
+    row.innerHTML=`<select class="promo-reward-type" aria-label="Reward category" onchange="syncPromoRewardRow(this)" style="flex:1;min-width:105px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;"><option value="fish">Fish</option><option value="bait">Bait</option><option value="cosmetic">Cosmetic</option><option value="tank">Tank</option><option value="pearls">Pearls</option></select>
       <input class="promo-reward-name" type="text" placeholder="Exact item name" aria-label="Exact item name" style="flex:2;min-width:145px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
       <input class="promo-reward-qty" type="number" min="1" step="1" value="1" aria-label="Reward quantity" style="width:75px;min-width:65px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
       <button type="button" aria-label="Remove reward" onclick="this.closest('.promo-reward-row').remove()" style="border:0;border-radius:8px;background:#fee2e2;color:#b91c1c;padding:9px 12px;font-weight:700;">×</button>`;
@@ -7065,9 +7072,10 @@
         const type=row.querySelector('.promo-reward-type').value;
         const typedName=(row.querySelector('.promo-reward-name')?.value||'').trim();
         const quantity=Number(row.querySelector('.promo-reward-qty').value);
-        if(!typedName && quantity===1)return; // Ignore the untouched starter row for coin-only codes.
-        if(!typedName)throw Error('Enter the exact name for every item reward.');
-        if(!Number.isSafeInteger(quantity)||quantity<1)throw Error('Every item reward needs a quantity of at least 1.');
+        const isPearls=type==='pearls';
+        if(!isPearls && !typedName && quantity===1)return; // Ignore the untouched starter row for coin-only codes.
+        if(!isPearls && !typedName)throw Error('Enter the exact name for every item reward.');
+        if(!Number.isSafeInteger(quantity)||quantity<1)throw Error(isPearls?'Pearl rewards need a whole amount of at least 1.':'Every item reward needs a quantity of at least 1.');
         let name=typedName;
         if(type==='fish'){
           const match=ALLOWED_FISH_TYPES.find(f=>f.name.toLowerCase()===typedName.toLowerCase());
@@ -7081,7 +7089,7 @@
           const match=['Mini Tank','Rocky Tank'].find(x=>x.toLowerCase()===typedName.toLowerCase());
           if(!match)throw Error('Tank rewards must be Mini Tank or Rocky Tank.');
           name=match;
-        }else if(type==='pearls'){
+        }else if(isPearls){
           name='Pearls';
         }else if(type!=='cosmetic')throw Error('Invalid item category.');
         items.push({type,name,quantity});
@@ -7103,7 +7111,7 @@
       if(snap.empty){c.textContent='No active codes.';return;}
       c.innerHTML=snap.docs.map(d=>{
         const x=d.data()||{},rewards=[x.coins?`${x.coins} Coins`:null];
-        (x.items||[]).forEach(it=>{const legacyTung=String(it.name||'').toLowerCase()==='mini tung cube';rewards.push(`${it.quantity} ${it.name} (${legacyTung?'bait':it.type})`);});
+        (x.items||[]).forEach(it=>{const legacyTung=String(it.name||'').toLowerCase()==='mini tung cube';rewards.push(`${it.quantity} ${it.name}${it.type==='pearls'?'':' ('+(legacyTung?'bait':it.type)+')'}`);});
         if(!x.items){if(x.baitName)rewards.push(`${x.baitQuantity||1} ${x.baitName}`);if(x.wormBaits)rewards.push(`${x.wormBaits} Worm Bait`);if(x.miniTunaCubes)rewards.push(`${x.miniTunaCubes} Mini Tuna Cube`);if(x.bonusFish)rewards.push(x.bonusFish);if(x.cosmeticName)rewards.push(`${x.cosmeticQuantity||1} ${x.cosmeticName}`);Object.entries(x.cosmetics||{}).forEach(([n,q])=>rewards.push(`${q} ${n}`));}
         return `<div class="admin-code-item"><strong>${esc(d.id)}</strong><span style="flex:1;margin:0 8px;">${esc(rewards.filter(Boolean).join(' + ')||'No rewards')}</span><button type="button" style="background:#e74c3c;color:#fff;border:none;padding:5px 9px;border-radius:5px;cursor:pointer;" onclick="adminDeleteCode('${esc(d.id)}')">Delete</button></div>`;
       }).join('');
