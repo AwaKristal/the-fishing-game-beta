@@ -1411,7 +1411,7 @@
             <strong>Your offer</strong><div id="trade-my-offer" style="font-size:.85rem;margin-top:6px;">Loading...</div>
           </div>
           <div style="background:#f0fdf4;padding:10px;border-radius:10px;">
-            <strong>Their offer</strong><div id="trade-their-offer" style="font-size:.85rem;margin-top:6px;">Waiting...</div>
+            <strong>What your friend is offering you</strong><div id="trade-their-offer" style="font-size:.85rem;margin-top:6px;">Waiting...</div>
           </div>
         </div>
         <div style="border:1px solid #cbd5e1;border-radius:10px;padding:12px;">
@@ -2288,9 +2288,28 @@
     }
 
     function renderTradeOffer(offer) {
-      const rows=[`<div>💰 ${Number(offer.coins)||0} Coins</div>`];
-      (offer.items||[]).forEach(it=>rows.push(`<div>${escapeHtml(it.name)} × ${it.quantity}</div>`));
-      return rows.join('')||'Nothing offered yet.';
+      const rows=[`<div>💰 <strong>${Number(offer.coins)||0} Coins</strong></div>`];
+      (offer.items||[]).forEach(it=>{
+        const kind=it.kind==='fish'?'🐟 Fish':it.kind==='cosmetic'?'🎨 Cosmetic':'🪱 Bait';
+        const cooked=it.kind==='fish'&&it.cooking&&it.cooking!=='raw'?` (${escapeHtml(it.cooking)} cooked)`:'';
+        rows.push(`<div style="padding:3px 0">${kind}: <strong>${escapeHtml(it.name)}</strong>${cooked} × ${Number(it.quantity)||1}</div>`);
+      });
+      return rows.length>1?rows.join(''):'Nothing offered yet.';
+    }
+
+    function getAquariumPlacedFishCounts(data){
+      const counts={};
+      Object.values(data.aquariumTanksMap||{}).forEach(room=>{
+        (Array.isArray(room)?room:[]).forEach(name=>{if(name)counts[name]=(counts[name]||0)+1;});
+      });
+      return counts;
+    }
+    function getAquariumPlacedCosmeticCounts(data){
+      const counts={};
+      // Cosmetics placed in tank slots are already deducted from cosmeticsInventory.
+      // The legacy Sandcastle toggle is separate, so protect its equipped copy here.
+      if(data.aquariumSandcastle) counts.Sandcastle=1;
+      return counts;
     }
 
     async function populateTradeItemSelect(){
@@ -2298,12 +2317,24 @@
       try{
         const snap=await db.collection('jugadores').doc(auth.currentUser.uid).get(),d=snap.data()||{};
         const opts=[{value:'',label:'Choose an item...'}];
+        const placedFish=getAquariumPlacedFishCounts(d),fishGroups={};
         (d.fishes||[]).forEach(f=>{
           const cooking=f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw';
-          const value=JSON.stringify({kind:'fish',name:f.name,cooking});
-          if(!opts.some(o=>o.value===value))opts.push({value,label:`Fish: ${f.name} (${cooking})`});
+          const key=`${f.name}::${cooking}`;
+          (fishGroups[key]||(fishGroups[key]={name:f.name,cooking,total:0})).total++;
         });
-        Object.entries(d.cosmeticsInventory||{}).forEach(([name,n])=>{if(n>0)opts.push({value:JSON.stringify({kind:'cosmetic',name}),label:`Cosmetic: ${name} (${n})`});});
+        const protectedRemaining={...placedFish};
+        Object.values(fishGroups).forEach(g=>{
+          const protectedHere=Math.min(g.total,protectedRemaining[g.name]||0);
+          protectedRemaining[g.name]=Math.max(0,(protectedRemaining[g.name]||0)-protectedHere);
+          const available=Math.max(0,g.total-protectedHere);
+          if(available>0)opts.push({value:JSON.stringify({kind:'fish',name:g.name,cooking:g.cooking}),label:`Fish: ${g.name} (${g.cooking}) — Available: ${available}`});
+        });
+        const placedCosmetics=getAquariumPlacedCosmeticCounts(d);
+        Object.entries(d.cosmeticsInventory||{}).forEach(([name,n])=>{
+          const available=Math.max(0,(Number(n)||0)-(placedCosmetics[name]||0));
+          if(available>0)opts.push({value:JSON.stringify({kind:'cosmetic',name}),label:`Cosmetic: ${name} (${available})`});
+        });
         if((d.wormBaitsCount||0)>0)opts.push({value:JSON.stringify({kind:'bait',name:'Worm Bait'}),label:`Bait: Worm Bait (${d.wormBaitsCount})`});
         if((d.miniTunaCubesCount||0)>0)opts.push({value:JSON.stringify({kind:'bait',name:'Mini Tuna Cube'}),label:`Bait: Mini Tuna Cube (${d.miniTunaCubesCount})`});
         sel.innerHTML=opts.map(o=>`<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('');
@@ -2328,8 +2359,17 @@
         const quantity=Number(document.getElementById('trade-item-quantity').value);
         if(!Number.isSafeInteger(quantity)||quantity<1) throw Error('Enter a valid quantity.');
         const inv=(await db.collection('jugadores').doc(auth.currentUser.uid).get()).data()||{};
-        if(item.kind==='fish' && (inv.fishes||[]).filter(f=>f.name===item.name && (f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===item.cooking).length<quantity) throw Error('Not enough fish.');
-        if(item.kind==='cosmetic' && Number(inv.cosmeticsInventory?.[item.name]||0)<quantity) throw Error('Not enough cosmetics.');
+        if(item.kind==='fish'){
+          const placed=getAquariumPlacedFishCounts(inv)[item.name]||0;
+          const sameName=(inv.fishes||[]).filter(f=>f.name===item.name);
+          const unplaced=sameName.slice(placed);
+          const available=unplaced.filter(f=>(f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===item.cooking).length;
+          if(available<quantity) throw Error('Not enough unplaced fish. Fish displayed in your Aquarium cannot be traded.');
+        }
+        if(item.kind==='cosmetic'){
+          const available=Math.max(0,Number(inv.cosmeticsInventory?.[item.name]||0)-(getAquariumPlacedCosmeticCounts(inv)[item.name]||0));
+          if(available<quantity) throw Error('Not enough unplaced cosmetics. Cosmetics displayed in your Aquarium cannot be traded.');
+        }
         if(item.kind==='bait' && item.name==='Worm Bait' && Number(inv.wormBaitsCount||0)<quantity) throw Error('Not enough Worm Baits.');
         if(item.kind==='bait' && item.name==='Mini Tuna Cube' && Number(inv.miniTunaCubesCount||0)<quantity) throw Error('Not enough Mini Tuna Cubes.');
         await writeMyTradeOffer(o=>({...o,items:[...o.items,{...item,quantity}]})); showToast('Item added to your offer.');
@@ -2359,8 +2399,21 @@
             const out={...src,coins:Number(src.coins||0)-Number(offer.coins||0),fishes:[...(src.fishes||[])],cosmeticsInventory:{...(src.cosmeticsInventory||{})},wormBaitsCount:Number(src.wormBaitsCount||0),miniTunaCubesCount:Number(src.miniTunaCubesCount||0)};
             const incoming=[];
             for(const it of offer.items||[]){const q=Number(it.quantity);if(!Number.isSafeInteger(q)||q<1)throw Error('Invalid item quantity.');
-              if(it.kind==='fish'){for(let n=0;n<q;n++){const i=out.fishes.findIndex(f=>f.name===it.name&&(f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===(it.cooking||'raw'));if(i<0)throw Error('Fish inventory changed.');incoming.push(out.fishes.splice(i,1)[0]);}}
-              else if(it.kind==='cosmetic'){if(Number(out.cosmeticsInventory[it.name]||0)<q)throw Error('Cosmetic inventory changed.');out.cosmeticsInventory[it.name]-=q;}
+              if(it.kind==='fish'){
+                const protectedCount=getAquariumPlacedFishCounts(src)[it.name]||0;
+                for(let n=0;n<q;n++){
+                  const sameName=[];out.fishes.forEach((f,index)=>{if(f.name===it.name)sameName.push(index);});
+                  const unplaced=sameName.slice(protectedCount);
+                  const eligible=unplaced.filter(index=>{const f=out.fishes[index];return (f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===(it.cooking||'raw');});
+                  if(!eligible.length)throw Error('Fish inventory changed or the fish is placed in your Aquarium.');
+                  incoming.push(out.fishes.splice(eligible[eligible.length-1],1)[0]);
+                }
+              }
+              else if(it.kind==='cosmetic'){
+                const protectedCount=getAquariumPlacedCosmeticCounts(src)[it.name]||0;
+                if(Number(out.cosmeticsInventory[it.name]||0)-protectedCount<q)throw Error('Cosmetic inventory changed or the cosmetic is placed in your Aquarium.');
+                out.cosmeticsInventory[it.name]-=q;
+              }
               else if(it.kind==='bait'&&it.name==='Worm Bait'){if(out.wormBaitsCount<q)throw Error('Bait inventory changed.');out.wormBaitsCount-=q;}
               else if(it.kind==='bait'&&it.name==='Mini Tuna Cube'){if(out.miniTunaCubesCount<q)throw Error('Bait inventory changed.');out.miniTunaCubesCount-=q;}else throw Error('Unsupported item.');
             } return {out,incoming};
@@ -2401,26 +2454,19 @@
           db.collection('tradeRequests').where('receiverUid', '==', user.uid).get(),
           db.collection('tradeRequests').where('senderUid', '==', user.uid).get()
         ]);
-        const inDocs = inSnap.docs.filter(d => d.data().status === 'pending');
-        const outDocs = outSnap.docs.filter(d => d.data().status === 'pending');
+        const inDocs = inSnap.docs.filter(d => ['pending','accepted'].includes(d.data().status));
+        const outDocs = outSnap.docs.filter(d => ['pending','accepted'].includes(d.data().status));
         if (!inDocs.length) incoming.innerHTML = '<p style="color:#64748b;text-align:center;">No incoming Trade requests.</p>';
         else incoming.innerHTML = inDocs.map(doc => {
           const r = doc.data();
-          return `<div style="background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <span>Trade request from: <strong>${escapeHtml(r.senderName || 'Player')}</strong></span>
-            <div style="display:flex;gap:6px;flex-shrink:0;">
-              <button type="button" class="modal-action-btn" style="background:#27ae60;padding:4px 8px;font-size:.75rem;width:auto;" onclick="acceptTradeInvitation('${doc.id}')">Accept</button>
-              <button type="button" class="modal-action-btn" style="background:#e74c3c;padding:4px 8px;font-size:.75rem;width:auto;" onclick="respondToTradeRequest('${doc.id}','rejected')">Decline</button>
-            </div>
-          </div>`;
+          if(r.status==='accepted') return `<div style="background:#ecfdf5;padding:10px;border-radius:8px;border:1px solid #86efac;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Trade with <strong>${escapeHtml(r.senderName || 'Player')}</strong> · Accepted</span><button type="button" class="modal-action-btn" style="background:#16a34a;padding:5px 9px;font-size:.78rem;width:auto;" onclick="openTradeSession('${doc.id}')">Open Trade</button></div>`;
+          return `<div style="background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Trade request from: <strong>${escapeHtml(r.senderName || 'Player')}</strong></span><div style="display:flex;gap:6px;flex-shrink:0;"><button type="button" class="modal-action-btn" style="background:#27ae60;padding:4px 8px;font-size:.75rem;width:auto;" onclick="acceptTradeInvitation('${doc.id}')">Accept</button><button type="button" class="modal-action-btn" style="background:#e74c3c;padding:4px 8px;font-size:.75rem;width:auto;" onclick="respondToTradeRequest('${doc.id}','rejected')">Decline</button></div></div>`;
         }).join('');
         if (!outDocs.length) outgoing.innerHTML = '<p style="color:#64748b;text-align:center;">You have no sent Trade requests waiting.</p>';
         else outgoing.innerHTML = outDocs.map(doc => {
           const r = doc.data();
-          return `<div style="background:#f8fafc;padding:9px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <span>Sent to: <strong>${escapeHtml(r.receiverName || 'Player')}</strong></span>
-            <button type="button" class="modal-action-btn" style="background:#64748b;padding:4px 8px;font-size:.75rem;width:auto;" onclick="respondToTradeRequest('${doc.id}','cancelled')">Cancel</button>
-          </div>`;
+          if(r.status==='accepted') return `<div style="background:#ecfdf5;padding:10px;border-radius:8px;border:1px solid #86efac;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Trade with <strong>${escapeHtml(r.receiverName || 'Player')}</strong> · Accepted</span><button type="button" class="modal-action-btn" style="background:#16a34a;padding:5px 9px;font-size:.78rem;width:auto;" onclick="openTradeSession('${doc.id}')">Open Trade</button></div>`;
+          return `<div style="background:#f8fafc;padding:9px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;"><span>Sent to: <strong>${escapeHtml(r.receiverName || 'Player')}</strong></span><button type="button" class="modal-action-btn" style="background:#64748b;padding:4px 8px;font-size:.75rem;width:auto;" onclick="respondToTradeRequest('${doc.id}','cancelled')">Cancel</button></div>`;
         }).join('');
       } catch (err) {
         incoming.innerHTML = '<p style="color:#e74c3c;text-align:center;">Could not load Trade requests. Check Firestore rules.</p>';
@@ -5994,7 +6040,7 @@
     el.innerHTML=SHOP_ITEMS.slice(shopPage*4,shopPage*4+4).map(i=>`<div class="rebuild-item"><img src="${i.img}"><strong>${esc(i.name)}</strong><p>${i.price} Coins</p><button class="rebuild-btn" onclick="buyShopItem('${i.id}')">Buy</button></div>`).join('');
     document.getElementById('shop-page-label').textContent=`Page ${shopPage+1} / ${Math.ceil(SHOP_ITEMS.length/4)}`;
   }
-  window.openPaginatedShop=openPaginatedShop;window.changeShopPage=changeShopPage;window.buyShopItem=buyShopItem;window.openTradeModal=openTradeModal;window.acceptTradeInvitation=acceptTradeInvitation;window.closeTradeModal=closeTradeModal;window.addTradeItemToOffer=addTradeItemToOffer;window.saveTradeCoinsOffer=saveTradeCoinsOffer;window.clearMyTradeOffer=clearMyTradeOffer;window.confirmCurrentTrade=confirmCurrentTrade;
+  window.openPaginatedShop=openPaginatedShop;window.changeShopPage=changeShopPage;window.buyShopItem=buyShopItem;window.openTradeModal=openTradeModal;window.acceptTradeInvitation=acceptTradeInvitation;window.openTradeSession=openTradeSession;window.closeTradeModal=closeTradeModal;window.addTradeItemToOffer=addTradeItemToOffer;window.saveTradeCoinsOffer=saveTradeCoinsOffer;window.clearMyTradeOffer=clearMyTradeOffer;window.confirmCurrentTrade=confirmCurrentTrade;
     window.respondToTradeRequest=respondToTradeRequest;
 
   // Bait selection and consumption: only one Equip Bait control, both bait types persist.
