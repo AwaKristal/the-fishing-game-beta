@@ -1235,7 +1235,7 @@
           <h3 id="profile-modal-name" style="margin:0; font-size:1.2rem;">Username</h3>
           <p id="profile-joined-date" style="margin:2px 0; font-size:0.75rem; color:#64748b; font-weight:bold;">Joined in: -</p>
           <p id="verification-status" style="margin:3px 0; font-size:0.8rem; color:#e74c3c; display:none;">Email not verified</p>
-          <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="profile-coins">0</span> | 🐟 Fish: <span id="profile-fish-count">0</span></p>
+          <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="profile-coins">0</span> | ⚪ Pearls: <span id="profile-pearls">0</span> | 🐟 Fish: <span id="profile-fish-count">0</span></p>
         </div>
       </div>
 
@@ -1301,7 +1301,7 @@
         <div>
           <h3 id="view-profile-name" style="margin:0; font-size:1.2rem;">Username</h3>
           <p id="view-profile-joined-date" style="margin:2px 0; font-size:0.75rem; color:#64748b; font-weight:bold;">Joined in: -</p>
-          <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="view-profile-coins">0</span> | 🐟 Fish: <span id="view-profile-fish-count">0</span></p>
+          <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="view-profile-coins">0</span> | ⚪ Pearls: <span id="view-profile-pearls">0</span> | 🐟 Fish: <span id="view-profile-fish-count">0</span></p>
         </div>
       </div>
       <div class="form-group">
@@ -4829,7 +4829,8 @@
           document.getElementById('profile-bio-display').innerText = data.bio || "No bio yet.";
           document.getElementById('profile-edit-username').value = data.username || "";
           document.getElementById('profile-edit-bio').value = data.bio || "";
-          document.getElementById('profile-coins').innerText = data.coins || 0;
+          document.getElementById('profile-coins').innerText = Number(data.coins) || 0;
+          document.getElementById('profile-pearls').innerText = Number(data.pearls) || 0;
           document.getElementById('profile-fish-count').innerText = (data.fishes || []).length;
           document.getElementById('profile-current-password').value = "";
           const newPassEl = document.getElementById('profile-new-password');
@@ -5132,8 +5133,15 @@
       viewingTargetTanksMap = tanksMap;
       try {
         const targetAquariumDoc = await db.collection('jugadores').doc(uid).get();
-        viewingTargetCosmeticsMap = targetAquariumDoc.exists ? (targetAquariumDoc.data().aquariumCosmeticsMap || {}) : {};
-      } catch (_) { viewingTargetCosmeticsMap = {}; }
+        const targetData = targetAquariumDoc.exists ? (targetAquariumDoc.data() || {}) : {};
+        viewingTargetCosmeticsMap = targetData.aquariumCosmeticsMap || {};
+        const pearlsEl = document.getElementById('view-profile-pearls');
+        if (pearlsEl) pearlsEl.innerText = Number(targetData.pearls) || 0;
+      } catch (_) {
+        viewingTargetCosmeticsMap = {};
+        const pearlsEl = document.getElementById('view-profile-pearls');
+        if (pearlsEl) pearlsEl.innerText = '0';
+      }
       currentAquariumRoomIndex = 0;
       
       document.getElementById('view-profile-name').innerText = username;
@@ -7715,7 +7723,7 @@
     if(workshopCountdownTimer)clearInterval(workshopCountdownTimer);
     if(pending){workshopCountdownTimer=setInterval(()=>{const left=Math.max(0,readyAt-Date.now()),el=$('rocky-craft-status');if(el)el.textContent=left>0?'Ready in '+formatWorkshopTime(left):'Your Rocky Tank is ready!';const b=$('clippy-workshop-items').querySelector('button');if(b){b.disabled=left>0;b.style.opacity=left>0?'.55':'1';b.style.cursor=left>0?'not-allowed':'pointer';}if(left<=0&&workshopCountdownTimer){clearInterval(workshopCountdownTimer);workshopCountdownTimer=null;}},1000);}
   }
-  window.openClippyWorkshop=async function(){try{const d=await getData();if(Number(d.pearls||0)<250&&!d.rockyTankCrafting){clippyUnlocked=false;clippyWorkshopClick();return;}clippyUnlocked=true;workshopPage=0;renderClippyShop(d);$('clippy-workshop-modal').style.display='flex';}catch(e){showToast(e.message);}};
+  window.openClippyWorkshop=async function(){try{const d=await getData();if(!d.clippyWorkshopUnlocked&&Number(d.pearls||0)<250&&!d.rockyTankCrafting){clippyUnlocked=false;clippyWorkshopClick();return;}clippyUnlocked=true;workshopPage=0;renderClippyShop(d);$('clippy-workshop-modal').style.display='flex';}catch(e){showToast(e.message);}};
   window.changeClippyPage=()=>{workshopPage=0;};
   window.craftRockyTank=async function(){
     try{
@@ -7754,7 +7762,7 @@
   // Add chest award to the existing successful catch handler without replacing fishing logic.
   // Aquarium tank choice: only show a choice when the player owns a Rocky Tank.
   const originalOpenSelect=window.openSelectFishModal;
-  window.openSelectFishModal=async function(fishes){try{const d=await getData();const rocky=Number(d.rockyTanksCount||0);const mini=Number(d.miniTanksCount||0);if(rocky>0||mini>0){const choices=[];if(mini>0)choices.push(`<div class="tank-choice-card" onclick="chooseAquariumTank('mini')"><span style="position:absolute;background:#3498db;color:white;font-size:.7rem;font-weight:bold;padding:1px 6px;border-radius:10px">Available: x${mini}</span><img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Mini Tank"><strong>Mini Tank</strong><button type="button" class="modal-action-btn">Select</button></div>`);if(rocky>0)choices.push(`<div class="tank-choice-card" onclick="chooseAquariumTank('rocky')"><span style="position:absolute;background:#3498db;color:white;font-size:.7rem;font-weight:bold;padding:1px 6px;border-radius:10px">Available: x${rocky}</span><img src="${ROCKY_IMG}" alt="Rocky Tank"><strong>Rocky Tank</strong><button type="button" class="modal-action-btn">Select</button></div>`);$('tank-choice-options').innerHTML=choices.join('');$('tank-choice-modal').style.display='flex';window.__pendingAquariumFishes=fishes;return;}chosenTankType='mini';return originalOpenSelect.call(this,fishes);}catch(e){showToast(e.message);}};
+  window.openSelectFishModal=async function(fishes){try{const d=await getData();const rocky=Number(d.rockyTanksCount||0);const mini=Number(d.miniTanksCount||0);if(rocky>0||mini>0){const choices=[];if(mini>0)choices.push(`<div class="tank-choice-card" onclick="chooseAquariumTank('mini')"><span style="position:absolute;background:#3498db;color:white;font-size:.7rem;font-weight:bold;padding:1px 6px;border-radius:10px">Available: x${mini}</span><img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Mini Tank"><strong>Mini Tank</strong><button type="button" class="modal-action-btn">Select</button></div>`);if(rocky>0)choices.push(`<div class="tank-choice-card" onclick="chooseAquariumTank('rocky')"><span style="position:absolute;background:#3498db;color:white;font-size:.7rem;font-weight:bold;padding:1px 6px;border-radius:10px">Available: x${rocky}</span><img src="https://i.postimg.cc/CLntQ0cL/Tanque-piedroso.png" alt="Rocky Tank"><strong>Rocky Tank</strong><button type="button" class="modal-action-btn">Select</button></div>`);$('tank-choice-options').innerHTML=choices.join('');$('tank-choice-modal').style.display='flex';window.__pendingAquariumFishes=fishes;return;}chosenTankType='mini';return originalOpenSelect.call(this,fishes);}catch(e){showToast(e.message);}};
   window.closeTankChoice=()=>$('tank-choice-modal').style.display='none';
   window.chooseAquariumTank=function(type){chosenTankType=type;$('tank-choice-modal').style.display='none';if(originalOpenSelect)originalOpenSelect.call(window,window.__pendingAquariumFishes||[]);};
   const originalAssign=window.assignFishToShelf;
