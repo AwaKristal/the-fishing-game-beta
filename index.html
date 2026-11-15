@@ -10,6 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
 
   <!-- Google reCAPTCHA v2 API -->
   <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
@@ -959,6 +960,7 @@
         <button id="tab-friends-list-btn" class="tab-btn active" onclick="switchFriendsTab('list')">My Friends</button>
         <button id="tab-friends-add-btn" class="tab-btn" onclick="switchFriendsTab('add')">Add Friend</button>
         <button id="tab-friends-req-btn" class="tab-btn" onclick="switchFriendsTab('requests')">Requests (<span id="friend-req-count">0</span>)</button>
+        <button id="tab-friends-trade-btn" class="tab-btn" onclick="switchFriendsTab('trade')">Trade Requests (<span id="trade-req-count">0</span>)</button>
       </div>
 
       <div id="friends-list-section">
@@ -979,6 +981,17 @@
       <div id="friends-requests-section" style="display: none;">
         <div id="friend-requests-container" style="max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
           <p style="color:#64748b; text-align:center;">Loading requests...</p>
+        </div>
+      </div>
+
+      <div id="friends-trade-section" style="display:none;">
+        <h3 style="margin:4px 0 8px;font-size:1rem;">Incoming Trade Requests</h3>
+        <div id="trade-requests-incoming" style="max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+          <p style="color:#64748b;text-align:center;">Loading trade requests...</p>
+        </div>
+        <h3 style="margin:14px 0 8px;font-size:1rem;">Sent Trade Requests</h3>
+        <div id="trade-requests-outgoing" style="max-height:150px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+          <p style="color:#64748b;text-align:center;">Loading sent requests...</p>
         </div>
       </div>
     </div>
@@ -1388,12 +1401,34 @@
   </div>
 
   <div id="modal-trade" class="modal-overlay" style="z-index:3600;">
-    <div class="modal-card" style="max-width:460px;">
-      <button class="modal-close" onclick="document.getElementById('modal-trade').style.display='none'">✖</button>
+    <div class="modal-card" style="max-width:560px;max-height:90vh;overflow:auto;">
+      <button class="modal-close" onclick="closeTradeModal()">✖</button>
       <h2 style="text-align:center;margin-top:0;">Trade</h2>
-      <p style="text-align:center;color:#64748b;">Trading is unlocked when you and your friend both own the Trade pass.</p>
-      <p id="trade-status-message" style="text-align:center;"></p>
-      <p style="font-size:.85rem;color:#64748b;">The trade pass is an unlock. Trade offers are not enabled until the secure trade processor is deployed in Firebase.</p>
+      <p id="trade-status-message" style="text-align:center;color:#64748b;">Choose what you want to offer.</p>
+      <div id="trade-workspace" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+          <div style="background:#eff6ff;padding:10px;border-radius:10px;">
+            <strong>Your offer</strong><div id="trade-my-offer" style="font-size:.85rem;margin-top:6px;">Loading...</div>
+          </div>
+          <div style="background:#f0fdf4;padding:10px;border-radius:10px;">
+            <strong>Their offer</strong><div id="trade-their-offer" style="font-size:.85rem;margin-top:6px;">Waiting...</div>
+          </div>
+        </div>
+        <div style="border:1px solid #cbd5e1;border-radius:10px;padding:12px;">
+          <h3 style="margin:0 0 8px;font-size:1rem;">Add to your offer</h3>
+          <label style="display:block;font-size:.82rem;margin-bottom:4px;">Item</label>
+          <select id="trade-item-select" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:8px;"></select>
+          <label style="display:block;font-size:.82rem;margin-bottom:4px;">Quantity</label>
+          <input id="trade-item-quantity" type="number" min="1" step="1" value="1" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:10px;">
+          <button type="button" class="modal-action-btn" style="background:#2563eb;" onclick="addTradeItemToOffer()">Add item</button>
+          <label style="display:block;font-size:.82rem;margin:12px 0 4px;">Coins to offer</label>
+          <input id="trade-coins-offer" type="number" min="0" step="1" value="0" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:8px;">
+          <button type="button" class="modal-action-btn" style="background:#0f766e;" onclick="saveTradeCoinsOffer()">Update Coins offer</button>
+          <button type="button" class="modal-action-btn" style="background:#64748b;margin-top:8px;" onclick="clearMyTradeOffer()">Clear my offer</button>
+        </div>
+        <div id="trade-confirm-state" style="margin:12px 0;text-align:center;font-size:.85rem;color:#64748b;"></div>
+        <button id="trade-confirm-btn" type="button" class="modal-action-btn" style="background:#16a34a;" onclick="confirmCurrentTrade()">Confirm this trade</button>
+      </div>
     </div>
   </div>
 
@@ -1853,6 +1888,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+
     const ADMIN_UID = "09SjiwOt9fYdFbc1wQp17Ot467F2";
 
     let newsList = [];
@@ -2123,62 +2159,297 @@
       }, 1000);
     }
 
-    /* FRIENDS: requests, list and profile shortcuts */
+    /* FRIENDS: requests, list, trade invitations and profile shortcuts */
     function openFriendsModal() {
       openModal('modal-friends');
       switchFriendsTab('list');
       updateFriendRequestsCount();
+      updateTradeRequestsCount();
     }
 
     function switchFriendsTab(tab) {
-      const listSec = document.getElementById('friends-list-section');
-      const addSec = document.getElementById('friends-add-section');
-      const reqSec = document.getElementById('friends-requests-section');
-      
-      const listBtn = document.getElementById('tab-friends-list-btn');
-      const addBtn = document.getElementById('tab-friends-add-btn');
-      const reqBtn = document.getElementById('tab-friends-req-btn');
-
-      listSec.style.display = 'none';
-      addSec.style.display = 'none';
-      reqSec.style.display = 'none';
-
-      listBtn.classList.remove('active');
-      addBtn.classList.remove('active');
-      reqBtn.classList.remove('active');
-
-      if (tab === 'list') {
-        listSec.style.display = 'block';
-        listBtn.classList.add('active');
-        loadFriendsList();
-      } else if (tab === 'add') {
-        addSec.style.display = 'block';
-        addBtn.classList.add('active');
-      } else if (tab === 'requests') {
-        reqSec.style.display = 'block';
-        reqBtn.classList.add('active');
-        loadFriendRequests();
-      }
+      const sections = {
+        list: document.getElementById('friends-list-section'),
+        add: document.getElementById('friends-add-section'),
+        requests: document.getElementById('friends-requests-section'),
+        trade: document.getElementById('friends-trade-section')
+      };
+      const buttons = {
+        list: document.getElementById('tab-friends-list-btn'),
+        add: document.getElementById('tab-friends-add-btn'),
+        requests: document.getElementById('tab-friends-req-btn'),
+        trade: document.getElementById('tab-friends-trade-btn')
+      };
+      Object.entries(sections).forEach(([key, el]) => { if (el) el.style.display = key === tab ? 'block' : 'none'; });
+      Object.entries(buttons).forEach(([key, el]) => { if (el) el.classList.toggle('active', key === tab); });
+      if (tab === 'list') loadFriendsList();
+      else if (tab === 'requests') loadFriendRequests();
+      else if (tab === 'trade') loadTradeRequests();
     }
+
+    let activeTradeSessionId = null;
+    let activeTradeUnsubscribe = null;
+    let activeTradeTargetUid = null;
 
     async function openTradeModal(targetUid, targetName) {
       const modal = document.getElementById('modal-trade');
       const status = document.getElementById('trade-status-message');
+      document.getElementById('trade-workspace').style.display = 'none';
       status.textContent = 'Checking Trade passes...';
       modal.style.display = 'flex';
       try {
         const me = auth.currentUser;
-        if (!me || !targetUid) throw new Error('Player not found.');
-        const refs = [db.collection('jugadores').doc(me.uid), db.collection('jugadores').doc(targetUid)];
-        const snaps = await Promise.all(refs.map(r => r.get()));
-        const mine = snaps[0].data() || {};
-        const theirs = snaps[1].data() || {};
-        const myFriends = mine.friends || [];
-        const theirFriends = theirs.friends || [];
-        if (!myFriends.includes(targetUid) || !theirFriends.includes(me.uid)) throw new Error('You must be mutual friends to trade.');
-        if (!mine.tradeOwned || !theirs.tradeOwned) throw new Error("Both players must purchase Trade from Bob\'s Shop for 1,000 Coins.");
-        status.textContent = `Trade unlocked with ${targetName}. The secure trade processor still needs to be deployed to Firebase before items or coins can be transferred.`;
+        if (!me || !targetUid || targetUid === me.uid) throw new Error('Player not found.');
+        const [mineSnap, theirsSnap] = await Promise.all([
+          db.collection('jugadores').doc(me.uid).get(),
+          db.collection('jugadores').doc(targetUid).get()
+        ]);
+        const mine = mineSnap.data() || {}, theirs = theirsSnap.data() || {};
+        if (!(mine.friends || []).includes(targetUid) || !(theirs.friends || []).includes(me.uid))
+          throw new Error('You must be mutual friends to trade.');
+        if (!mine.tradeOwned || !theirs.tradeOwned)
+          throw new Error("Both players must purchase Trade from Bob's Shop for 1,000 Coins.");
+        const requestsRef = db.collection('tradeRequests');
+        const [sentSnap, receivedSnap] = await Promise.all([
+          requestsRef.where('senderUid','==',me.uid).get(),
+          requestsRef.where('receiverUid','==',me.uid).get()
+        ]);
+        const duplicate = [...sentSnap.docs,...receivedSnap.docs].some(d => {
+          const r=d.data(); return r.status==='pending' &&
+            ((r.senderUid===me.uid&&r.receiverUid===targetUid)||(r.senderUid===targetUid&&r.receiverUid===me.uid));
+        });
+        if (duplicate) throw new Error('A pending Trade request already exists between you and this player.');
+        await requestsRef.add({
+          senderUid:me.uid, receiverUid:targetUid,
+          senderName:mine.username||'Player', receiverName:theirs.username||targetName||'Player',
+          status:'pending', createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        status.textContent = `Sent Trade to ${targetName || theirs.username || 'Player'}!`;
+        showToast(`Sent Trade to ${targetName || theirs.username || 'Player'}`);
+        updateTradeRequestsCount();
       } catch (e) { status.textContent = e.message; }
+    }
+
+    function closeTradeModal() {
+      document.getElementById('modal-trade').style.display='none';
+      if (activeTradeUnsubscribe) activeTradeUnsubscribe();
+      activeTradeUnsubscribe=null; activeTradeSessionId=null; activeTradeTargetUid=null;
+    }
+
+    async function acceptTradeInvitation(requestId) {
+      try {
+        const reqRef=db.collection('tradeRequests').doc(requestId);
+        const sessionRef=db.collection('tradeSessions').doc(requestId);
+        let sessionId=requestId;
+        await db.runTransaction(async tx=>{
+          const reqSnap=await tx.get(reqRef);
+          if(!reqSnap.exists) throw new Error('Trade invitation not found.');
+          const req=reqSnap.data(), uid=auth.currentUser.uid;
+          if(req.receiverUid!==uid) throw new Error('Only the invited player can accept.');
+          if(req.status!=='pending') throw new Error('Invitation is no longer pending.');
+          const aRef=db.collection('jugadores').doc(req.senderUid), bRef=db.collection('jugadores').doc(req.receiverUid);
+          const [a,b]=await Promise.all([tx.get(aRef),tx.get(bRef)]);
+          const pa=a.data()||{}, pb=b.data()||{};
+          if(!pa.tradeOwned||!pb.tradeOwned || !(pa.friends||[]).includes(req.receiverUid) || !(pb.friends||[]).includes(req.senderUid)) throw new Error('Both players need Trade Pass and mutual friendship.');
+          tx.update(reqRef,{status:'accepted',respondedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          tx.set(sessionRef,{participants:[req.senderUid,req.receiverUid],offers:{[req.senderUid]:{coins:0,items:[]},[req.receiverUid]:{coins:0,items:[]}},confirmed:{[req.senderUid]:false,[req.receiverUid]:false},status:'negotiating',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+        });
+        showToast('Trade accepted! Build your offers.'); loadTradeRequests(); openTradeSession(sessionId);
+      } catch(e) { showToast('Could not open trade: '+(e.message||e)); }
+    }
+
+    function openTradeSession(sessionId) {
+      if(activeTradeUnsubscribe) activeTradeUnsubscribe();
+      activeTradeSessionId=sessionId;
+      document.getElementById('modal-trade').style.display='flex';
+      document.getElementById('trade-workspace').style.display='block';
+      document.getElementById('trade-status-message').textContent='Trade session · add Coins, fish, cosmetics or baits.';
+      activeTradeUnsubscribe=db.collection('tradeSessions').doc(sessionId).onSnapshot(async snap=>{
+        if(!snap.exists){document.getElementById('trade-status-message').textContent='This trade session no longer exists.';return;}
+        const s=snap.data(), uid=auth.currentUser?.uid;
+        const otherUid=s.participants.find(x=>x!==uid);
+        const mine=s.offers?.[uid]||{coins:0,items:[]};
+        const theirs=s.offers?.[otherUid]||{coins:0,items:[]};
+        document.getElementById('trade-my-offer').innerHTML=renderTradeOffer(mine);
+        document.getElementById('trade-their-offer').innerHTML=renderTradeOffer(theirs);
+        const confirmed=s.confirmed||{};
+        document.getElementById('trade-confirm-state').textContent=
+          `You: ${confirmed[uid]?'Confirmed':'Not confirmed'} · Friend: ${confirmed[otherUid]?'Confirmed':'Not confirmed'}`;
+        const btn=document.getElementById('trade-confirm-btn');
+        btn.disabled=!!confirmed[uid] || s.status==='completed';
+        btn.textContent=s.status==='completed'?'Trade completed':(confirmed[uid]?'Waiting for your friend...':'Confirm this trade');
+        if(s.status==='completed'){
+          document.getElementById('trade-status-message').textContent='Trade completed successfully!';
+          showToast('Trade completed! Items and Coins transferred.');
+          refreshAfterTrade();
+        }
+        await populateTradeItemSelect();
+      },err=>{document.getElementById('trade-status-message').textContent='Trade session error: '+err.message;});
+    }
+
+    function renderTradeOffer(offer) {
+      const rows=[`<div>💰 ${Number(offer.coins)||0} Coins</div>`];
+      (offer.items||[]).forEach(it=>rows.push(`<div>${escapeHtml(it.name)} × ${it.quantity}</div>`));
+      return rows.join('')||'Nothing offered yet.';
+    }
+
+    async function populateTradeItemSelect(){
+      const sel=document.getElementById('trade-item-select'); if(!sel||!auth.currentUser)return;
+      try{
+        const snap=await db.collection('jugadores').doc(auth.currentUser.uid).get(),d=snap.data()||{};
+        const opts=[{value:'',label:'Choose an item...'}];
+        (d.fishes||[]).forEach(f=>{
+          const cooking=f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw';
+          const value=JSON.stringify({kind:'fish',name:f.name,cooking});
+          if(!opts.some(o=>o.value===value))opts.push({value,label:`Fish: ${f.name} (${cooking})`});
+        });
+        Object.entries(d.cosmeticsInventory||{}).forEach(([name,n])=>{if(n>0)opts.push({value:JSON.stringify({kind:'cosmetic',name}),label:`Cosmetic: ${name} (${n})`});});
+        if((d.wormBaitsCount||0)>0)opts.push({value:JSON.stringify({kind:'bait',name:'Worm Bait'}),label:`Bait: Worm Bait (${d.wormBaitsCount})`});
+        if((d.miniTunaCubesCount||0)>0)opts.push({value:JSON.stringify({kind:'bait',name:'Mini Tuna Cube'}),label:`Bait: Mini Tuna Cube (${d.miniTunaCubesCount})`});
+        sel.innerHTML=opts.map(o=>`<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join('');
+      }catch(e){console.warn('Could not load trade inventory',e);}
+    }
+
+    async function writeMyTradeOffer(mutator){
+      if(!activeTradeSessionId) throw new Error('No active trade.');
+      const ref=db.collection('tradeSessions').doc(activeTradeSessionId), uid=auth.currentUser.uid;
+      await db.runTransaction(async tx=>{
+        const snap=await tx.get(ref); if(!snap.exists) throw new Error('Trade not found.');
+        const s=snap.data(); if(s.status!=='negotiating'||!s.participants.includes(uid)) throw new Error('Trade is not editable.');
+        const offers={...(s.offers||{})}, current=offers[uid]||{coins:0,items:[]};
+        offers[uid]=mutator({...current,items:[...(current.items||[])]});
+        const confirmed={...(s.confirmed||{})}; s.participants.forEach(id=>confirmed[id]=false);
+        tx.update(ref,{offers,confirmed,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+      });
+    }
+    async function addTradeItemToOffer(){
+      try{
+        const item=JSON.parse(document.getElementById('trade-item-select').value||'null'); if(!item) throw Error('Choose an item first.');
+        const quantity=Number(document.getElementById('trade-item-quantity').value);
+        if(!Number.isSafeInteger(quantity)||quantity<1) throw Error('Enter a valid quantity.');
+        const inv=(await db.collection('jugadores').doc(auth.currentUser.uid).get()).data()||{};
+        if(item.kind==='fish' && (inv.fishes||[]).filter(f=>f.name===item.name && (f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===item.cooking).length<quantity) throw Error('Not enough fish.');
+        if(item.kind==='cosmetic' && Number(inv.cosmeticsInventory?.[item.name]||0)<quantity) throw Error('Not enough cosmetics.');
+        if(item.kind==='bait' && item.name==='Worm Bait' && Number(inv.wormBaitsCount||0)<quantity) throw Error('Not enough Worm Baits.');
+        if(item.kind==='bait' && item.name==='Mini Tuna Cube' && Number(inv.miniTunaCubesCount||0)<quantity) throw Error('Not enough Mini Tuna Cubes.');
+        await writeMyTradeOffer(o=>({...o,items:[...o.items,{...item,quantity}]})); showToast('Item added to your offer.');
+      }catch(e){showToast('Could not add item: '+e.message);}
+    }
+    async function saveTradeCoinsOffer(){
+      try{const coins=Number(document.getElementById('trade-coins-offer').value); if(!Number.isSafeInteger(coins)||coins<0) throw Error('Invalid Coins amount.');
+        const d=(await db.collection('jugadores').doc(auth.currentUser.uid).get()).data()||{}; if(coins>Number(d.coins||0)) throw Error('Not enough Coins.');
+        await writeMyTradeOffer(o=>({...o,coins})); showToast('Coins offer updated.');
+      }catch(e){showToast('Could not update Coins: '+e.message);}
+    }
+    async function clearMyTradeOffer(){try{await writeMyTradeOffer(()=>({coins:0,items:[]}));showToast('Offer cleared.');}catch(e){showToast(e.message);}}
+    async function confirmCurrentTrade(){
+      if(!activeTradeSessionId)return;
+      try{
+        const ref=db.collection('tradeSessions').doc(activeTradeSessionId), uid=auth.currentUser.uid;
+        await db.runTransaction(async tx=>{
+          const ss=await tx.get(ref); if(!ss.exists) throw Error('Trade not found.');
+          const s=ss.data(); if(s.status!=='negotiating'||!s.participants.includes(uid)) throw Error('Trade is not active.');
+          const other=s.participants.find(x=>x!==uid), confirmed={...(s.confirmed||{}),[uid]:true};
+          if(!confirmed[other]){tx.update(ref,{confirmed});return;}
+          const aRef=db.collection('jugadores').doc(s.participants[0]), bRef=db.collection('jugadores').doc(s.participants[1]);
+          const [as,bs]=await Promise.all([tx.get(aRef),tx.get(bRef)]); if(!as.exists||!bs.exists) throw Error('Player profile missing.');
+          const A=as.data(),B=bs.data(),oa=s.offers[s.participants[0]]||{coins:0,items:[]},ob=s.offers[s.participants[1]]||{coins:0,items:[]};
+          function transfer(src,dst,offer){
+            if(Number(src.coins||0)<Number(offer.coins||0)) throw Error('Not enough Coins.');
+            const out={...src,coins:Number(src.coins||0)-Number(offer.coins||0),fishes:[...(src.fishes||[])],cosmeticsInventory:{...(src.cosmeticsInventory||{})},wormBaitsCount:Number(src.wormBaitsCount||0),miniTunaCubesCount:Number(src.miniTunaCubesCount||0)};
+            const incoming=[];
+            for(const it of offer.items||[]){const q=Number(it.quantity);if(!Number.isSafeInteger(q)||q<1)throw Error('Invalid item quantity.');
+              if(it.kind==='fish'){for(let n=0;n<q;n++){const i=out.fishes.findIndex(f=>f.name===it.name&&(f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===(it.cooking||'raw'));if(i<0)throw Error('Fish inventory changed.');incoming.push(out.fishes.splice(i,1)[0]);}}
+              else if(it.kind==='cosmetic'){if(Number(out.cosmeticsInventory[it.name]||0)<q)throw Error('Cosmetic inventory changed.');out.cosmeticsInventory[it.name]-=q;}
+              else if(it.kind==='bait'&&it.name==='Worm Bait'){if(out.wormBaitsCount<q)throw Error('Bait inventory changed.');out.wormBaitsCount-=q;}
+              else if(it.kind==='bait'&&it.name==='Mini Tuna Cube'){if(out.miniTunaCubesCount<q)throw Error('Bait inventory changed.');out.miniTunaCubesCount-=q;}else throw Error('Unsupported item.');
+            } return {out,incoming};
+          }
+          const ta=transfer(A,B,oa),tb=transfer(B,A,ob);
+          function receive(base,own,other,fish){const x={...own.out,coins:own.out.coins+Number(other.coins||0),fishes:[...own.out.fishes,...fish],cosmeticsInventory:{...own.out.cosmeticsInventory},wormBaitsCount:own.out.wormBaitsCount,miniTunaCubesCount:own.out.miniTunaCubesCount};for(const it of other.items||[]){const q=Number(it.quantity);if(it.kind==='cosmetic')x.cosmeticsInventory[it.name]=(Number(x.cosmeticsInventory[it.name])||0)+q;else if(it.kind==='bait'&&it.name==='Worm Bait')x.wormBaitsCount+=q;else if(it.kind==='bait'&&it.name==='Mini Tuna Cube')x.miniTunaCubesCount+=q;}return x;}
+          const finalA=receive(A,ta,ob,tb.incoming), finalB=receive(B,tb,oa,ta.incoming);
+          tx.update(aRef,finalA);tx.update(bRef,finalB);tx.update(ref,{confirmed,status:'completed',completedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        });
+        showToast('Trade confirmation saved.');
+      }catch(e){showToast('Trade failed: '+e.message);}
+    }
+
+    function refreshAfterTrade(){
+      try{loadBackpackData();updateGameHUD();loadMyFishesForMarket();}catch(e){}
+    }
+
+    async function updateTradeRequestsCount() {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const snap = await db.collection('tradeRequests').where('receiverUid', '==', user.uid).get();
+        const pending = snap.docs.filter(d => d.data().status === 'pending').length;
+        const count = document.getElementById('trade-req-count');
+        if (count) count.textContent = pending;
+      } catch (e) { console.warn('Could not update Trade request count:', e); }
+    }
+
+    async function loadTradeRequests() {
+      const user = auth.currentUser;
+      if (!user) return;
+      const incoming = document.getElementById('trade-requests-incoming');
+      const outgoing = document.getElementById('trade-requests-outgoing');
+      incoming.innerHTML = '<p style="color:#64748b;text-align:center;">Loading trade requests...</p>';
+      outgoing.innerHTML = '<p style="color:#64748b;text-align:center;">Loading sent requests...</p>';
+      try {
+        const [inSnap, outSnap] = await Promise.all([
+          db.collection('tradeRequests').where('receiverUid', '==', user.uid).get(),
+          db.collection('tradeRequests').where('senderUid', '==', user.uid).get()
+        ]);
+        const inDocs = inSnap.docs.filter(d => d.data().status === 'pending');
+        const outDocs = outSnap.docs.filter(d => d.data().status === 'pending');
+        if (!inDocs.length) incoming.innerHTML = '<p style="color:#64748b;text-align:center;">No incoming Trade requests.</p>';
+        else incoming.innerHTML = inDocs.map(doc => {
+          const r = doc.data();
+          return `<div style="background:#f8fafc;padding:10px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <span>Trade request from: <strong>${escapeHtml(r.senderName || 'Player')}</strong></span>
+            <div style="display:flex;gap:6px;flex-shrink:0;">
+              <button type="button" class="modal-action-btn" style="background:#27ae60;padding:4px 8px;font-size:.75rem;width:auto;" onclick="acceptTradeInvitation('${doc.id}')">Accept</button>
+              <button type="button" class="modal-action-btn" style="background:#e74c3c;padding:4px 8px;font-size:.75rem;width:auto;" onclick="respondToTradeRequest('${doc.id}','rejected')">Decline</button>
+            </div>
+          </div>`;
+        }).join('');
+        if (!outDocs.length) outgoing.innerHTML = '<p style="color:#64748b;text-align:center;">You have no sent Trade requests waiting.</p>';
+        else outgoing.innerHTML = outDocs.map(doc => {
+          const r = doc.data();
+          return `<div style="background:#f8fafc;padding:9px;border-radius:8px;border:1px solid #cbd5e1;display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <span>Sent to: <strong>${escapeHtml(r.receiverName || 'Player')}</strong></span>
+            <button type="button" class="modal-action-btn" style="background:#64748b;padding:4px 8px;font-size:.75rem;width:auto;" onclick="respondToTradeRequest('${doc.id}','cancelled')">Cancel</button>
+          </div>`;
+        }).join('');
+      } catch (err) {
+        incoming.innerHTML = '<p style="color:#e74c3c;text-align:center;">Could not load Trade requests. Check Firestore rules.</p>';
+        outgoing.innerHTML = '';
+        console.error('Trade requests error:', err);
+      }
+      updateTradeRequestsCount();
+    }
+
+    async function respondToTradeRequest(requestId, newStatus) {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const ref = db.collection('tradeRequests').doc(requestId);
+        const snap = await ref.get();
+        if (!snap.exists) throw new Error('This Trade request no longer exists.');
+        const req = snap.data();
+        if (req.status !== 'pending') throw new Error('This Trade request is no longer pending.');
+        if (newStatus === 'cancelled' && req.senderUid !== user.uid) throw new Error('Only the sender can cancel this request.');
+        if ((newStatus === 'accepted' || newStatus === 'rejected') && req.receiverUid !== user.uid) throw new Error('Only the recipient can respond to this request.');
+        await ref.update({ status: newStatus, respondedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        if (newStatus === 'accepted') {
+          showToast('Trade invitation accepted.');
+        } else if (newStatus === 'rejected') showToast('Trade request declined.');
+        else showToast('Trade request cancelled.');
+        loadTradeRequests();
+      } catch (err) {
+        showToast('Could not update Trade request: ' + err.message);
+      }
     }
 
     async function handleProfileFriendButton() {
@@ -5428,6 +5699,7 @@
             document.getElementById('user-avatar').src = "https://via.placeholder.com/40";
           }
           updateFriendRequestsCount();
+          updateTradeRequestsCount();
 
         } catch(e) {
           console.error("Error loading user session:", e);
@@ -5722,7 +5994,8 @@
     el.innerHTML=SHOP_ITEMS.slice(shopPage*4,shopPage*4+4).map(i=>`<div class="rebuild-item"><img src="${i.img}"><strong>${esc(i.name)}</strong><p>${i.price} Coins</p><button class="rebuild-btn" onclick="buyShopItem('${i.id}')">Buy</button></div>`).join('');
     document.getElementById('shop-page-label').textContent=`Page ${shopPage+1} / ${Math.ceil(SHOP_ITEMS.length/4)}`;
   }
-  window.openPaginatedShop=openPaginatedShop;window.changeShopPage=changeShopPage;window.buyShopItem=buyShopItem;window.openTradeModal=openTradeModal;
+  window.openPaginatedShop=openPaginatedShop;window.changeShopPage=changeShopPage;window.buyShopItem=buyShopItem;window.openTradeModal=openTradeModal;window.acceptTradeInvitation=acceptTradeInvitation;window.closeTradeModal=closeTradeModal;window.addTradeItemToOffer=addTradeItemToOffer;window.saveTradeCoinsOffer=saveTradeCoinsOffer;window.clearMyTradeOffer=clearMyTradeOffer;window.confirmCurrentTrade=confirmCurrentTrade;
+    window.respondToTradeRequest=respondToTradeRequest;
 
   // Bait selection and consumption: only one Equip Bait control, both bait types persist.
   async function openBaitSelector(){
