@@ -2289,7 +2289,7 @@
               throw new Error('An old Trade session already exists. Cancel or finish that session first.');
             }
           } else {
-            tx.create(sessionRef, {
+            tx.set(sessionRef, {
               participants: [req.senderUid, req.receiverUid],
               offers: {
                 [req.senderUid]: { coins: 0, items: [] },
