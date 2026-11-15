@@ -7641,7 +7641,7 @@
   window.clippyWorkshopClick=async function(){
     if(!auth.currentUser){showToast('You must be logged in.');openModal('modal-account');return;}
     try{const d=await getData();if(clippyUnlocked&&Number(d.pearls||0)>=250){openClippyWorkshop();return;}
-      clippyStep=0;$('clippy-dialog-text').textContent=d.clippyVisited?'Did you got the pearls?':clippyLines[0];
+      clippyStep=0;$('clippy-dialog-text').textContent=d.clippyVisited?'Did you get the pearls?':clippyLines[0];
       $('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=async()=>{
         if(d.clippyVisited){$('clippy-dialog-text').textContent='Ok I will check';setTimeout(async()=>{const fresh=await getData();if(Number(fresh.pearls||0)>=250){clippyUnlocked=true;$('clippy-dialog-text').textContent='You got the 250 pearls, Welcome to my Workshop!';$('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=()=>{closeClippyDialog();openClippyWorkshop();};}else{$('clippy-dialog-text').textContent="You don't have enough pearls, come back when you get them";$('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=closeClippyDialog;}},650);return;}
         advanceClippyDialog();
