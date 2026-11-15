@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -780,7 +780,7 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.3 BETA</div>
+      <div class="version-tag">v.1.0.0.3</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
@@ -788,7 +788,7 @@
         <img src="https://i.postimg.cc/NjwRPPmr/tutorial.png" alt="Tutorial">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -2265,6 +2265,7 @@
       document.getElementById('modal-trade').style.display='flex';
       document.getElementById('trade-workspace').style.display='block';
       document.getElementById('trade-status-message').textContent='Trade session · add Coins, fish, cosmetics or baits.';
+      let completedHandled=false;
       activeTradeUnsubscribe=db.collection('tradeSessions').doc(sessionId).onSnapshot(async snap=>{
         if(!snap.exists){document.getElementById('trade-status-message').textContent='This trade session no longer exists.';return;}
         const s=snap.data(), uid=auth.currentUser?.uid;
@@ -2288,8 +2289,17 @@
         }
         if(s.status==='completed'){
           document.getElementById('trade-status-message').textContent='Trade completed successfully!';
-          showToast('Trade completed! Items and Coins transferred.');
-          refreshAfterTrade();
+          const cancelBtn=document.getElementById('trade-cancel-btn');
+          if(cancelBtn) cancelBtn.disabled=true;
+          if(!completedHandled){
+            completedHandled=true;
+            showToast('Trade completed! Items and Coins transferred.');
+            refreshAfterTrade();
+            loadTradeRequests();
+            // Close the finished session so it cannot remain stuck in the trade window.
+            setTimeout(()=>{if(activeTradeSessionId===sessionId)closeTradeModal();},2200);
+          }
+          return;
         }
         await populateTradeItemSelect();
       },err=>{document.getElementById('trade-status-message').textContent='Trade session error: '+err.message;});
@@ -2298,6 +2308,7 @@
     async function cancelActiveTrade(){
       const uid=auth.currentUser?.uid, sessionId=activeTradeSessionId;
       if(!uid||!sessionId)return;
+      if(!await showToastConfirm('Cancel this Trade? Both players will leave the trade.'))return;
       showToast('Cancelling Trade...');
       try{
         const sessionRef=db.collection('tradeSessions').doc(sessionId);
@@ -2424,7 +2435,9 @@
           const other=s.participants.find(x=>x!==uid), confirmed={...(s.confirmed||{}),[uid]:true};
           if(!confirmed[other]){tx.update(ref,{confirmed});return;}
           const aRef=db.collection('jugadores').doc(s.participants[0]), bRef=db.collection('jugadores').doc(s.participants[1]);
-          const [as,bs]=await Promise.all([tx.get(aRef),tx.get(bRef)]); if(!as.exists||!bs.exists) throw Error('Player profile missing.');
+          const requestRef=db.collection('tradeRequests').doc(activeTradeSessionId);
+          const [as,bs,requestSnap]=await Promise.all([tx.get(aRef),tx.get(bRef),tx.get(requestRef)]);
+          if(!as.exists||!bs.exists) throw Error('Player profile missing.');
           const A=as.data(),B=bs.data(),oa=s.offers[s.participants[0]]||{coins:0,items:[]},ob=s.offers[s.participants[1]]||{coins:0,items:[]};
           function transfer(src,dst,offer){
             if(Number(src.coins||0)<Number(offer.coins||0)) throw Error('Not enough Coins.');
@@ -2453,7 +2466,11 @@
           const ta=transfer(A,B,oa),tb=transfer(B,A,ob);
           function receive(base,own,other,fish){const x={...own.out,coins:own.out.coins+Number(other.coins||0),fishes:[...own.out.fishes,...fish],cosmeticsInventory:{...own.out.cosmeticsInventory},wormBaitsCount:own.out.wormBaitsCount,miniTunaCubesCount:own.out.miniTunaCubesCount};for(const it of other.items||[]){const q=Number(it.quantity);if(it.kind==='cosmetic')x.cosmeticsInventory[it.name]=(Number(x.cosmeticsInventory[it.name])||0)+q;else if(it.kind==='bait'&&it.name==='Worm Bait')x.wormBaitsCount+=q;else if(it.kind==='bait'&&it.name==='Mini Tuna Cube')x.miniTunaCubesCount+=q;}return x;}
           const finalA=receive(A,ta,ob,tb.incoming), finalB=receive(B,tb,oa,ta.incoming);
-          tx.update(aRef,finalA);tx.update(bRef,finalB);tx.update(ref,{confirmed,status:'completed',completedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          tx.update(aRef,finalA);tx.update(bRef,finalB);
+          tx.update(ref,{confirmed,status:'completed',completedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          if(requestSnap.exists && requestSnap.data().status==='accepted'){
+            tx.update(requestRef,{status:'completed',respondedAt:firebase.firestore.FieldValue.serverTimestamp()});
+          }
         });
         showToast('Trade confirmation saved.');
       }catch(e){showToast('Trade failed: '+e.message);}
