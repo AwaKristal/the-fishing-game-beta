@@ -1792,6 +1792,79 @@
       return `brightness(${brightness}) sepia(${sepia}) contrast(${contrast})`;
     }
     window.getCookedFilter = getCookedFilter;
+
+    /* Procedural sound effects (Web Audio, no external files). */
+    const GameAudio = (() => {
+      let ctx = null;
+      const ensure = () => {
+        if (!ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return null;
+          try { ctx = new AC(); } catch (e) { return null; }
+        }
+        if (ctx.state === 'suspended') ctx.resume();
+        return ctx;
+      };
+      const unlock = () => ensure();
+      document.addEventListener('pointerdown', unlock, { passive: true });
+      document.addEventListener('keydown', unlock);
+      const tone = (freq, delay, dur, type = 'sine', gain = 0.12, slideTo = null) => {
+        const a = ensure(); if (!a) return;
+        const t = a.currentTime + delay;
+        const osc = a.createOscillator(), g = a.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t);
+        if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(gain, t + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        osc.connect(g).connect(a.destination);
+        osc.start(t); osc.stop(t + dur + 0.03);
+      };
+      const whoosh = (delay, dur, from, to, gain = 0.1) => {
+        const a = ensure(); if (!a) return;
+        const t = a.currentTime + delay;
+        const buf = a.createBuffer(1, Math.max(1, Math.floor(a.sampleRate * dur)), a.sampleRate);
+        const ch = buf.getChannelData(0);
+        for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
+        const src = a.createBufferSource(); src.buffer = buf;
+        const bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.2;
+        bp.frequency.setValueAtTime(from, t);
+        bp.frequency.exponentialRampToValueAtTime(to, t + dur);
+        const g = a.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(gain, t + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        src.connect(bp).connect(g).connect(a.destination);
+        src.start(t); src.stop(t + dur + 0.03);
+      };
+      const sfx = {
+        click: () => tone(640, 0, 0.06, 'triangle', 0.05),
+        cast: () => { whoosh(0, 0.5, 2400, 420, 0.11); tone(420, 0.34, 0.22, 'sine', 0.07, 220); },
+        bite: () => { tone(920, 0, 0.08, 'square', 0.05); tone(1240, 0.1, 0.1, 'square', 0.05); },
+        catch: () => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.09, 0.24, 'triangle', 0.12)); whoosh(0, 0.18, 1800, 700, 0.06); },
+        miss: () => tone(300, 0, 0.32, 'sawtooth', 0.06, 130),
+        sell: () => { tone(880, 0, 0.09, 'triangle', 0.1); tone(1318.5, 0.08, 0.16, 'triangle', 0.1); whoosh(0, 0.25, 5000, 2600, 0.04); },
+        buy: () => { tone(740, 0, 0.08, 'triangle', 0.08); tone(494, 0.08, 0.16, 'triangle', 0.08); },
+        chest: () => { [783.99, 987.77, 1174.66, 1567.98, 1975.53].forEach((f, i) => tone(f, i * 0.07, 0.22, 'sine', 0.09)); },
+        achievement: () => { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, i * 0.1, 0.3, 'triangle', 0.1)); tone(1567.98, 0.4, 0.55, 'sine', 0.05); },
+        daily: () => { whoosh(0, 0.4, 2500, 6000, 0.035); [1046.5, 1318.5, 1567.98, 2093].forEach((f, i) => tone(f, 0.05 + i * 0.06, 0.22, 'sine', 0.07)); },
+        cook: () => { whoosh(0, 0.7, 900, 2200, 0.06); tone(160, 0, 0.15, 'sawtooth', 0.025); },
+        flip: () => whoosh(0, 0.25, 800, 3200, 0.06),
+        ding: () => { tone(1567.98, 0, 0.7, 'sine', 0.1); tone(3135.96, 0.02, 0.45, 'sine', 0.035); tone(2093, 0.28, 0.5, 'sine', 0.05); },
+        place: () => tone(420, 0, 0.1, 'sine', 0.1, 720),
+        trade: () => { tone(659.25, 0, 0.09, 'triangle', 0.09); tone(880, 0.09, 0.09, 'triangle', 0.09); tone(1109.73, 0.18, 0.2, 'triangle', 0.09); },
+        enter: () => { whoosh(0, 0.5, 300, 1800, 0.05); tone(330, 0.1, 0.28, 'sine', 0.06, 440); },
+        error: () => { tone(220, 0, 0.14, 'square', 0.045, 165); tone(165, 0.12, 0.18, 'square', 0.04, 120); }
+      };
+      document.addEventListener('click', e => {
+        const btn = e.target && e.target.closest ? e.target.closest('.img-btn, .tab-btn') : null;
+        if (btn) sfx.click();
+      });
+      return { play(name) { const fn = sfx[name]; if (!fn) return; try { fn(); } catch (e) {} } };
+    })();
+    window.playGameSound = name => GameAudio.play(name);
+
     const RECAPTCHA_SITE_KEY = "6Lex8BMuAAAAAPx6P5c7RwFUNi_9dpZPX0hw_Il9";
     let recaptchaLoginId = null;
     let recaptchaRegisterId = null;
@@ -1934,6 +2007,7 @@
     let currentNewsIndex = 0;
 
     function showToast(message) {
+      if (typeof message === 'string' && /^(Error|Could not|Not enough|You need|You don't|You cannot|Purchase failed|Trade failed)/i.test(message)) playGameSound('error');
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
       toast.className = 'toast';
@@ -2143,6 +2217,7 @@
         if (reward.miniTanks) updateData.miniTanksCount = firebase.firestore.FieldValue.increment(reward.miniTanks);
 
         await docRef.update(updateData);
+        playGameSound('daily');
 
         const rewardParts = [];
         if (reward.coins) rewardParts.push(`+${reward.coins} 💰`);
@@ -2411,6 +2486,7 @@
             completedHandled=true;
             unlockMakingBusinessAchievement();
             showToast('Trade completed! Items and Coins transferred.');
+            playGameSound('trade');
             refreshAfterTrade();
             loadTradeRequests();
             // Close the finished session so it cannot remain stuck in the trade window.
@@ -2648,6 +2724,7 @@
         else if(result==='confirmed')showToast('Confirmation saved. You can cancel it until your friend confirms.');
         else if(result==='completed'){
           showToast('Trade completed! Items and Coins transferred.');
+          playGameSound('trade');
           refreshAfterTrade();
           loadTradeRequests();
         }
@@ -3189,6 +3266,7 @@
 
     // Full achievement-unlock notification, styled to match the game's own UI.
     window.showAchievementUnlocked = function(name, description, objective) {
+      playGameSound('achievement');
       let node=document.getElementById('achievement-unlock-notice');
       if(!node){
         node=document.createElement('div');
@@ -3587,6 +3665,7 @@
           });
         });
         showToast(`Bot sold cooked ${soldName} for +${sellValue} 💰!`);
+        playGameSound('sell');
         loadMyFishesForMarket();
         updateGameHUD();
       } catch (err) {
@@ -3657,6 +3736,7 @@
 
         if (canSell) {
           showToast(`Bot sold ${qtyInput}x ${fishName} for +${totalCoinsEarned} 💰 coins!`);
+          playGameSound('sell');
           document.getElementById('modal-botsell-prompt').style.display = 'none';
           loadMyFishesForMarket();
           updateGameHUD();
@@ -3734,6 +3814,7 @@
         });
 
         showToast(`Successfully sold ${soldCount} fish for +${totalCoinsEarned} 💰 coins!`);
+        playGameSound('sell');
         loadMyFishesForMarket();
         updateGameHUD();
       } catch (err) {
@@ -3811,6 +3892,7 @@
         });
 
         showToast(`Purchased ${fishName} for ${price} 💰!`);
+        playGameSound('buy');
         loadMarketListings();
         updateGameHUD();
       } catch (err) {
@@ -4096,6 +4178,7 @@
           });
           
           showToast(`${fishName} placed in tank!`);
+          playGameSound('place');
           loadBackpackData();
           document.getElementById('modal-select-fish').style.display = 'none';
           renderAquarium(data.username || "My", fishes, tanksMap, data.aquariumCosmeticsMap || {}, tankTypesMap);
@@ -4135,6 +4218,7 @@
             });
 
             showToast(`${tank.name} removed and returned to your inventory.`);
+            playGameSound('place');
             loadBackpackData();
           }
 
@@ -4215,6 +4299,7 @@
         return;
       }
       document.getElementById('game-screen').style.display = 'block';
+      playGameSound('enter');
       updateGameHUD();
       showToast("Entered the fishing spot!");
     }
@@ -4253,6 +4338,7 @@
       castBtn.disabled = true;
       castBtn.innerText = "Waiting for bite...";
       showToast("Line cast! Waiting...");
+      playGameSound('cast');
 
       try {
         const playerRef = db.collection('jugadores').doc(user.uid);
@@ -4346,6 +4432,7 @@
     function startFishingMinigame() {
       const overlay = document.getElementById('fishing-minigame-overlay');
       overlay.style.display = 'flex';
+      playGameSound('bite');
 
       catchBarY = 10;
       catchBarSpeed = 0;
@@ -4450,6 +4537,7 @@
           });
 
           triggerCaughtFishPopup(pendingCaughtFish);
+          playGameSound('catch');
 
           showToast(`You caught a ${pendingCaughtFish.name} (${pendingCaughtFish.rarity})!`);
           updateGameHUD();
@@ -4460,6 +4548,7 @@
           showToast("Error saving catch: " + err.message);
         }
       } else if (!success && pendingCaughtFish) {
+        playGameSound('miss');
         showToast("The fish got away! Try again.");
       }
       pendingCaughtFish = null;
@@ -4495,6 +4584,7 @@
           });
 
           showToast("Success! Mini Tank bought and added to your backpack!");
+          playGameSound('buy');
           loadBackpackData();
           updateShopCoinsDisplay();
           checkAchievements((data.fishes || []).length, true);
@@ -4532,6 +4622,7 @@
           });
 
           showToast("Success! Worm Bait bought and added to your backpack!");
+          playGameSound('buy');
           loadBackpackData();
           updateShopCoinsDisplay();
         }
@@ -4568,6 +4659,7 @@
           });
 
           showToast("Success! New aquarium room purchased!");
+          playGameSound('buy');
           loadBackpackData();
           updateShopCoinsDisplay();
           updateGameHUD();
@@ -6344,7 +6436,7 @@
         if(id==='sandcastle'||id==='verity'){const inv={...(d.cosmeticsInventory||{})};const cosmeticName=id==='sandcastle'?'Sandcastle':'Verity';inv[cosmeticName]=(inv[cosmeticName]||0)+1;updates.cosmeticsInventory=inv;}
         tx.update(ref,updates);
       });
-      showToast(`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); updateGameHUD(); loadBackpackData();
+      showToast(`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); playGameSound('buy'); updateGameHUD(); loadBackpackData();
     }catch(e){showToast('Purchase failed: '+e.message);}
   }
   function openPaginatedShop(){shopPage=0;renderShopPage();document.getElementById('modal-shop-pages').style.display='flex';}
@@ -6433,13 +6525,13 @@
   async function addFishToGrill(fishId,fishName,fishTimestamp,fallbackIndex){
     if(grillState){showToast('Finish or remove the current fish first.');return;}
     try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};const fs=[...(d.fishes||[])];let idx=-1;if(fishId)idx=fs.findIndex(f=>f.id===fishId);if(idx<0&&fishTimestamp)idx=fs.findIndex(f=>f.name===fishName&&f.timestamp===fishTimestamp);if(idx<0&&typeof fallbackIndex==='number'&&fs[fallbackIndex]&&fs[fallbackIndex].name===fishName)idx=fallbackIndex;if(idx<0)idx=fs.findIndex(f=>f.name===fishName);if(idx<0)throw Error('Fish is no longer available.');const f=fs[idx];const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity))throw Error('This fish is protected from cooking.');const prevCk=f.cooking||{side1:0,side2:0};fs.splice(idx,1);tx.update(ref,{fishes:fs,grillState:{fish:{...f,id:f.id||'fish-'+Date.now()},side1:Number(prevCk.side1)||0,side2:Number(prevCk.side2)||0,activeSide:1,zone:'hot',posX:35,posY:38,updatedAt:Date.now()}});});
-      grillState=(await ref.get()).data().grillState;document.getElementById('grill-fish-picker').style.display='none';renderGrillState();loadBackpackData();
+      grillState=(await ref.get()).data().grillState;document.getElementById('grill-fish-picker').style.display='none';renderGrillState();playGameSound('cook');loadBackpackData();
     }catch(e){showToast('Could not add fish: '+e.message);}
   }
   function startGrillTicker(){if(grillTimer)clearInterval(grillTimer);grillTimer=setInterval(()=>{if(!grillState||grillState.zone!=='hot')return;const key=grillState.activeSide===1?'side1':'side2';if(grillState[key]>=100)return;grillState[key]=Math.min(100,grillState[key]+1);renderGrillState();},1000);if(grillSaveTimer)clearInterval(grillSaveTimer);grillSaveTimer=setInterval(saveGrillState,5000);}
   async function saveGrillState(){if(!auth.currentUser||!grillState)return;try{await playerRef().update({grillState:grillState});}catch(e){console.error('Grill save failed',e);}}
-  function toggleGrillZone(){if(!grillState)return;grillState.zone=grillState.zone==='hot'?'rest':'hot';renderGrillState();saveGrillState();}
-  function flipGrillFish(){if(!grillState){showToast('Add a fish to the grill first.');return;}grillState.activeSide=grillState.activeSide===1?2:1;const nextPct=grillState[grillState.activeSide===1?'side1':'side2'];if(grillState.zone==='rest'&&nextPct<99){grillState.zone='hot';}renderGrillState();saveGrillState();showToast(`Flipped to Side ${grillState.activeSide}!`);}
+  function toggleGrillZone(){if(!grillState)return;grillState.zone=grillState.zone==='hot'?'rest':'hot';renderGrillState();if(grillState.zone==='hot')playGameSound('cook');saveGrillState();}
+  function flipGrillFish(){if(!grillState){showToast('Add a fish to the grill first.');return;}grillState.activeSide=grillState.activeSide===1?2:1;const nextPct=grillState[grillState.activeSide===1?'side1':'side2'];if(grillState.zone==='rest'&&nextPct<99){grillState.zone='hot';}renderGrillState();playGameSound('flip');saveGrillState();showToast(`Flipped to Side ${grillState.activeSide}!`);}
   async function finishGrilling(){if(!grillState)return;try{
     const side1=Number(grillState.side1)||0,side2=Number(grillState.side2)||0;
     const done={...grillState.fish,cooking:{side1,side2,stage1:stage(side1),stage2:stage(side2),cookedAt:Date.now()}};
@@ -6453,7 +6545,7 @@
       if(earnsDing&&!achievements.dingReady){achievements.dingReady=true;dingWasNew=true;}
       tx.update(ref,{fishes:[...(d.fishes||[]),done],grillState:null,achievements});
     });
-    grillState=null;renderGrillState();showToast('Cooked fish returned to your Backpack.');
+    grillState=null;renderGrillState();showToast('Cooked fish returned to your Backpack.');playGameSound('ding');
     if(cookWasNew)window.showAchievementUnlocked('Call me master master','One, two FLIP!','Cook a fish.');
     if(dingWasNew)window.showAchievementUnlocked('Ding, its ready!','Tastes better than before.','Burn a fish in the grill.');
     loadBackpackData();
@@ -6464,8 +6556,8 @@
   // Bob trade uses exact two-side stages, a persistent 10-minute timestamp and one-time claim.
   let bobCountdownInterval=null;
   async function openBobTrade(){try{const d=(await playerRef().get()).data()||{};const t=d.bobTrade;const status=document.getElementById('bob-trade-status');if(bobCountdownInterval)clearInterval(bobCountdownInterval);const update=()=>{if(!t){status.textContent='No trade in progress. Cook a Bluefin Tuna and give it to Bob!';return;}if(t.claimed){status.textContent='Give a Well Cooked Bluefin Tuna for a Mini Tuna Cube.';return;}const remain=Math.max(0,600000-(Date.now()-t.startedAt));if(remain<=0){status.textContent='🎁 Your Mini Tuna Cube is ready to claim!';return;}const mm=Math.floor(remain/60000),ss=Math.floor((remain%60000)/1000);status.textContent=`⏳ Bob is preparing your Mini Tuna Cube: ${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')} remaining`;};update();if(t&&!t.claimed)bobCountdownInterval=setInterval(update,1000);document.getElementById('modal-bob-trade').style.display='flex';}catch(e){showToast(e.message);}}
-  async function startBobTrade(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.bobTrade&&!d.bobTrade.claimed)throw Error('You already have a Bob trade in progress.');const fs=[...(d.fishes||[])];const i=fs.findIndex(f=>f.name==='Bluefin Tuna'&&f.cooking&&stage(f.cooking.side1)==='Well Cooked'&&stage(f.cooking.side2)==='Well Cooked');if(i<0)throw Error('Bob only accepts a Bluefin Tuna with both sides Well Cooked (46% - 60%).');const fish=fs.splice(i,1)[0];tx.update(ref,{fishes:fs,bobTrade:{startedAt:Date.now(),fishId:fish.id||null,claimed:false}});});showToast('Bob accepted your Bluefin Tuna. Come back in 10 minutes.');openBobTrade();}catch(e){showToast(e.message);}}
-  async function claimBobReward(){try{const ref=playerRef();let bobWasNew=false;await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},t=d.bobTrade;if(!t||t.claimed)throw Error('There is no unclaimed reward.');if(Date.now()-t.startedAt<600000)throw Error('Bob is still preparing your Mini Tuna Cube.');const achievements={...(d.achievements||{})};bobWasNew=!achievements.bobMaster;achievements.bobMaster=true;tx.update(ref,{miniTunaCubesCount:(d.miniTunaCubesCount||0)+1,bobTrade:{...t,claimed:true,claimedAt:Date.now()},achievements});});showToast('You received 1 Mini Tuna Cube!');if(bobWasNew)window.showAchievementUnlocked("That's what you get",'Hope i get a better one!','Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.');openBobTrade();loadBackpackData();}catch(e){showToast(e.message);}}
+  async function startBobTrade(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.bobTrade&&!d.bobTrade.claimed)throw Error('You already have a Bob trade in progress.');const fs=[...(d.fishes||[])];const i=fs.findIndex(f=>f.name==='Bluefin Tuna'&&f.cooking&&stage(f.cooking.side1)==='Well Cooked'&&stage(f.cooking.side2)==='Well Cooked');if(i<0)throw Error('Bob only accepts a Bluefin Tuna with both sides Well Cooked (46% - 60%).');const fish=fs.splice(i,1)[0];tx.update(ref,{fishes:fs,bobTrade:{startedAt:Date.now(),fishId:fish.id||null,claimed:false}});});showToast('Bob accepted your Bluefin Tuna. Come back in 10 minutes.');playGameSound('trade');openBobTrade();}catch(e){showToast(e.message);}}
+  async function claimBobReward(){try{const ref=playerRef();let bobWasNew=false;await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},t=d.bobTrade;if(!t||t.claimed)throw Error('There is no unclaimed reward.');if(Date.now()-t.startedAt<600000)throw Error('Bob is still preparing your Mini Tuna Cube.');const achievements={...(d.achievements||{})};bobWasNew=!achievements.bobMaster;achievements.bobMaster=true;tx.update(ref,{miniTunaCubesCount:(d.miniTunaCubesCount||0)+1,bobTrade:{...t,claimed:true,claimedAt:Date.now()},achievements});});showToast('You received 1 Mini Tuna Cube!');playGameSound('chest');if(bobWasNew)window.showAchievementUnlocked("That's what you get",'Hope i get a better one!','Give a cooked Bluefin Tuna to Bob to get a Mini Tuna Cube.');openBobTrade();loadBackpackData();}catch(e){showToast(e.message);}}
   window.openBobTrade=openBobTrade;window.startBobTrade=startBobTrade;window.claimBobReward=claimBobReward;
 
   // Cosmetic inventory and aquarium placement.
@@ -6486,9 +6578,9 @@
   window.openTanksInventory=openTanksInventory;
 
   async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const cMap=d.aquariumCosmeticsMap||{};const names=['Sandcastle','Verity'];document.getElementById('cosmetic-inventory').innerHTML=names.map(name=>{const n=inv[name]||0,placedCount=Object.values(cMap).flat().filter(x=>x===name).length,img=name==='Sandcastle'?IMG.sandcastle:IMG.verity;return `<div class="rebuild-item"><img src="${img}"><strong>${name}</strong><p>In bag: ${n} | Placed: ${placedCount}</p><small>To place or remove it, select a tank in your Aquarium and use the cosmetic selector.</small></div>`;}).join('');document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
-  async function quickToggleCosmeticTank(cosName){try{const ref=playerRef();await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');const d=snap.data()||{};const inv={...(d.cosmeticsInventory||{})};const tMap={...(d.aquariumTanksMap||{})};const cMap={...(d.aquariumCosmeticsMap||{})};let removed=false;for(const rKey of Object.keys(cMap)){const arr=[...(cMap[rKey]||[])];const idx=arr.indexOf(cosName);if(idx!==-1){arr[idx]=null;cMap[rKey]=arr;inv[cosName]=(inv[cosName]||0)+1;removed=true;break;}}if(!removed){if((inv[cosName]||0)<=0)throw Error('You do not own this cosmetic.');let placed=false;const roomKeys=Object.keys(tMap).length?Object.keys(tMap):['room_0'];for(const rKey of roomKeys){const tArr=tMap[rKey]||[];const cArr=[...(cMap[rKey]||new Array(8).fill(null))];const slotIdx=tArr.findIndex((fish,i)=>fish&&!cArr[i]);if(slotIdx!==-1){cArr[slotIdx]=cosName;cMap[rKey]=cArr;inv[cosName]-=1;placed=true;break;}}if(!placed)throw Error('Place a fish in a Mini Tank in your Aquarium first!');}tx.update(ref,{aquariumCosmeticsMap:cMap,cosmeticsInventory:inv});});showToast('Cosmetic updated!');openCosmeticsInventory();loadBackpackData();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{},d.aquariumTankTypesMap||{});}}catch(e){showToast(e.message);}}
+  async function quickToggleCosmeticTank(cosName){try{const ref=playerRef();await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');const d=snap.data()||{};const inv={...(d.cosmeticsInventory||{})};const tMap={...(d.aquariumTanksMap||{})};const cMap={...(d.aquariumCosmeticsMap||{})};let removed=false;for(const rKey of Object.keys(cMap)){const arr=[...(cMap[rKey]||[])];const idx=arr.indexOf(cosName);if(idx!==-1){arr[idx]=null;cMap[rKey]=arr;inv[cosName]=(inv[cosName]||0)+1;removed=true;break;}}if(!removed){if((inv[cosName]||0)<=0)throw Error('You do not own this cosmetic.');let placed=false;const roomKeys=Object.keys(tMap).length?Object.keys(tMap):['room_0'];for(const rKey of roomKeys){const tArr=tMap[rKey]||[];const cArr=[...(cMap[rKey]||new Array(8).fill(null))];const slotIdx=tArr.findIndex((fish,i)=>fish&&!cArr[i]);if(slotIdx!==-1){cArr[slotIdx]=cosName;cMap[rKey]=cArr;inv[cosName]-=1;placed=true;break;}}if(!placed)throw Error('Place a fish in a Mini Tank in your Aquarium first!');}tx.update(ref,{aquariumCosmeticsMap:cMap,cosmeticsInventory:inv});});showToast('Cosmetic updated!');playGameSound('place');openCosmeticsInventory();loadBackpackData();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{},d.aquariumTankTypesMap||{});}}catch(e){showToast(e.message);}}
   window.quickToggleCosmeticTank=quickToggleCosmeticTank;
-  async function toggleSandcastle(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},inv={...(d.cosmeticsInventory||{})};const equipped=!!d.aquariumSandcastle;if(!equipped&&(inv.Sandcastle||0)<=0)throw Error('You do not own a Sandcastle. Buy one in the Shop.');tx.update(ref,{aquariumSandcastle:!equipped});});showToast('Aquarium decoration updated.');if(typeof openCosmeticsInventory==='function'&&document.getElementById('modal-cosmetics').style.display==='flex')openCosmeticsInventory();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{},d.aquariumTankTypesMap||{});} }catch(e){showToast(e.message);}}
+  async function toggleSandcastle(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},inv={...(d.cosmeticsInventory||{})};const equipped=!!d.aquariumSandcastle;if(!equipped&&(inv.Sandcastle||0)<=0)throw Error('You do not own a Sandcastle. Buy one in the Shop.');tx.update(ref,{aquariumSandcastle:!equipped});});showToast('Aquarium decoration updated.');playGameSound('place');if(typeof openCosmeticsInventory==='function'&&document.getElementById('modal-cosmetics').style.display==='flex')openCosmeticsInventory();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{},d.aquariumTankTypesMap||{});} }catch(e){showToast(e.message);}}
   window.openCosmeticsInventory=openCosmeticsInventory;window.toggleSandcastle=toggleSandcastle;
   async function openTankCosmeticPicker(){
     try{
@@ -6840,6 +6932,7 @@
       });
       offerBundle=[];
       showToast('Custom offer published to the Market!');
+      playGameSound('sell');
       closeRebuildModal('modal-make-offer');
       loadMarketListings();
       loadMyActiveListings();
@@ -7642,7 +7735,7 @@
   const WORKSHOP_BG='https://i.postimg.cc/BQPyV3mn/clippy-workshop.png';
   const ROCKY_IMG='https://i.postimg.cc/CLntQ0cL/Tanque-piedroso.png';
   const $=id=>document.getElementById(id);
-  let clippyStep=0, clippyUnlocked=false, workshopPage=0, chosenTankType='mini';
+  let clippyStep=0, clippyUnlocked=false, workshopPage=0, chosenTankType='mini', clippyClickHandler=null;
   const clippyLines=[
     'Welcome!',
     'This is my workshop! i can let you enter but...',
@@ -7672,20 +7765,21 @@
       #tank-choice-options .tank-choice-card button{background:#27ae60;padding:4px;font-size:.7rem;width:100%;margin:0}
       .clippy-dialog{display:flex;gap:13px;align-items:center;justify-content:center;text-align:left;background:#f3f0ff;border:1px solid #c4b5fd;border-radius:13px;padding:12px;margin:12px 0;min-height:110px}
       .clippy-dialog img{width:104px;height:104px;object-fit:contain;flex:0 0 auto}
-      #clippy-dialog-overlay .clippy-panel{cursor:pointer}
-      #clippy-dialog-overlay .clippy-dialog{min-height:130px}
-      #clippy-dialog-overlay .clippy-dialog>div{text-align:center}
+      #clippy-dialog-overlay{cursor:pointer}
+      #clippy-dialog-overlay .clippy-dialog{height:152px;min-height:152px;align-items:center}
+      #clippy-dialog-overlay .clippy-dialog>div{flex:1;min-width:0;height:100%;max-height:128px;overflow:hidden;text-align:center;display:flex;flex-direction:column;justify-content:center}
       .clippy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
       .clippy-item{border:1px solid #cbd5e1;border-radius:12px;padding:12px;background:#f8fafc}
       .clippy-item img{width:120px;height:110px;object-fit:contain;display:block;margin:auto}
       .pearl-count{font-weight:800;color:#6d4acb;background:#f3f0ff;padding:6px 12px;border-radius:20px;display:inline-block}
-      @media(max-width:480px){.clippy-grid{grid-template-columns:1fr}.clippy-dialog img{width:82px;height:82px}#clippy-workshop-modal .clippy-shop-item{align-items:flex-start;gap:8px;padding:10px}#clippy-workshop-modal .clippy-shop-item img{width:86px;height:86px;flex-basis:86px}}
+      @media(max-width:480px){.clippy-grid{grid-template-columns:1fr}.clippy-dialog img{width:82px;height:82px}#clippy-dialog-overlay .clippy-dialog{height:170px;min-height:170px}#clippy-dialog-overlay .clippy-dialog>div{max-height:146px}#clippy-workshop-modal .clippy-shop-item{align-items:flex-start;gap:8px;padding:10px}#clippy-workshop-modal .clippy-shop-item img{width:86px;height:86px;flex-basis:86px}}
     `;document.head.appendChild(st);
   }
   function addUI(){
     addStyle();
     if(!$('clippy-dialog-overlay')){
-      const d=document.createElement('div');d.id='clippy-dialog-overlay';d.innerHTML=`<div class="clippy-panel" onclick="advanceClippyDialog()"><button onclick="event.stopPropagation();closeClippyDialog()" style="float:right;background:#ef4444">✕</button><div class="clippy-dialog"><img src="${CLIPPY_IMG}" alt="Clippy"><div><h2 style="margin:0 0 8px;color:#5b3aa8">Clippy</h2><div id="clippy-dialog-text" style="font-weight:700;line-height:1.5">Welcome!</div></div></div></div>`;document.body.appendChild(d);
+      const d=document.createElement('div');d.id='clippy-dialog-overlay';d.innerHTML=`<div class="clippy-panel"><div class="clippy-dialog"><img src="${CLIPPY_IMG}" alt="Clippy"><div><h2 style="margin:0 0 8px;color:#5b3aa8">Clippy</h2><div id="clippy-dialog-text" style="font-weight:700;line-height:1.5">Welcome!</div></div></div></div>`;document.body.appendChild(d);
+      d.addEventListener('click',()=>{playGameSound('click');if(clippyClickHandler)clippyClickHandler();});
     }
     if(!$('clippy-workshop-modal')){
       const w=document.createElement('div');w.id='clippy-workshop-modal';w.innerHTML=`<div class="clippy-panel"><button class="clippy-close" onclick="closeClippyWorkshop()">✕</button><div class="clippy-shop-header"><h2 style="margin:0;color:#1f2937">Clippy's Workshop</h2><div class="pearl-count">⚪ Pearls: <span id="clippy-workshop-pearls">0</span></div><img src="${WORKSHOP_BG}" alt="Clippy's Workshop"></div><p style="font-size:.9rem;color:#64748b;margin:0 0 14px">Welcome to my workshop! Craft special items with Pearls.</p><div id="clippy-workshop-items"></div><div style="display:flex;justify-content:center;align-items:center;gap:10px"><button onclick="changeClippyPage(-1)">Previous</button><span id="clippy-page-label">Page 1 / 1</span><button onclick="changeClippyPage(1)">Next</button></div></div>`;document.body.appendChild(w);
@@ -7696,35 +7790,33 @@
   }
   function setWorkshopVisible(){const b=$('clippy-workshop-open');if(b){b.style.display='inline-flex';b.style.visibility='visible';b.style.position='relative';b.style.zIndex='101';}}
   async function getData(){const snap=await playerDoc().get();if(!snap.exists)throw Error('Player profile not found.');return snap.data()||{};}
-  let clippyCheckPending=false;
-  window.closeClippyDialog=()=>{$('clippy-dialog-overlay').style.display='none';clippyStep=0;clippyCheckPending=false;};
+  function setClippyText(t){$('clippy-dialog-text').textContent=t;}
+  window.closeClippyDialog=()=>{$('clippy-dialog-overlay').style.display='none';clippyStep=0;clippyClickHandler=null;};
   async function checkClippyPearls(){
-    clippyCheckPending=false;
+    clippyClickHandler=null;
     try{
       const d=await getData();
       if(Number(d.pearls||0)>=250||d.rockyTankCrafting){
         clippyUnlocked=true;
         await playerDoc().update({clippyWorkshopUnlocked:true});
-        $('clippy-dialog-text').textContent='You have enough Pearls! Welcome to my Workshop!';
-        $('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=()=>{closeClippyDialog();openClippyWorkshop();};
+        setClippyText('You have enough Pearls! Welcome to my Workshop!');
+        clippyClickHandler=()=>{closeClippyDialog();openClippyWorkshop();};
       }else{
-        $('clippy-dialog-text').textContent="You don't have enough Pearls yet. Come back when you have 250.";
-        $('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=closeClippyDialog;
+        setClippyText("You don't have enough Pearls yet. Come back when you have 250.");
+        clippyClickHandler=closeClippyDialog;
       }
-    }catch(e){$('clippy-dialog-text').textContent=e.message;}
+    }catch(e){setClippyText(e.message);clippyClickHandler=closeClippyDialog;}
   }
   window.advanceClippyDialog=async function(){
     try{
-      if(clippyCheckPending){await checkClippyPearls();return;}
       if(clippyStep<clippyLines.length-1){
         clippyStep++;
-        $('clippy-dialog-text').textContent=clippyLines[clippyStep];
-        if(clippyStep===clippyLines.length-1)clippyCheckPending=true;
+        setClippyText(clippyLines[clippyStep]);
+        if(clippyStep===clippyLines.length-1)clippyClickHandler=checkClippyPearls;
         return;
       }
-      clippyCheckPending=true;
-      $('clippy-dialog-text').textContent=clippyLines[3];
-    }catch(e){$('clippy-dialog-text').textContent=e.message;}
+      clippyClickHandler=checkClippyPearls;
+    }catch(e){setClippyText(e.message);}
   };
   window.clippyWorkshopClick=async function(){
     if(!auth.currentUser){showToast('You must be logged in.');openModal('modal-account');return;}
@@ -7741,18 +7833,14 @@
         await playerDoc().update({clippyWorkshopUnlocked:true});
         clippyUnlocked=true;openClippyWorkshop();return;
       }
-      clippyStep=0;clippyCheckPending=false;
-      $('clippy-dialog-text').textContent=d.clippyVisited?'Did you get the Pearls?':clippyLines[0];
-      const panel=$('clippy-dialog-overlay').querySelector('.clippy-panel');
-      panel.onclick=async()=>{
-        if(clippyCheckPending){await checkClippyPearls();return;}
-        if(d.clippyVisited){
-          $('clippy-dialog-text').textContent='Ok, I will check your Pearls... Click to continue.';
-          clippyCheckPending=true;
-          return;
-        }
-        await advanceClippyDialog();
-      };
+      clippyStep=0;
+      if(d.clippyVisited){
+        setClippyText('Did you get the Pearls?');
+        clippyClickHandler=()=>{setClippyText('Ok, I will check your Pearls... Click to continue.');clippyClickHandler=checkClippyPearls;};
+      }else{
+        setClippyText(clippyLines[0]);
+        clippyClickHandler=advanceClippyDialog;
+      }
       await playerDoc().update({clippyVisited:true});
       $('clippy-dialog-overlay').style.display='flex';
     }catch(e){showToast(e.message);}
@@ -7784,6 +7872,7 @@
         tx.update(ref,{pearls:Number(d.pearls||0)-100,miniTanksCount:Number(d.miniTanksCount||0)-1,rockyTankCrafting:{item:'Rocky Tank',startedAt,readyAt:startedAt+600000}});
       });
       showToast('Crafting started! Come back in 10 minutes to claim your Rocky Tank.');
+      playGameSound('buy');
       renderClippyShop(await getData());loadBackpackData();
     }catch(e){showToast('Could not start crafting: '+e.message);}
   };
@@ -7799,12 +7888,13 @@
         tx.update(ref,{rockyTanksCount:Number(d.rockyTanksCount||0)+1,rockyTankCrafting:firebase.firestore.FieldValue.delete(),achievements});
       });
       showToast('Rocky Tank claimed!');
+      playGameSound('chest');
       if(unlocked&&window.showAchievementUnlocked)window.showAchievementUnlocked('I give, I get',"Ok, but don't scam me.",'Successfully made an exchange with Clippy.');
       renderClippyShop(await getData());loadBackpackData();
     }catch(e){showToast('Could not claim Rocky Tank: '+e.message);}
   };
   // Successful fishing may award a chest containing 50–100 Pearls.
-  window.awardPearlChest=async function(usedBait=false){const chestChance=usedBait?0.0005:0.003;if(Math.random()>=chestChance)return;const amount=50+Math.floor(Math.random()*51);try{await playerDoc().update({pearls:firebase.firestore.FieldValue.increment(amount)});const n=document.createElement('div');n.style.cssText='position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;background:#0008;padding:15px';n.innerHTML=`<div style="background:white;border:3px solid #d6a84f;border-radius:18px;padding:22px;text-align:center;max-width:320px"><img src="${CHEST_IMG}" style="width:150px;height:130px;object-fit:contain"><h2 style="color:#8b5e16;margin:5px">Pearl Chest!</h2><p>You found <strong>⚪ ${amount} Pearls</strong>!</p><button style="background:#2563eb;color:white;border:0;border-radius:8px;padding:10px 24px" id="pearl-chest-close">Awesome!</button></div>`;document.body.appendChild(n);n.querySelector('#pearl-chest-close').onclick=()=>n.remove();}catch(e){console.error('Pearl chest award failed',e);}};
+  window.awardPearlChest=async function(usedBait=false){const chestChance=usedBait?0.0005:0.003;if(Math.random()>=chestChance)return;const amount=50+Math.floor(Math.random()*51);try{await playerDoc().update({pearls:firebase.firestore.FieldValue.increment(amount)});playGameSound('chest');const n=document.createElement('div');n.style.cssText='position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;background:#0008;padding:15px';n.innerHTML=`<div style="background:white;border:3px solid #d6a84f;border-radius:18px;padding:22px;text-align:center;max-width:320px"><img src="${CHEST_IMG}" style="width:150px;height:130px;object-fit:contain"><h2 style="color:#8b5e16;margin:5px">Pearl Chest!</h2><p>You found <strong>⚪ ${amount} Pearls</strong>!</p><button style="background:#2563eb;color:white;border:0;border-radius:8px;padding:10px 24px" id="pearl-chest-close">Awesome!</button></div>`;document.body.appendChild(n);n.querySelector('#pearl-chest-close').onclick=()=>n.remove();}catch(e){console.error('Pearl chest award failed',e);}};
   // Add chest award to the existing successful catch handler without replacing fishing logic.
   // Aquarium tank choice: list every owned tank type from the shared TANK_TYPES catalog.
   const originalOpenSelect=window.openSelectFishModal;
@@ -7816,7 +7906,7 @@
     const tank=getTankType(chosenTankType);
     if(tank.id==='mini')return originalAssign.call(this,fishName);
     const user=auth.currentUser;if(!user)return;
-    try{const ref=playerDoc();let savedTypes=null;await db.runTransaction(async tx=>{const snap=await tx.get(ref);const d=snap.data()||{};const fish=[...(d.fishes||[])];const idx=fish.findIndex(f=>f.name===fishName&&!f.cooking);if(idx<0)throw Error('Fish is no longer available.');const market=await db.collection('marketListings').where('sellerUid','==',user.uid).where('fishName','==',fishName).get();if(!market.empty)throw Error('This fish is listed on the Market.');const map={...(d.aquariumTanksMap||{})},room=`room_${currentAquariumRoomIndex}`,slots=[...(map[room]||new Array(8).fill(null))];const typesMap={...(d.aquariumTankTypesMap||{})},roomTypes=[...(Array.isArray(typesMap[room])?typesMap[room]:new Array(8).fill(null))];if(!slots[selectedShelfIndex]){const owned=Number(d[tank.field])||0;if(owned<=0)throw Error(`No ${tank.name}s available.`);tx.update(ref,{[tank.field]:owned-1});roomTypes[selectedShelfIndex]=tank.id;}else if(!roomTypes[selectedShelfIndex]){roomTypes[selectedShelfIndex]='mini';}slots[selectedShelfIndex]=fishName;map[room]=slots;typesMap[room]=roomTypes;savedTypes=typesMap;tx.update(ref,{aquariumTanksMap:map,aquariumTankTypesMap:typesMap});});showToast(`${fishName} placed in a ${tank.name}!`);$('modal-select-fish').style.display='none';const fresh=await getData();renderAquarium(fresh.username||'My',fresh.fishes||[],fresh.aquariumTanksMap||{},fresh.aquariumCosmeticsMap||{},fresh.aquariumTankTypesMap||savedTypes||{});loadBackpackData();chosenTankType='mini';}catch(e){showToast('Could not place fish: '+e.message);}
+    try{const ref=playerDoc();let savedTypes=null;await db.runTransaction(async tx=>{const snap=await tx.get(ref);const d=snap.data()||{};const fish=[...(d.fishes||[])];const idx=fish.findIndex(f=>f.name===fishName&&!f.cooking);if(idx<0)throw Error('Fish is no longer available.');const market=await db.collection('marketListings').where('sellerUid','==',user.uid).where('fishName','==',fishName).get();if(!market.empty)throw Error('This fish is listed on the Market.');const map={...(d.aquariumTanksMap||{})},room=`room_${currentAquariumRoomIndex}`,slots=[...(map[room]||new Array(8).fill(null))];const typesMap={...(d.aquariumTankTypesMap||{})},roomTypes=[...(Array.isArray(typesMap[room])?typesMap[room]:new Array(8).fill(null))];if(!slots[selectedShelfIndex]){const owned=Number(d[tank.field])||0;if(owned<=0)throw Error(`No ${tank.name}s available.`);tx.update(ref,{[tank.field]:owned-1});roomTypes[selectedShelfIndex]=tank.id;}else if(!roomTypes[selectedShelfIndex]){roomTypes[selectedShelfIndex]='mini';}slots[selectedShelfIndex]=fishName;map[room]=slots;typesMap[room]=roomTypes;savedTypes=typesMap;tx.update(ref,{aquariumTanksMap:map,aquariumTankTypesMap:typesMap});});showToast(`${fishName} placed in a ${tank.name}!`);playGameSound('place');$('modal-select-fish').style.display='none';const fresh=await getData();renderAquarium(fresh.username||'My',fresh.fishes||[],fresh.aquariumTanksMap||{},fresh.aquariumCosmeticsMap||{},fresh.aquariumTankTypesMap||savedTypes||{});loadBackpackData();chosenTankType='mini';}catch(e){showToast('Could not place fish: '+e.message);}
   };
   // Achievements for room purchase and Clippy exchange, plus cards in the existing list.
   function addAchievementCards(){const list=$('achievements-list');if(!list)return;const defs=[['expanding-lands','Expanding lands','These territories are now MINE!','Purchase a new Aquarium Room.'],['clippy-exchange','I give, I get',"Ok, but don't scam me.",'Successfully made an exchange with Clippy.']];defs.forEach(([id,name,desc,obj])=>{if($('ach-'+id))return;const card=document.createElement('div');card.id='ach-'+id;card.style.cssText='background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:.5';card.innerHTML=`<div><h4 style="margin:0 0 3px;color:#1e3a8a">${name}</h4><p style="margin:0 0 3px;font-weight:bold;font-size:.85rem">${desc}</p><span style="font-size:.75rem;color:#64748b">${obj}</span></div><div id="status-${id}" style="margin-left:auto;font-weight:bold;color:#e74c3c">Locked</div>`;list.appendChild(card);});}
