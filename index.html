@@ -6434,7 +6434,7 @@
       const tankMap=d.aquariumTanksMap||{};
       const placed=Object.values(tankMap).flat().filter(Boolean).length;
       const list=document.getElementById('tanks-inventory-list');
-      list.innerHTML=`<div class="rebuild-item"><img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Mini Tank"><strong>Mini Tank</strong><p>In bag: ${miniBag}</p></div><div class="rebuild-item"><img src="${ROCKY_IMG}" alt="Rocky Tank"><strong>Rocky Tank</strong><p>In bag: ${rockyBag}</p></div><div class="rebuild-item"><strong>Placed in Aquarium</strong><p>${placed} tank slot(s) currently occupied across your rooms.</p></div>`;
+      list.innerHTML=`<div class="rebuild-item"><img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Mini Tank"><strong>Mini Tank</strong><p>In bag: ${miniBag}</p></div><div class="rebuild-item"><img src="https://i.postimg.cc/CLntQ0cL/Tanque-piedroso.png" alt="Rocky Tank"><strong>Rocky Tank</strong><p>In bag: ${rockyBag}</p></div><div class="rebuild-item"><strong>Placed in Aquarium</strong><p>${placed} tank slot(s) currently occupied across your rooms.</p></div>`;
       document.getElementById('modal-tanks-inventory').style.display='flex';
     }catch(e){showToast('Could not load tanks: '+e.message);}
   }
@@ -7600,8 +7600,16 @@
     if($('clippy-extra-style'))return;
     const st=document.createElement('style');st.id='clippy-extra-style';st.textContent=`
       #clippy-dialog-overlay,#clippy-workshop-modal,#tank-choice-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.72);backdrop-filter:blur(4px);z-index:12000;align-items:center;justify-content:center;padding:14px}
-      .clippy-panel{width:min(520px,96vw);background:#fff;border:3px solid #8b5cf6;border-radius:18px;padding:18px;box-shadow:0 16px 45px #0005;text-align:center;color:#1f2937;max-height:90vh;overflow:auto}
+      .clippy-panel{width:min(600px,96vw);background:#fff;border:2px solid #cbd5e1;border-radius:16px;padding:20px;box-shadow:0 10px 30px #0003;text-align:center;color:#1f2937;max-height:90vh;overflow:auto;position:relative}
       .clippy-panel button{border:0;border-radius:9px;padding:10px 16px;background:#6d4acb;color:white;font-weight:800;cursor:pointer;margin:5px}
+      #clippy-workshop-modal .clippy-shop-item{background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;padding:14px;text-align:left;display:flex;align-items:center;gap:14px;margin:14px 0}
+      #clippy-workshop-modal .clippy-shop-item img{width:112px;height:112px;object-fit:contain;flex:0 0 112px}
+      #clippy-workshop-modal .clippy-shop-item .details{flex:1;min-width:0}
+      #clippy-workshop-modal .clippy-shop-item button{background:#6d4acb;width:100%;margin:8px 0 0}
+      #clippy-workshop-modal .clippy-close{position:absolute;right:12px;top:12px;background:#e74c3c;padding:7px 12px}
+      #clippy-workshop-modal .clippy-shop-header{display:flex;flex-direction:column;align-items:center;padding:4px 34px 8px}
+      #clippy-workshop-modal .clippy-shop-header img{width:120px;height:120px;object-fit:contain;margin:8px 0}
+      #clippy-workshop-modal .clippy-countdown{font-weight:700;color:#92400e;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;padding:9px;margin-top:8px}
       .clippy-dialog{display:flex;gap:13px;align-items:center;justify-content:center;text-align:left;background:#f3f0ff;border:1px solid #c4b5fd;border-radius:13px;padding:12px;margin:12px 0;min-height:110px}
       .clippy-dialog img{width:104px;height:104px;object-fit:contain;flex:0 0 auto}
       #clippy-dialog-overlay .clippy-panel{cursor:pointer}
@@ -7611,7 +7619,7 @@
       .clippy-item{border:1px solid #cbd5e1;border-radius:12px;padding:12px;background:#f8fafc}
       .clippy-item img{width:120px;height:110px;object-fit:contain;display:block;margin:auto}
       .pearl-count{font-weight:800;color:#6d4acb;background:#f3f0ff;padding:6px 12px;border-radius:20px;display:inline-block}
-      @media(max-width:480px){.clippy-grid{grid-template-columns:1fr}.clippy-dialog img{width:82px;height:82px}}
+      @media(max-width:480px){.clippy-grid{grid-template-columns:1fr}.clippy-dialog img{width:82px;height:82px}#clippy-workshop-modal .clippy-shop-item{align-items:flex-start;gap:8px;padding:10px}#clippy-workshop-modal .clippy-shop-item img{width:86px;height:86px;flex-basis:86px}}
     `;document.head.appendChild(st);
   }
   function addUI(){
@@ -7620,7 +7628,7 @@
       const d=document.createElement('div');d.id='clippy-dialog-overlay';d.innerHTML=`<div class="clippy-panel" onclick="advanceClippyDialog()"><button onclick="event.stopPropagation();closeClippyDialog()" style="float:right;background:#ef4444">✕</button><div class="clippy-dialog"><img src="${CLIPPY_IMG}" alt="Clippy"><div><h2 style="margin:0 0 8px;color:#5b3aa8">Clippy</h2><div id="clippy-dialog-text" style="font-weight:700;line-height:1.5">Welcome!</div></div></div></div>`;document.body.appendChild(d);
     }
     if(!$('clippy-workshop-modal')){
-      const w=document.createElement('div');w.id='clippy-workshop-modal';w.innerHTML=`<div class="clippy-panel" style="max-width:700px;background:#fff url('${WORKSHOP_BG}') center/cover no-repeat"><button onclick="closeClippyWorkshop()" style="float:right;background:#ef4444">✕</button><h2 style="color:#55349b;margin:3px 0 8px">Clippy's Workshop</h2><div class="pearl-count">⚪ Pearls: <span id="clippy-workshop-pearls">0</span></div><div id="clippy-workshop-items" class="clippy-grid"></div><div style="display:flex;justify-content:center;align-items:center;gap:10px"><button onclick="changeClippyPage(-1)">Previous</button><span id="clippy-page-label">Page 1 / 1</span><button onclick="changeClippyPage(1)">Next</button></div></div>`;document.body.appendChild(w);
+      const w=document.createElement('div');w.id='clippy-workshop-modal';w.innerHTML=`<div class="clippy-panel"><button class="clippy-close" onclick="closeClippyWorkshop()">✕</button><div class="clippy-shop-header"><h2 style="margin:0;color:#1f2937">Clippy's Workshop</h2><div class="pearl-count">⚪ Pearls: <span id="clippy-workshop-pearls">0</span></div><img src="${CLIPPY_IMG}" alt="Clippy"></div><p style="font-size:.9rem;color:#64748b;margin:0 0 14px">Welcome to my workshop! Craft special items with Pearls.</p><div id="clippy-workshop-items"></div><div style="display:flex;justify-content:center;align-items:center;gap:10px"><button onclick="changeClippyPage(-1)">Previous</button><span id="clippy-page-label">Page 1 / 1</span><button onclick="changeClippyPage(1)">Next</button></div></div>`;document.body.appendChild(w);
     }
     if(!$('tank-choice-modal')){
       const t=document.createElement('div');t.id='tank-choice-modal';t.innerHTML=`<div class="clippy-panel" style="max-width:420px"><button onclick="closeTankChoice()" style="float:right;background:#ef4444">✕</button><h2 style="color:#1e3a8a">Select a Tank to put your fish</h2><p>Choose which tank you want to use for this aquarium slot.</p><div id="tank-choice-options" style="display:grid;gap:10px"></div></div>`;document.body.appendChild(t);
@@ -7634,26 +7642,67 @@
       if(clippyStep<clippyLines.length-1){clippyStep++;$('clippy-dialog-text').textContent=clippyLines[clippyStep];return;}
       $('clippy-dialog-text').textContent=clippyLines[3];
       const d=await getData();
-      if(Number(d.pearls||0)>=250){clippyUnlocked=true;$('clippy-dialog-text').textContent='You got the 250 pearls, Welcome to my Workshop!';$('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=()=>{closeClippyDialog();openClippyWorkshop();};}
+      if(Number(d.pearls||0)>=250||d.rockyTankCrafting){clippyUnlocked=true;$('clippy-dialog-text').textContent='Welcome back! Your workshop is ready.';$('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=()=>{closeClippyDialog();openClippyWorkshop();};}
       else{$('clippy-dialog-text').textContent="You don't have enough pearls, come back when you get them";$('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=closeClippyDialog;}
     }catch(e){$('clippy-dialog-text').textContent=e.message;}
   };
   window.clippyWorkshopClick=async function(){
     if(!auth.currentUser){showToast('You must be logged in.');openModal('modal-account');return;}
-    try{const d=await getData();if(clippyUnlocked&&Number(d.pearls||0)>=250){openClippyWorkshop();return;}
+    try{const d=await getData();if(d.rockyTankCrafting||(clippyUnlocked&&Number(d.pearls||0)>=250)){openClippyWorkshop();return;}
       clippyStep=0;$('clippy-dialog-text').textContent=d.clippyVisited?'Did you get the pearls?':clippyLines[0];
       $('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=async()=>{
-        if(d.clippyVisited){$('clippy-dialog-text').textContent='Ok I will check';setTimeout(async()=>{const fresh=await getData();if(Number(fresh.pearls||0)>=250){clippyUnlocked=true;$('clippy-dialog-text').textContent='You got the 250 pearls, Welcome to my Workshop!';$('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=()=>{closeClippyDialog();openClippyWorkshop();};}else{$('clippy-dialog-text').textContent="You don't have enough pearls, come back when you get them";$('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=closeClippyDialog;}},650);return;}
+        if(d.clippyVisited){$('clippy-dialog-text').textContent='Ok I will check';setTimeout(async()=>{const fresh=await getData();if(Number(fresh.pearls||0)>=250||fresh.rockyTankCrafting){clippyUnlocked=true;$('clippy-dialog-text').textContent='Welcome back! Your workshop is ready.';$('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=()=>{closeClippyDialog();openClippyWorkshop();};}else{$('clippy-dialog-text').textContent="You don't have enough pearls, come back when you get them";$('clippy-dialog-overlay').querySelector('.clippy-panel').onclick=closeClippyDialog;}},650);return;}
         advanceClippyDialog();
       };
       await playerDoc().update({clippyVisited:true});$('clippy-dialog-overlay').style.display='flex';
     }catch(e){showToast(e.message);}
   };
-  window.closeClippyWorkshop=()=>$('clippy-workshop-modal').style.display='none';
-  window.openClippyWorkshop=async function(){try{const d=await getData();if(Number(d.pearls||0)<250){clippyUnlocked=false;clippyWorkshopClick();return;}clippyUnlocked=true;workshopPage=0;renderClippyShop(d);$('clippy-workshop-modal').style.display='flex';}catch(e){showToast(e.message);}};
-  function renderClippyShop(d){$('clippy-workshop-pearls').textContent=Number(d.pearls||0);$('clippy-workshop-items').innerHTML=workshopPage===0?`<div class="clippy-item"><img src="${ROCKY_IMG}" alt="Rocky Tank"><strong>Rocky Tank</strong><p>Crafting exchange</p><p>100 Pearls + 1 Mini Tank</p><button onclick="craftRockyTank()">Exchange</button></div>`:'';$('clippy-page-label').textContent='Page 1 / 1';}
+  window.closeClippyWorkshop=()=>{$('clippy-workshop-modal').style.display='none';if(workshopCountdownTimer){clearInterval(workshopCountdownTimer);workshopCountdownTimer=null;}};
+  let workshopCountdownTimer=null;
+  function formatWorkshopTime(ms){const sec=Math.max(0,Math.ceil(ms/1000));return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}
+  function renderClippyShop(d){
+    $('clippy-workshop-pearls').textContent=Number(d.pearls||0);
+    const pending=d.rockyTankCrafting||null, readyAt=pending?Number(pending.readyAt||0):0;
+    const remaining=pending?Math.max(0,readyAt-Date.now()):0;
+    $('clippy-workshop-items').innerHTML=`<div class="clippy-shop-item"><img src="${ROCKY_IMG}" alt="Rocky Tank" onerror="this.onerror=null;this.src='https://i.postimg.cc/CLntQ0cL/Tanque-piedroso.png'"><div class="details"><strong style="font-size:1.05rem">Rocky Tank</strong><p style="margin:6px 0;color:#64748b">Crafting exchange</p><p style="margin:6px 0">100 Pearls + 1 Mini Tank</p>${pending?`<div class="clippy-countdown" id="rocky-craft-status">${remaining>0?'Ready in '+formatWorkshopTime(remaining):'Your Rocky Tank is ready!'}</div><button onclick="claimRockyTank()" ${remaining>0?'disabled style="opacity:.55;cursor:not-allowed"':''}>Claim Rocky Tank</button>`:`<button onclick="craftRockyTank()">Craft Rocky Tank (10 minutes)</button>`}</div></div>`;
+    $('clippy-page-label').textContent='Page 1 / 1';
+    if(workshopCountdownTimer)clearInterval(workshopCountdownTimer);
+    if(pending){workshopCountdownTimer=setInterval(()=>{const left=Math.max(0,readyAt-Date.now()),el=$('rocky-craft-status');if(el)el.textContent=left>0?'Ready in '+formatWorkshopTime(left):'Your Rocky Tank is ready!';const b=$('clippy-workshop-items').querySelector('button');if(b){b.disabled=left>0;b.style.opacity=left>0?'.55':'1';b.style.cursor=left>0?'not-allowed':'pointer';}if(left<=0&&workshopCountdownTimer){clearInterval(workshopCountdownTimer);workshopCountdownTimer=null;}},1000);}
+  }
+  window.openClippyWorkshop=async function(){try{const d=await getData();if(Number(d.pearls||0)<250&&!d.rockyTankCrafting){clippyUnlocked=false;clippyWorkshopClick();return;}clippyUnlocked=true;workshopPage=0;renderClippyShop(d);$('clippy-workshop-modal').style.display='flex';}catch(e){showToast(e.message);}};
   window.changeClippyPage=()=>{workshopPage=0;};
-  window.craftRockyTank=async function(){try{const ref=playerDoc();let unlocked=false;await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(Number(d.pearls||0)<100)throw Error('You need 100 Pearls.');if(Number(d.miniTanksCount||0)<1)throw Error('You need 1 Mini Tank.');const a={...(d.achievements||{})};unlocked=!a.clippyExchange;a.clippyExchange=true;tx.update(ref,{pearls:Number(d.pearls||0)-100,miniTanksCount:Number(d.miniTanksCount||0)-1,rockyTanksCount:Number(d.rockyTanksCount||0)+1,achievements:a});});showToast('Exchange successful! You received 1 Rocky Tank.');if(unlocked)window.showAchievementUnlocked('I give, I get','Ok, but don\'t scam me.','Successfully made an exchange with Clippy.');const d=await getData();renderClippyShop(d);loadBackpackData();}catch(e){showToast(e.message);}};
+  window.craftRockyTank=async function(){
+    try{
+      const ref=playerDoc();
+      await db.runTransaction(async tx=>{
+        const snap=await tx.get(ref);if(!snap.exists)throw Error('Player profile not found.');
+        const d=snap.data()||{};
+        if(d.rockyTankCrafting)throw Error('You already have an item being crafted.');
+        if(Number(d.pearls||0)<100)throw Error('You need 100 Pearls.');
+        if(Number(d.miniTanksCount||0)<1)throw Error('You need 1 Mini Tank.');
+        const startedAt=Date.now();
+        tx.update(ref,{pearls:Number(d.pearls||0)-100,miniTanksCount:Number(d.miniTanksCount||0)-1,rockyTankCrafting:{item:'Rocky Tank',startedAt,readyAt:startedAt+600000}});
+      });
+      showToast('Crafting started! Come back in 10 minutes to claim your Rocky Tank.');
+      renderClippyShop(await getData());loadBackpackData();
+    }catch(e){showToast('Could not start crafting: '+e.message);}
+  };
+  window.claimRockyTank=async function(){
+    try{
+      const ref=playerDoc();let unlocked=false;
+      await db.runTransaction(async tx=>{
+        const snap=await tx.get(ref);if(!snap.exists)throw Error('Player profile not found.');
+        const d=snap.data()||{},pending=d.rockyTankCrafting;
+        if(!pending||pending.item!=='Rocky Tank')throw Error('There is no Rocky Tank waiting to be claimed.');
+        if(Date.now()<Number(pending.readyAt||0))throw Error('Your Rocky Tank is still being crafted.');
+        const achievements={...(d.achievements||{})};unlocked=!achievements.clippyExchange;achievements.clippyExchange=true;
+        tx.update(ref,{rockyTanksCount:Number(d.rockyTanksCount||0)+1,rockyTankCrafting:firebase.firestore.FieldValue.delete(),achievements});
+      });
+      showToast('Rocky Tank claimed!');
+      if(unlocked&&window.showAchievementUnlocked)window.showAchievementUnlocked('I give, I get',"Ok, but don't scam me.",'Successfully made an exchange with Clippy.');
+      renderClippyShop(await getData());loadBackpackData();
+    }catch(e){showToast('Could not claim Rocky Tank: '+e.message);}
+  };
   // Successful fishing may award a chest containing 50–100 Pearls.
   window.awardPearlChest=async function(usedBait=false){const chestChance=usedBait?0.0005:0.003;if(Math.random()>=chestChance)return;const amount=50+Math.floor(Math.random()*51);try{await playerDoc().update({pearls:firebase.firestore.FieldValue.increment(amount)});const n=document.createElement('div');n.style.cssText='position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;background:#0008;padding:15px';n.innerHTML=`<div style="background:white;border:3px solid #d6a84f;border-radius:18px;padding:22px;text-align:center;max-width:320px"><img src="${CHEST_IMG}" style="width:150px;height:130px;object-fit:contain"><h2 style="color:#8b5e16;margin:5px">Pearl Chest!</h2><p>You found <strong>⚪ ${amount} Pearls</strong>!</p><button style="background:#2563eb;color:white;border:0;border-radius:8px;padding:10px 24px" id="pearl-chest-close">Awesome!</button></div>`;document.body.appendChild(n);n.querySelector('#pearl-chest-close').onclick=()=>n.remove();}catch(e){console.error('Pearl chest award failed',e);}};
   // Add chest award to the existing successful catch handler without replacing fishing logic.
