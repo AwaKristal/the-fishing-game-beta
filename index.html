@@ -7836,7 +7836,7 @@
       clippyStep=0;
       if(d.clippyVisited){
         setClippyText('Did you get the Pearls?');
-        clippyClickHandler=()=>{setClippyText('Ok, I will check your Pearls... Click to continue.');clippyClickHandler=checkClippyPearls;};
+        clippyClickHandler=()=>{setClippyText('Ok, I will check your Pearls...');clippyClickHandler=checkClippyPearls;};
       }else{
         setClippyText(clippyLines[0]);
         clippyClickHandler=advanceClippyDialog;
