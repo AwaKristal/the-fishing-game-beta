@@ -4712,7 +4712,7 @@
           const isBaitActive = data.isBaitActive || false;
 
           const placedTanks=Object.values(data.aquariumTanksMap||{}).flat().filter(Boolean).length;
-          document.getElementById('backpack-tanks-summary').innerText = `Mini Tanks: ${tanksCount} in bag · Rocky Tanks: ${Number(data.rockyTanksCount)||0} in bag · ${placedTanks} tank slot(s) occupied`; 
+          document.getElementById('backpack-tanks-summary').innerText = `${placedTanks} tank(s) placed in your Aquarium`;
           document.getElementById('backpack-rooms-count').innerText = `Aquarium Rooms Owned: ${roomsCount}`;
           document.getElementById('backpack-baits-count').innerText = `Baits: ${baitsCount}`;
           
@@ -6567,17 +6567,27 @@
   async function openTanksInventory(){
     try{
       const d=(await playerRef().get()).data()||{};
-      const miniBag=Math.max(0,Number(d.miniTanksCount)||0), rockyBag=Math.max(0,Number(d.rockyTanksCount)||0);
       const tankMap=d.aquariumTanksMap||{};
-      const placed=Object.values(tankMap).flat().filter(Boolean).length;
+      const typeMap=d.aquariumTankTypesMap||{};
       const list=document.getElementById('tanks-inventory-list');
-      list.innerHTML=`<div class="rebuild-item"><img src="https://i.postimg.cc/DZs0wKSx/tanque-mini.png" alt="Mini Tank"><strong>Mini Tank</strong><p>In bag: ${miniBag}</p></div><div class="rebuild-item"><img src="https://i.postimg.cc/CLntQ0cL/Tanque-piedroso.png" alt="Rocky Tank"><strong>Rocky Tank</strong><p>In bag: ${rockyBag}</p></div><div class="rebuild-item"><strong>Placed in Aquarium</strong><p>${placed} tank slot(s) currently occupied across your rooms.</p></div>`;
+      const items=(window.TANK_TYPES||[]).map(t=>{
+        const inBag=Math.max(0,Number(d[t.field])||0);
+        let placed=0;
+        Object.entries(tankMap).forEach(([rKey,arr])=>{
+          if(!Array.isArray(arr))return;
+          const tArr=Array.isArray(typeMap[rKey])?typeMap[rKey]:[];
+          arr.forEach((fish,idx)=>{if(fish&&(tArr[idx]||'mini')===t.id)placed++;});
+        });
+        if(inBag===0&&placed===0)return '';
+        return `<div class="rebuild-item"><img src="${t.img}" alt="${t.name}"><strong>${t.name}</strong><p>In bag: ${inBag} | Placed: ${placed}</p></div>`;
+      }).join('');
+      list.innerHTML=items||'<p>You do not own any tanks yet.</p>';
       document.getElementById('modal-tanks-inventory').style.display='flex';
     }catch(e){showToast('Could not load tanks: '+e.message);}
   }
   window.openTanksInventory=openTanksInventory;
 
-  async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const cMap=d.aquariumCosmeticsMap||{};const names=['Sandcastle','Verity'];document.getElementById('cosmetic-inventory').innerHTML=names.map(name=>{const n=inv[name]||0,placedCount=Object.values(cMap).flat().filter(x=>x===name).length,img=name==='Sandcastle'?IMG.sandcastle:IMG.verity;return `<div class="rebuild-item"><img src="${img}"><strong>${name}</strong><p>In bag: ${n} | Placed: ${placedCount}</p><small>To place or remove it, select a tank in your Aquarium and use the cosmetic selector.</small></div>`;}).join('');document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
+  async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const cMap=d.aquariumCosmeticsMap||{};const names=['Sandcastle','Verity'];const html=names.map(name=>{const n=inv[name]||0,placedCount=Object.values(cMap).flat().filter(x=>x===name).length,img=name==='Sandcastle'?IMG.sandcastle:IMG.verity;if(n===0&&placedCount===0)return '';return `<div class="rebuild-item"><img src="${img}"><strong>${name}</strong><p>In bag: ${n} | Placed: ${placedCount}</p><small>To place or remove it, select a tank in your Aquarium and use the cosmetic selector.</small></div>`;}).join('');document.getElementById('cosmetic-inventory').innerHTML=html||'<p>You do not own any cosmetics yet.</p>';document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
   async function quickToggleCosmeticTank(cosName){try{const ref=playerRef();await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)throw Error('Player not found.');const d=snap.data()||{};const inv={...(d.cosmeticsInventory||{})};const tMap={...(d.aquariumTanksMap||{})};const cMap={...(d.aquariumCosmeticsMap||{})};let removed=false;for(const rKey of Object.keys(cMap)){const arr=[...(cMap[rKey]||[])];const idx=arr.indexOf(cosName);if(idx!==-1){arr[idx]=null;cMap[rKey]=arr;inv[cosName]=(inv[cosName]||0)+1;removed=true;break;}}if(!removed){if((inv[cosName]||0)<=0)throw Error('You do not own this cosmetic.');let placed=false;const roomKeys=Object.keys(tMap).length?Object.keys(tMap):['room_0'];for(const rKey of roomKeys){const tArr=tMap[rKey]||[];const cArr=[...(cMap[rKey]||new Array(8).fill(null))];const slotIdx=tArr.findIndex((fish,i)=>fish&&!cArr[i]);if(slotIdx!==-1){cArr[slotIdx]=cosName;cMap[rKey]=cArr;inv[cosName]-=1;placed=true;break;}}if(!placed)throw Error('Place a fish in a Mini Tank in your Aquarium first!');}tx.update(ref,{aquariumCosmeticsMap:cMap,cosmeticsInventory:inv});});showToast('Cosmetic updated!');playGameSound('place');openCosmeticsInventory();loadBackpackData();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{},d.aquariumTankTypesMap||{});}}catch(e){showToast(e.message);}}
   window.quickToggleCosmeticTank=quickToggleCosmeticTank;
   async function toggleSandcastle(){try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{},inv={...(d.cosmeticsInventory||{})};const equipped=!!d.aquariumSandcastle;if(!equipped&&(inv.Sandcastle||0)<=0)throw Error('You do not own a Sandcastle. Buy one in the Shop.');tx.update(ref,{aquariumSandcastle:!equipped});});showToast('Aquarium decoration updated.');playGameSound('place');if(typeof openCosmeticsInventory==='function'&&document.getElementById('modal-cosmetics').style.display==='flex')openCosmeticsInventory();if(isViewingMyAquarium){const d=(await ref.get()).data();renderAquarium(d.username||'My',d.fishes||[],d.aquariumTanksMap||{},d.aquariumCosmeticsMap||{},d.aquariumTankTypesMap||{});} }catch(e){showToast(e.message);}}
@@ -7387,7 +7397,7 @@
       const cubesCount=d.miniTunaCubesCount||0;
       const bait=d.equippedBait||(d.isBaitActive?'worm':'');
       const placedTanks=Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean).length;
-       const tankSummary=document.getElementById('backpack-tanks-summary');if(tankSummary)tankSummary.innerText=`Mini Tanks: ${tanksCount} in bag · Rocky Tanks: ${Number(d.rockyTanksCount)||0} in bag · ${placedTanks} tank slot(s) occupied`; 
+       const tankSummary=document.getElementById('backpack-tanks-summary');if(tankSummary)tankSummary.innerText=`${placedTanks} tank(s) placed in your Aquarium`;
       document.getElementById('backpack-rooms-count').innerText=`Aquarium Rooms Owned: ${roomsCount}`;
       const baitLabel=document.getElementById('backpack-baits-count');if(baitLabel)baitLabel.remove();
       const toggleBtn=document.getElementById('backpack-bait-toggle-btn');
