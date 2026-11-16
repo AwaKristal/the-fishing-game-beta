@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <!-- Firebase v10.8.0 Compat SDKs -->
@@ -780,7 +780,7 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.4 BETA</div>
+      <div class="version-tag">v.1.0.0.4</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
@@ -788,7 +788,7 @@
         <img src="https://i.postimg.cc/NjwRPPmr/tutorial.png" alt="Tutorial">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -1346,6 +1346,11 @@
 
       </div>
 
+      <div id="aquarium-feed-bar" style="display: none; margin-top: 4px;">
+        <button id="give-fish-food-btn" type="button" class="modal-action-btn" style="background: #6d4acb; font-size: 0.95rem;">Give Fish Food</button>
+        <p id="fish-food-hint" style="font-size: 0.8rem; color: #64748b; text-align: center; margin: 6px 0 0;">Buy Fish Food in Bob's Shop and keep your fish happy.</p>
+      </div>
+
     </div>
   </div>
 
@@ -1673,6 +1678,18 @@
       <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('bait')">Give Baits</button>
 
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
+      <h3>User Fish Food (Give)</h3>
+      <div class="form-group">
+        <label>Give Fish Food (type the exact food name)</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="adminFoodName" list="adminFoodTypes" placeholder="Fish Food" autocomplete="off" style="flex:2;">
+          <datalist id="adminFoodTypes"><option value="Fish Food"></option></datalist>
+          <input type="number" id="adminFoodQty" placeholder="Feeds" value="1" min="1" autocomplete="off" style="flex:1;">
+        </div>
+      </div>
+      <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('food')">Give Fish Food</button>
+
+      <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>User Cosmetics (Give / Remove)</h3>
       <div id="admin-target-cosmetics-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
         <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view cosmetics...</p>
@@ -1715,12 +1732,13 @@
           <strong style="color:#1e293b;">Item Rewards</strong>
           <button type="button" class="modal-action-btn" style="background:#2980b9;padding:7px 12px;" onclick="addPromoRewardRow()">+ Add Reward</button>
         </div>
-        <p style="font-size:.82rem;color:#64748b;margin:0 0 10px;">Choose Fish, Bait, Cosmetic, Tank or Pearls. Enter the exact item name for items; for Pearls just set the amount.</p>
+        <p style="font-size:.82rem;color:#64748b;margin:0 0 10px;">Choose Fish, Bait, Fish Food, Cosmetic, Tank or Pearls. Enter the exact item name for items; for Pearls just set the amount.</p>
         <div id="adminPromoRewardRows">
           <div class="promo-reward-row" style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;">
             <select class="promo-reward-type" aria-label="Reward category" onchange="syncPromoRewardRow(this)" style="flex:1;min-width:105px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
               <option value="fish">Fish</option>
               <option value="bait">Bait</option>
+              <option value="food">Fish Food</option>
               <option value="cosmetic">Cosmetic</option><option value="tank">Tank</option><option value="pearls">Pearls</option>
             </select>
             <input class="promo-reward-name" type="text" placeholder="Exact item name (e.g. Clam)" aria-label="Exact item name" style="flex:2;min-width:145px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
@@ -1921,11 +1939,15 @@
       { name: "Sponge", value:40, rarity: "Rare", desc: "A colorful sea animal that filters tiny food particles from passing water.", img: "https://i.postimg.cc/Jz3gt3th/sponge.png", creatureType: "sand" },
       { name: "Pufferfish", value:38, rarity: "Rare", desc: "A round reef fish that inflates its body when it feels threatened.", img: "https://i.postimg.cc/RZJhCnqt/pufferfish.png", creatureType: "fish" },
       { name: "Shrimp", value:28, rarity: "Rare", desc: "A small crustacean that scuttles along the seabed in search of food.", img: "https://i.postimg.cc/4xHy4hn7/shrimp.png", creatureType: "sand" },
+      { name: "Rainbow Trout", value:30, rarity: "Rare", desc: "A colorful freshwater fish with a shimmering rainbow stripe along its body.", img: "https://i.postimg.cc/TwWHtqCt/rainbow-trout.png" },
+      { name: "Red Snapper", value:36, rarity: "Rare", desc: "A prized reef fish with a rosy body and a taste for small crustaceans.", img: "https://i.postimg.cc/Ssztg7DG/red-snapper.png" },
       { name: "Betta Fish", value:95, rarity: "Epic", desc: "A vibrant and elegant freshwater fish with flowing fins.", img: "https://i.postimg.cc/T2J64ynq/betta-fish.png" },
       { name: "Barreleye Fish", value:75, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
       { name: "Electric Eel", value:110, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
       { name: "Coelacanth", value:125, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
       { name: "Bluefin Tuna", value:100, rarity: "Epic", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
+      { name: "Largemouth Bass", value:85, rarity: "Epic", desc: "A powerful freshwater predator that ambushes prey with explosive strikes.", img: "https://i.postimg.cc/tTVmBt2d/largemouth-bass.png" },
+      { name: "Mahi Mahi", value:115, rarity: "Epic", desc: "A brilliantly colored ocean hunter known for its speed and acrobatic leaps.", img: "https://i.postimg.cc/zBRPxS0S/mahi-mahi.png" },
       { name: "Manta ray", value:280, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
       { name: "Great White Shark", value:350, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
       { name: "Turtle", value:350, rarity: "Legendary", desc: "A peaceful sea turtle that glides through the water with its powerful flippers.", img: "https://i.postimg.cc/g0wMdW8S/turtle2.png", creatureType: "turtle" },
@@ -1934,6 +1956,7 @@
       { name: "Dolphin", value:420, rarity: "Legendary", desc: "A clever, social swimmer known for its speed and playful leaps.", img: "https://i.postimg.cc/x1N8jbqL/dolphin.png", creatureType: "fish" },
       { name: "Piranha", value:480, rarity: "Legendary", desc: "A sharp-toothed freshwater fish that lives in lively schools.", img: "https://i.postimg.cc/kGLfNV8m/piranha.png" },
       { name: "Atlantic Wolffish", value:520, rarity: "Legendary", desc: "A cold-water fish with a broad head and powerful crushing jaws.", img: "https://i.postimg.cc/qBFbHFFM/atlantic-wolffish.png" },
+      { name: "Channel Catfish", value:300, rarity: "Legendary", desc: "A whiskered river giant that patrols muddy bottoms in search of food.", img: "https://i.postimg.cc/Px8FSz2y/channel-catfish.png" },
       { name: "Swordfish", value:750, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
       { name: "Whale Shark", value:900, rarity: "Mythic", desc: "The massive yet gentle giant filter-feeder of the deep sea.", img: "https://i.postimg.cc/HW9ghJbQ/whale-shark.png" },
       { name: "Leafy Seadragon", value:650, rarity: "Mythic", desc: "A master of camouflage adorned with leaf-like appendages.", img: "https://i.postimg.cc/rwsYSdfb/leafy-seadragon.png" },
@@ -6414,7 +6437,8 @@
     {id:'grill',name:'Grill',price:2500,img:IMG.grill,buy:async (r,d)=>{if(d.grillOwned)throw Error('You already own a Grill.');r.update({grillOwned:true})}},
     {id:'sandcastle',name:'Sandcastle',price:500,img:IMG.sandcastle,buy:async r=>r.update({})},
     {id:'verity',name:'Verity',price:350,img:IMG.verity,buy:async r=>r.update({})},
-    {id:'trade',name:'Trade',price:1000,img:'https://i.postimg.cc/NMG4CPhB/trade.png',buy:async r=>r.update({tradeOwned:true})}
+    {id:'trade',name:'Trade',price:1000,img:'https://i.postimg.cc/NMG4CPhB/trade.png',buy:async r=>r.update({tradeOwned:true})},
+    {id:'food',name:'Fish Food',price:150,note:'1 pack · 5 uses',img:'https://i.postimg.cc/CLp4gVxy/fish-food.png',buy:async r=>r.update({})}
   ];
   // Correct cosmetic purchase uses a transaction so the map is merged, not replaced.
   async function buyShopItem(id){
@@ -6433,17 +6457,23 @@
         if(id==='room')updates.aquariumRoomsOwned=(d.aquariumRoomsOwned||1)+1;
         if(id==='grill')updates.grillOwned=true;
         if(id==='trade')updates.tradeOwned=true;
+        if(id==='food'){
+          const tools={...(d.fishTools||{})};
+          tools['Fish Food']=(Number(tools['Fish Food'])||0)+5;
+          updates.fishTools=tools;
+          updates.fishFoodCount=Object.values(tools).reduce((sum,v)=>sum+(Number(v)||0),0);
+        }
         if(id==='sandcastle'||id==='verity'){const inv={...(d.cosmeticsInventory||{})};const cosmeticName=id==='sandcastle'?'Sandcastle':'Verity';inv[cosmeticName]=(inv[cosmeticName]||0)+1;updates.cosmeticsInventory=inv;}
         tx.update(ref,updates);
       });
-      showToast(`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); playGameSound('buy'); updateGameHUD(); loadBackpackData();
+      showToast(id==='food'?'Bought 1 Fish Food pack (5 uses)!':`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); playGameSound('buy'); updateGameHUD(); loadBackpackData();
     }catch(e){showToast('Purchase failed: '+e.message);}
   }
   function openPaginatedShop(){shopPage=0;renderShopPage();document.getElementById('modal-shop-pages').style.display='flex';}
   function changeShopPage(delta){shopPage=Math.max(0,Math.min(Math.ceil(SHOP_ITEMS.length/4)-1,shopPage+delta));renderShopPage();}
   function renderShopPage(){
     const el=document.getElementById('shop-page-items'); if(!el)return;
-    el.innerHTML=SHOP_ITEMS.slice(shopPage*4,shopPage*4+4).map(i=>`<div class="rebuild-item"><img src="${i.img}"><strong>${esc(i.name)}</strong><p>${i.price} Coins</p><button class="rebuild-btn" onclick="buyShopItem('${i.id}')">Buy</button></div>`).join('');
+    el.innerHTML=SHOP_ITEMS.slice(shopPage*4,shopPage*4+4).map(i=>`<div class="rebuild-item"><img src="${i.img}"><strong>${esc(i.name)}</strong><p>${i.price} Coins${i.note?` · ${esc(i.note)}`:''}</p><button class="rebuild-btn" onclick="buyShopItem('${i.id}')">Buy</button></div>`).join('');
     document.getElementById('shop-page-label').textContent=`Page ${shopPage+1} / ${Math.ceil(SHOP_ITEMS.length/4)}`;
   }
   window.openPaginatedShop=openPaginatedShop;window.changeShopPage=changeShopPage;window.buyShopItem=buyShopItem;window.openTradeModal=openTradeModal;window.acceptTradeInvitation=acceptTradeInvitation;window.openTradeSession=openTradeSession;window.cancelActiveTrade=cancelActiveTrade;window.cancelTradeByRequest=cancelTradeByRequest;window.closeTradeModal=closeTradeModal;window.addTradeItemToOffer=addTradeItemToOffer;window.saveTradeCoinsOffer=saveTradeCoinsOffer;window.clearMyTradeOffer=clearMyTradeOffer;window.confirmCurrentTrade=confirmCurrentTrade;
@@ -7156,7 +7186,7 @@
     const wrap=document.getElementById('adminPromoRewardRows');if(!wrap)return;
     const row=document.createElement('div');row.className='promo-reward-row';
     row.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap;';
-    row.innerHTML=`<select class="promo-reward-type" aria-label="Reward category" onchange="syncPromoRewardRow(this)" style="flex:1;min-width:105px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;"><option value="fish">Fish</option><option value="bait">Bait</option><option value="cosmetic">Cosmetic</option><option value="tank">Tank</option><option value="pearls">Pearls</option></select>
+    row.innerHTML=`<select class="promo-reward-type" aria-label="Reward category" onchange="syncPromoRewardRow(this)" style="flex:1;min-width:105px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:white;"><option value="fish">Fish</option><option value="bait">Bait</option><option value="food">Fish Food</option><option value="cosmetic">Cosmetic</option><option value="tank">Tank</option><option value="pearls">Pearls</option></select>
       <input class="promo-reward-name" type="text" placeholder="Exact item name" aria-label="Exact item name" style="flex:2;min-width:145px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
       <input class="promo-reward-qty" type="number" min="1" step="1" value="1" aria-label="Reward quantity" style="width:75px;min-width:65px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
       <button type="button" aria-label="Remove reward" onclick="this.closest('.promo-reward-row').remove()" style="border:0;border-radius:8px;background:#fee2e2;color:#b91c1c;padding:9px 12px;font-weight:700;">×</button>`;
@@ -7187,6 +7217,11 @@
         }else if(type==='bait'){
           const match=['Worm Bait','Mini Tuna Cube','Mini Tung Cube'].find(x=>x.toLowerCase()===typedName.toLowerCase());
           if(!match)throw Error('Unknown bait. Use Worm Bait, Mini Tuna Cube, or Mini Tung Cube.');
+          name=match;
+        }else if(type==='food'){
+          const foods=(window.FISH_FOOD_TYPES||[]).map(f=>f.name);
+          const match=foods.find(x=>x.toLowerCase()===typedName.toLowerCase());
+          if(!match)throw Error('Unknown fish food. Use the exact food name (e.g. Fish Food).');
           name=match;
         }else if(type==='tank'){
           const match=['Mini Tank','Rocky Tank'].find(x=>x.toLowerCase()===typedName.toLowerCase());
@@ -7244,12 +7279,15 @@
         if(x.coins)rewards.push(`${x.coins} Coins`);
         if((x.items||[]).length){
           const fishes=[...(d.fishes||[])],cosmetics={...(d.cosmeticsInventory||{})};
+          const fishTools={...(d.fishTools||{})};
+          let fishFoodTotal=Number(d.fishFoodCount)||0;
           let worms=d.wormBaitsCount||0,cubes=d.miniTunaCubesCount||0,tung=d.miniTungCubesCount||0;
           let miniTanks=Number(d.miniTanksCount)||0,rockyTanks=Number(d.rockyTanksCount)||0,pearls=Number(d.pearls)||0;
           x.items.forEach(it=>{
             const qty=Number(it.quantity)||0;
             if(it.type==='fish'){for(let i=0;i<qty;i++)fishes.push({id:'code-'+code+'-'+Date.now()+'-'+i+'-'+Math.random().toString(36).slice(2),name:it.name,timestamp:new Date().toISOString()});}
             else if(it.type==='bait'||String(it.name||'').toLowerCase()==='mini tung cube'){if(it.name==='Worm Bait')worms+=qty;else if(it.name==='Mini Tuna Cube')cubes+=qty;else if(String(it.name||'').toLowerCase()==='mini tung cube')tung+=qty;else throw Error('Unknown bait in this code.');}
+            else if(it.type==='food'){const foodName=it.name||'Fish Food';fishTools[foodName]=(fishTools[foodName]||0)+qty;fishFoodTotal+=qty;}
             else if(it.type==='cosmetic')cosmetics[it.name]=(cosmetics[it.name]||0)+qty;
             else if(it.type==='tank'){if(it.name==='Mini Tank')miniTanks+=qty;else if(it.name==='Rocky Tank')rockyTanks+=qty;else throw Error('Unknown tank reward.');}
             else if(it.type==='pearls')pearls+=qty;
@@ -7257,6 +7295,7 @@
           });
           update.fishes=fishes;update.wormBaitsCount=worms;update.miniTunaCubesCount=cubes;update.miniTungCubesCount=tung;update.cosmeticsInventory=cosmetics;
           update.miniTanksCount=miniTanks;update.rockyTanksCount=rockyTanks;update.pearls=pearls;
+          update.fishTools=fishTools;update.fishFoodCount=fishFoodTotal;
         }else{
           const baitName=x.baitName||null,baitQty=x.baitQuantity||0,worm=x.wormBaits||0,cubes=x.miniTunaCubes||0,tung=x.miniTungCubes||0,fish=x.bonusFish||null,rawCos=x.cosmeticName||null,cos=String(rawCos||'').toLowerCase()==='mini tung cube'?null:rawCos,cosQty=x.cosmeticQuantity||0;
           if(baitName){const key=baitName==='Mini Tuna Cube'?'miniTunaCubesCount':baitName==='Mini Tung Cube'?'miniTungCubesCount':baitName==='Worm Bait'?'wormBaitsCount':null;if(!key)throw Error('Unknown bait name.');update[key]=(d[key]||0)+baitQty;rewards.push(`${baitQty} ${baitName}`);}
@@ -7669,6 +7708,26 @@
         x = Math.max(b.minX, Math.min(x, b.maxX));
         y = Math.max(b.minY, Math.min(y, b.maxY));
 
+        // Fish food mode: steer toward the nearest food dot and eat it.
+        const feeding = window.FishFeeding && window.FishFeeding.targetFor(img, x + b.iw / 2, y + b.ih / 2);
+        if (feeding) {
+          const dx = feeding.x - (x + b.iw / 2);
+          const dy = feeding.y - (y + b.ih / 2);
+          const dist = Math.hypot(dx, dy) || 1;
+          if (dist < 11) {
+            window.FishFeeding.consume(img);
+          } else {
+            const step = Math.min(2.2, Math.max(0.7, dist * 0.08));
+            x += (dx / dist) * step;
+            y += (dy / dist) * step;
+            facing = dx < 0 ? -1 : 1;
+          }
+          x = Math.max(b.minX, Math.min(x, b.maxX));
+          y = Math.max(b.minY, Math.min(y, b.maxY));
+          paint();
+          return;
+        }
+
         if (pause > 0) {
           pause--;
         } else {
@@ -7948,5 +8007,1523 @@
 })();
 </script>
 
+<style id="deluxe-ui-css">
+  /* ================================================================
+     Shared entrance animations (modals, menus, HUD and shop cards)
+     ================================================================ */
+  @keyframes tfOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes tfCardIn { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
+  @keyframes tfRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes tfFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes tfPop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+  @keyframes tfBlink { 50% { opacity: 0; } }
+
+  .modal-overlay { animation: tfOverlayIn .22s ease-out both; }
+  .modal-overlay .modal-card { animation: tfCardIn .3s cubic-bezier(.2, .9, .25, 1.12) both; }
+  .rebuild-modal { animation: tfOverlayIn .2s ease-out both; }
+  .rebuild-card { animation: tfCardIn .3s cubic-bezier(.2, .9, .25, 1.12) both; }
+  #clippy-dialog-overlay, #clippy-workshop-modal, #tank-choice-modal { animation: tfOverlayIn .2s ease-out both; }
+  #clippy-dialog-overlay .clippy-panel,
+  #clippy-workshop-modal .clippy-panel,
+  #tank-choice-modal .modal-card { animation: tfCardIn .3s cubic-bezier(.2, .9, .25, 1.12) both; }
+  #game-screen { animation: tfFade .3s ease-out; }
+  .main-container .title-box { animation: tfRise .55s ease-out both; }
+  .center-menu .img-btn { animation: tfRise .5s ease-out both; }
+  .center-menu .img-btn:nth-child(1) { animation-delay: .04s; }
+  .center-menu .img-btn:nth-child(2) { animation-delay: .09s; }
+  .center-menu .img-btn:nth-child(3) { animation-delay: .14s; }
+  .center-menu .img-btn:nth-child(4) { animation-delay: .19s; }
+  .hud-box, .exit-game-btn, .cast-line-btn { animation: tfRise .4s ease-out both; }
+  #fishing-minigame-overlay .minigame-container { animation: tfPop .25s cubic-bezier(.2, .9, .25, 1.2) both; }
+  .rebuild-item, .tank-choice-card, .search-player-item, .news-card, .rule-item { animation: tfRise .32s ease-out both; }
+  .rebuild-grid > *:nth-child(2), #tank-choice-options > *:nth-child(2) { animation-delay: .04s; }
+  .rebuild-grid > *:nth-child(3), #tank-choice-options > *:nth-child(3) { animation-delay: .08s; }
+  .rebuild-grid > *:nth-child(4), #tank-choice-options > *:nth-child(4) { animation-delay: .12s; }
+
+  /* ================================================================
+     Background music toggle
+     ================================================================ */
+  #tf-music-toggle {
+    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 14000; display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 14px; border-radius: 999px; cursor: pointer;
+    background: rgba(255, 255, 255, .94); border: 2px solid #1e3a8a; color: #1e3a8a;
+    font: inherit; font-size: .78rem; font-weight: 800; letter-spacing: .02em;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .18); backdrop-filter: blur(6px);
+    transition: transform .2s ease, background .2s ease, color .2s ease, border-color .2s ease;
+  }
+  #tf-music-toggle:hover { transform: translateX(-50%) translateY(-1px) scale(1.03); }
+  #tf-music-toggle.is-off { color: #64748b; border-color: #cbd5e1; background: rgba(255, 255, 255, .86); }
+  #tf-music-toggle .tf-music-note { font-size: 1rem; line-height: 1; }
+  #tf-music-toggle.is-playing .tf-music-note { animation: tfMusicPulse 2.4s ease-in-out infinite; }
+  @keyframes tfMusicPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.22) rotate(-6deg); } }
+
+  /* ================================================================
+     Clippy dialog typewriter
+     ================================================================ */
+  #clippy-dialog-text.typewriter-active::after {
+    content: '▍'; color: #6d4acb; margin-left: 2px; animation: tfBlink .8s step-end infinite;
+  }
+  .dialog-continue-hint {
+    font-size: .68rem; color: #7c6bb0; text-align: center; margin-top: 8px;
+    letter-spacing: .03em; animation: tfBlink 2s ease-in-out infinite;
+  }
+
+  /* ================================================================
+     Generic overlays used by chests, fish menu and food picker
+     ================================================================ */
+  .tf-overlay {
+    display: none; position: fixed; inset: 0; z-index: 14500; align-items: center; justify-content: center;
+    padding: 14px; background: rgba(15, 23, 42, .68); backdrop-filter: blur(5px);
+    animation: tfOverlayIn .2s ease-out both;
+  }
+  .tf-card {
+    position: relative; width: min(430px, 96vw); max-height: 92vh; overflow-y: auto;
+    background: #fff; color: #1f2937; border: 2px solid #cbd5e1; border-radius: 18px;
+    padding: 20px; box-shadow: 0 24px 70px rgba(15, 23, 42, .38);
+    animation: tfCardIn .3s cubic-bezier(.2, .9, .25, 1.12) both;
+  }
+  .tf-close {
+    position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%;
+    border: 0; background: #eef2f7; color: #475569; font-weight: 900; cursor: pointer; font-size: 1rem;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .tf-close:hover { background: #e2e8f0; color: #0f172a; }
+
+  /* ================================================================
+     Chest reward overlay
+     ================================================================ */
+  #tf-chest-overlay { z-index: 15000; }
+  .tf-chest-card { text-align: center; width: min(360px, 94vw); }
+  .tf-chest-card h2 { margin: 2px 0 0; color: #8b5e16; }
+  .tf-chest-stage {
+    position: relative; width: 226px; height: 190px; margin: 6px auto 2px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .tf-chest-glow {
+    position: absolute; width: 190px; height: 190px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(241, 196, 15, .5), rgba(241, 196, 15, 0) 70%);
+    opacity: 0; transition: opacity .3s ease;
+  }
+  .tf-chest-card.opened .tf-chest-glow { opacity: 1; animation: tfGlowPulse 1.6s ease-in-out infinite; }
+  @keyframes tfGlowPulse { 0%, 100% { transform: scale(1); opacity: .75; } 50% { transform: scale(1.12); opacity: 1; } }
+  .tf-chest-img {
+    position: relative; width: 190px; max-height: 180px; object-fit: contain;
+    filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .28));
+    animation: tfChestBob 2.6s ease-in-out infinite; transition: transform .15s ease;
+  }
+  .tf-chest-stage:hover .tf-chest-img { transform: scale(1.05); }
+  .tf-chest-img.opened { animation: tfChestOpen .55s cubic-bezier(.2, .9, .25, 1.4) both; }
+  @keyframes tfChestBob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-6px) rotate(1deg); } }
+  @keyframes tfChestOpen { 0% { transform: scale(1); } 35% { transform: scale(1.16) rotate(-2deg); } 100% { transform: scale(1); } }
+  .tf-chest-hint { color: #64748b; font-size: .85rem; margin: 4px 0 0; }
+  .tf-chest-reward { display: none; margin-top: 10px; padding: 10px; border-radius: 12px; background: #fffbeb; border: 1px solid #fde68a; animation: tfPop .3s ease-out both; }
+  .tf-chest-card.opened .tf-chest-reward { display: block; }
+  .tf-chest-amount { font-size: 1.3rem; font-weight: 900; color: #b45309; margin: 2px 0 8px; }
+  .tf-chest-collect {
+    width: 100%; border: 0; border-radius: 10px; padding: 11px; background: #2563eb; color: #fff;
+    font: inherit; font-weight: 800; cursor: pointer;
+  }
+  .tf-chest-collect:hover { background: #1d4ed8; }
+
+  /* ================================================================
+     Fish details menu
+     ================================================================ */
+  .fish-menu-card { width: min(440px, 96vw); }
+  .fm-head { display: flex; gap: 14px; align-items: center; margin: 2px 0 14px; padding-right: 28px; }
+  .fm-head img { width: 86px; height: 86px; object-fit: contain; flex: 0 0 86px; filter: drop-shadow(0 5px 10px rgba(0, 0, 0, .16)); }
+  .fm-rarity { display: inline-block; font-size: .65rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: #fff; padding: 2px 8px; border-radius: 999px; background: #27ae60; }
+  .fm-head h3 { margin: 5px 0 2px; font-size: 1.15rem; color: #1e3a8a; line-height: 1.2; }
+  .fm-owner { font-size: .76rem; color: #64748b; margin: 0; }
+  .fish-menu-card label { display: block; font-size: .72rem; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .fish-menu-card input.fm-name-input {
+    width: 100%; padding: 10px 11px; border: 1px solid #cbd5e1; border-radius: 9px;
+    background: #f8fafc; color: #1e293b; font: inherit; margin-bottom: 8px;
+  }
+  .fm-name-readonly { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 9px; padding: 10px 11px; font-weight: 800; color: #1e3a8a; margin-bottom: 8px; }
+  .fm-save-name {
+    width: 100%; border: 0; border-radius: 9px; padding: 9px; background: #6d4acb; color: #fff;
+    font: inherit; font-weight: 800; cursor: pointer; margin-bottom: 12px;
+  }
+  .fm-save-name:hover { background: #5b3aa8; }
+  .fm-happiness-box { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px; padding: 11px; margin-bottom: 10px; }
+  .fm-happiness-row { display: flex; justify-content: space-between; align-items: center; font-size: .82rem; margin-bottom: 6px; }
+  .fm-happiness-row strong { color: #1e3a8a; }
+  .fm-happiness-pct { font-weight: 900; color: #b45309; }
+  .fm-happiness-track { height: 14px; border-radius: 999px; background: #e2e8f0; border: 1px solid #cbd5e1; overflow: hidden; }
+  .fm-happiness-fill { height: 100%; width: 50%; border-radius: 999px; background: linear-gradient(90deg, #ef4444, #f59e0b 55%, #22c55e); transition: width .5s ease; }
+  .fm-happiness-hint { margin: 7px 0 0; font-size: .75rem; color: #64748b; line-height: 1.35; }
+  .fm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 12px; }
+  .fm-stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; }
+  .fm-stat span { display: block; font-size: .62rem; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; font-weight: 900; }
+  .fm-stat strong { display: block; font-size: .84rem; color: #1f2937; margin-top: 2px; }
+  .fm-close-btn { width: 100%; border: 0; border-radius: 10px; padding: 10px; background: #1e3a8a; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+  .fm-close-btn:hover { background: #1e40af; }
+
+  /* ================================================================
+     Food picker
+     ================================================================ */
+  #tf-food-overlay { z-index: 14600; }
+  #tf-food-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin-top: 10px; }
+  .tf-food-option {
+    border: 1px solid #cbd5e1; border-radius: 12px; padding: 10px; background: #f8fafc;
+    cursor: pointer; text-align: center; transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    animation: tfRise .3s ease-out both; font: inherit; color: inherit;
+  }
+  .tf-food-option:hover { transform: translateY(-2px); border-color: #6d4acb; box-shadow: 0 6px 14px rgba(109, 74, 203, .16); }
+  .tf-food-option img { width: 58px; height: 58px; object-fit: contain; display: block; margin: 0 auto 4px; }
+  .tf-food-option strong { display: block; font-size: .82rem; color: #1e293b; }
+  .tf-food-option span { display: block; font-size: .7rem; color: #6d4acb; font-weight: 800; margin-top: 2px; }
+
+  /* ================================================================
+     Aquarium fish labels, feeding mode and food particles
+     ================================================================ */
+  .fish-slot-label {
+    position: absolute; top: 2px; left: 3px; right: 3px; z-index: 6;
+    display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none;
+  }
+  .fish-slot-name {
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: .55rem; font-weight: 900; color: #1e293b; background: rgba(255, 255, 255, .84);
+    border-radius: 999px; padding: 1px 6px; box-shadow: 0 1px 3px rgba(0, 0, 0, .14);
+  }
+  .fish-slot-happiness {
+    display: inline-flex; align-items: center; gap: 3px; font-size: .5rem; font-weight: 900;
+    color: #92400e; background: rgba(255, 255, 255, .78); border-radius: 999px; padding: 1px 5px;
+  }
+  .fish-slot-happiness .bar { width: 22px; height: 4px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+  .fish-slot-happiness .bar i { display: block; height: 100%; background: #f59e0b; transition: width .4s ease; }
+  #modal-aquarium .modal-card.fish-feeding { box-shadow: 0 0 0 3px rgba(109, 74, 203, .24), 0 10px 30px rgba(0, 0, 0, .25); }
+  #modal-aquarium .modal-card.fish-feeding [id^="shelf-"] { cursor: crosshair !important; }
+  #modal-aquarium .modal-card.fish-feeding img[class*="swimming-fish"] { filter: drop-shadow(0 0 5px rgba(109, 74, 203, .9)); }
+  #give-fish-food-btn.is-active { background: #e74c3c !important; }
+  #fish-food-hint.is-feeding { color: #6d4acb; font-weight: 800; }
+
+  .fish-food-portion { position: absolute; left: 0; top: 0; z-index: 5; width: 0; height: 0; pointer-events: none; }
+  .fish-food-dot {
+    position: absolute; width: 4px; height: 4px; margin: -2px; border-radius: 50%;
+    background: #281407; box-shadow: 0 0 3px rgba(40, 20, 7, .6);
+    animation: tfFoodBob 1.8s ease-in-out infinite;
+  }
+  .fish-food-portion.sinking .fish-food-dot { animation: tfFoodSink 2.2s ease-in forwards; }
+  @keyframes tfFoodBob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.15); } }
+  @keyframes tfFoodSink { 0% { opacity: 1; transform: translateY(0); } 70% { opacity: .9; } 100% { opacity: 0; transform: translateY(var(--sink, 48px)); } }
+
+  @media (max-width: 768px) {
+    #tf-music-toggle { top: 6px; padding: 5px 10px; font-size: .68rem; }
+    .tf-card { padding: 16px; }
+    .fm-head img { width: 72px; height: 72px; flex-basis: 72px; }
+    .fish-slot-name { font-size: .5rem; padding: 1px 4px; }
+    .fish-slot-happiness { font-size: .45rem; padding: 1px 4px; }
+    .fish-slot-happiness .bar { width: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+</style>
+
+<script>
+/* =====================================================================
+   FISHING DELUXE SYSTEMS
+   Background music, dialog typewriter, interactive chests, fish food,
+   fish happiness + coins, fish menus, and fish-food admin support.
+   ===================================================================== */
+(function () {
+  'use strict';
+
+  const $ = id => document.getElementById(id);
+  const num = v => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, num(v)));
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const nowMs = () => Date.now();
+
+  /* -------------------------------------------------------------------
+     1. Fish food catalog and happiness tuning
+     ------------------------------------------------------------------- */
+  const FISH_FOOD_TYPES = [
+    {
+      id: 'fish-food',
+      name: 'Fish Food',
+      img: 'https://i.postimg.cc/CLp4gVxy/fish-food.png',
+      price: 150,
+      feedsPerPurchase: 5,
+      usesPerPack: 5,
+      happiness: 20,
+      desc: 'A balanced meal that keeps any fish happy.'
+    }
+  ];
+  window.FISH_FOOD_TYPES = FISH_FOOD_TYPES;
+
+  const findFood = name => FISH_FOOD_TYPES.find(f => f.name.toLowerCase() === String(name || '').toLowerCase()) || null;
+  const foodImg = name => (findFood(name) || {}).img || 'https://i.postimg.cc/CLp4gVxy/fish-food.png';
+
+  const DECAY_PER_HOUR = { Common: 3.5, Rare: 5, Epic: 7, Legendary: 10, Mythic: 14, Divine: 18, Legacy: 22, Secret: 26 };
+  const PAY_INTERVAL_MS = 5 * 60 * 1000;
+  const HAPPINESS_START = 55;
+  const DOTS_PER_FEED = 10;
+  const HAPPINESS_PER_DOT = 2;
+
+  const speciesDef = name => (ALLOWED_FISH_TYPES || []).find(f => f.name === name) || { name: name, rarity: 'Common', value: 0, img: '' };
+  const decayRate = species => DECAY_PER_HOUR[speciesDef(species).rarity] || DECAY_PER_HOUR.Common;
+
+  function settleHappiness(species, entry, at) {
+    const lastT = num(entry && entry.t) || at;
+    const lastP = num(entry && entry.p) || lastT;
+    const raw = entry && entry.v != null ? num(entry.v) : HAPPINESS_START;
+    const value = Math.round(clamp(raw - decayRate(species) * Math.max(0, at - lastT) / 3600000, 0, 100) * 100) / 100;
+    const intervals = Math.max(0, Math.floor((at - lastP) / PAY_INTERVAL_MS));
+    const perInterval = Math.min(25, Math.round(25 * value / 100));
+    return { v: value, p: lastP + intervals * PAY_INTERVAL_MS, coins: intervals * perInterval };
+  }
+
+  /* -------------------------------------------------------------------
+     2. Relaxing procedural background music
+     ------------------------------------------------------------------- */
+  const TFMusic = (function () {
+    let ctx = null, master = null, delayNode = null, timer = null;
+    let playing = false;
+    const active = new Set();
+
+    const CHORDS = [
+      [130.81, 164.81, 196.00, 246.94], // Cmaj7
+      [110.00, 130.81, 164.81, 196.00], // Am7
+      [87.31, 130.81, 174.61, 220.00],  // Fmaj7
+      [98.00, 123.47, 146.83, 196.00],  // G
+      [110.00, 146.83, 174.61, 220.00], // Dm7
+      [130.81, 164.81, 196.00, 261.63]  // C
+    ];
+    const MELODY = [392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 783.99];
+
+    function ensure() {
+      if (ctx) return true;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      try {
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 0;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 3000;
+        filter.Q.value = 0.7;
+        const compressor = ctx.createDynamicsCompressor();
+        compressor.threshold.value = -18;
+        compressor.knee.value = 18;
+        compressor.ratio.value = 3.5;
+        compressor.attack.value = 0.22;
+        compressor.release.value = 1.0;
+        master.connect(filter);
+        filter.connect(compressor);
+        compressor.connect(ctx.destination);
+
+        delayNode = ctx.createDelay(1.0);
+        delayNode.delayTime.value = 0.42;
+        const feedback = ctx.createGain();
+        feedback.gain.value = 0.27;
+        const wet = ctx.createGain();
+        wet.gain.value = 0.32;
+        delayNode.connect(feedback);
+        feedback.connect(delayNode);
+        delayNode.connect(wet);
+        wet.connect(master);
+        return true;
+      } catch (err) {
+        ctx = null;
+        return false;
+      }
+    }
+
+    function voice(freq, start, dur, level, type, destination) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(level, start + Math.min(2.2, dur * 0.28));
+      gain.gain.linearRampToValueAtTime(0.0001, start + dur);
+      osc.connect(gain);
+      gain.connect(destination || master);
+      osc.start(start);
+      osc.stop(start + dur + 0.1);
+      active.add(osc);
+      osc.onended = () => {
+        active.delete(osc);
+        try { osc.disconnect(); gain.disconnect(); } catch (err) { /* ignore */ }
+      };
+    }
+
+    function pad() {
+      if (!playing || !ctx) return;
+      const chord = CHORDS[Math.floor(Math.random() * CHORDS.length)];
+      const t = ctx.currentTime + 0.06;
+      chord.forEach((freq, index) => {
+        voice(freq, t, 10.5, 0.062, 'sine');
+        voice(freq * 2.004, t + 0.12, 9.2, 0.017, 'triangle');
+        if (index === 0) voice(freq / 2, t + 0.05, 11.4, 0.038, 'sine');
+      });
+    }
+
+    function pluck(offset) {
+      if (!playing || !ctx) return;
+      const note = MELODY[Math.floor(Math.random() * MELODY.length)];
+      const t = ctx.currentTime + (offset == null ? 0.03 : offset);
+      voice(note, t, 2.4, 0.085, 'triangle', delayNode);
+      voice(note / 2, t, 2.8, 0.028, 'sine', delayNode);
+    }
+
+    function start() {
+      if (!ensure()) return false;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      playing = true;
+      const t = ctx.currentTime;
+      master.gain.cancelScheduledValues(t);
+      master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), t);
+      master.gain.linearRampToValueAtTime(0.6, t + 1.8);
+      clearInterval(timer);
+      timer = setInterval(() => {
+        if (!playing) return;
+        pad();
+        pluck(0.05);
+        if (Math.random() < 0.7) pluck(2.35);
+      }, 5000);
+      pad();
+      setTimeout(() => { if (playing) pluck(0); }, 1400);
+      setTimeout(() => { if (playing) pluck(0); }, 3300);
+      return true;
+    }
+
+    function stop() {
+      playing = false;
+      clearInterval(timer);
+      timer = null;
+      if (ctx && master) {
+        const t = ctx.currentTime;
+        master.gain.cancelScheduledValues(t);
+        master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), t);
+        master.gain.linearRampToValueAtTime(0.0001, t + 0.9);
+      }
+      setTimeout(() => {
+        if (playing) return;
+        active.forEach(osc => { try { osc.stop(); } catch (err) { /* ignore */ } });
+        active.clear();
+        if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {});
+      }, 1200);
+    }
+
+    return { start, stop, isPlaying: () => playing };
+  })();
+
+  function initMusic() {
+    if ($('tf-music-toggle')) return;
+    let pref = '1';
+    try {
+      const saved = localStorage.getItem('tfMusicEnabled');
+      if (saved === '0' || saved === '1') pref = saved;
+    } catch (err) { /* ignore */ }
+
+    const button = document.createElement('button');
+    button.id = 'tf-music-toggle';
+    button.type = 'button';
+    button.innerHTML = '<span class="tf-music-note">♪</span><span class="tf-music-label">Music</span>';
+    document.body.appendChild(button);
+    const label = button.querySelector('.tf-music-label');
+
+    const refresh = () => {
+      const on = TFMusic.isPlaying();
+      button.classList.toggle('is-playing', on);
+      button.classList.toggle('is-off', !on);
+      button.setAttribute('aria-pressed', on ? 'true' : 'false');
+      button.setAttribute('aria-label', on ? 'Turn background music off' : 'Turn background music on');
+      label.textContent = on ? 'Music On' : (pref === '0' ? 'Music Off' : 'Tap for music');
+    };
+    const start = () => {
+      if (TFMusic.start()) {
+        pref = '1';
+        try { localStorage.setItem('tfMusicEnabled', '1'); } catch (err) { /* ignore */ }
+      }
+      refresh();
+    };
+    const stop = () => {
+      TFMusic.stop();
+      pref = '0';
+      try { localStorage.setItem('tfMusicEnabled', '0'); } catch (err) { /* ignore */ }
+      refresh();
+    };
+
+    button.addEventListener('click', () => {
+      if (TFMusic.isPlaying()) stop(); else start();
+    });
+
+    const gestureStart = event => {
+      if (TFMusic.isPlaying() || pref === '0') {
+        document.removeEventListener('pointerdown', gestureStart, true);
+        return;
+      }
+      if (event.target && event.target.closest && event.target.closest('#tf-music-toggle')) return;
+      start();
+      document.removeEventListener('pointerdown', gestureStart, true);
+    };
+    document.addEventListener('pointerdown', gestureStart, true);
+    refresh();
+  }
+
+  /* -------------------------------------------------------------------
+     3. Clippy dialog typewriter
+     ------------------------------------------------------------------- */
+  function initClippyTypewriter() {
+    const overlay = $('clippy-dialog-overlay');
+    const text = $('clippy-dialog-text');
+    if (!overlay || !text) {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initClippyTypewriter, { once: true });
+      } else {
+        setTimeout(initClippyTypewriter, 60);
+      }
+      return;
+    }
+
+    const panel = overlay.querySelector('.clippy-panel');
+    if (panel && !panel.querySelector('.dialog-continue-hint')) {
+      const hint = document.createElement('div');
+      hint.className = 'dialog-continue-hint';
+      hint.textContent = 'Click to continue';
+      panel.appendChild(hint);
+    }
+
+    let timer = null;
+    let typing = false;
+    let fullText = '';
+    let lastValue = text.textContent || '';
+
+    const finish = () => {
+      clearInterval(timer);
+      timer = null;
+      typing = false;
+      text.textContent = fullText;
+      lastValue = fullText;
+      text.classList.remove('typewriter-active');
+    };
+
+    const startTyping = value => {
+      clearInterval(timer);
+      fullText = String(value || '');
+      text.textContent = '';
+      lastValue = '';
+      if (!fullText) {
+        finish();
+        return;
+      }
+      typing = true;
+      text.classList.add('typewriter-active');
+      let index = 0;
+      timer = setInterval(() => {
+        index++;
+        const slice = fullText.slice(0, index);
+        text.textContent = slice;
+        lastValue = slice;
+        if (index >= fullText.length) finish();
+      }, 22);
+    };
+
+    const observer = new MutationObserver(() => {
+      const value = text.textContent || '';
+      if (value === lastValue) return;
+      lastValue = value;
+      startTyping(value);
+    });
+    observer.observe(text, { childList: true, characterData: true, subtree: true });
+
+    overlay.addEventListener('click', event => {
+      if (!typing) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      finish();
+    }, true);
+
+    startTyping(lastValue);
+  }
+
+  /* -------------------------------------------------------------------
+     4. Interactive pearl chests
+     ------------------------------------------------------------------- */
+  function openChestOverlay(kind, amount) {
+    return new Promise(resolve => {
+      const basic = kind === 'basic';
+      const skin = basic
+        ? { title: 'Basic Chest!', closed: 'https://i.postimg.cc/tCGzjHCK/basic-chest.png', open: 'https://i.postimg.cc/wTYkpdTS/basic-chest-open.png', border: '#93c5fd', titleColor: '#1d4ed8', amountColor: '#1d4ed8' }
+        : { title: 'Pearl Chest!', closed: 'https://i.postimg.cc/ydJtCz7n/chest.png', open: 'https://i.postimg.cc/Hs1tgCkD/chest-open.png', border: '#d6a84f', titleColor: '#8b5e16', amountColor: '#b45309' };
+
+      const overlay = document.createElement('div');
+      overlay.id = 'tf-chest-overlay';
+      overlay.className = 'tf-overlay';
+      overlay.style.display = 'flex';
+      overlay.innerHTML = `
+        <div class="tf-card tf-chest-card" style="border-color:${skin.border};">
+          <h2 style="color:${skin.titleColor};">${skin.title}</h2>
+          <p class="tf-chest-hint" id="tf-chest-hint">A chest appeared! Click it to open.</p>
+          <div class="tf-chest-stage" id="tf-chest-stage" role="button" tabindex="0" aria-label="Open chest">
+            <span class="tf-chest-glow"></span>
+            <img class="tf-chest-img" id="tf-chest-img" src="${skin.closed}" alt="${skin.title}">
+          </div>
+          <div class="tf-chest-reward">
+            <div class="tf-chest-amount" style="color:${skin.amountColor};">⚪ ${amount} Pearls</div>
+            <button type="button" class="tf-chest-collect" id="tf-chest-collect">Collect Pearls</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+
+      const card = overlay.querySelector('.tf-chest-card');
+      const stage = overlay.querySelector('#tf-chest-stage');
+      const image = overlay.querySelector('#tf-chest-img');
+      const hint = overlay.querySelector('#tf-chest-hint');
+      const collect = overlay.querySelector('#tf-chest-collect');
+      let opened = false;
+      let credited = false;
+
+      const credit = async () => {
+        if (credited) return;
+        credited = true;
+        const user = auth.currentUser;
+        if (!user) return;
+        try {
+          await db.collection('jugadores').doc(user.uid).update({
+            pearls: firebase.firestore.FieldValue.increment(amount)
+          });
+        } catch (err) {
+          showToast('Could not add the pearls. Please try again.');
+        }
+      };
+
+      const open = () => {
+        if (opened) return;
+        opened = true;
+        card.classList.add('opened');
+        image.src = skin.open;
+        image.classList.add('opened');
+        hint.textContent = basic ? 'The lid pops open and a few pearls tumble out!' : 'The chest bursts open in a shower of pearls!';
+        if (window.playGameSound) playGameSound('chest');
+        credit();
+      };
+
+      stage.addEventListener('click', open);
+      stage.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          open();
+        }
+      });
+      collect.addEventListener('click', () => {
+        if (window.playGameSound) playGameSound('click');
+        overlay.remove();
+        resolve();
+      });
+    });
+  }
+
+  window.awardPearlChest = async function () {
+    if (!auth.currentUser) return;
+    if ($('tf-chest-overlay')) return;
+    const roll = Math.random();
+    let kind = null;
+    if (roll < 0.02) kind = 'pearl';          // Legendary-like chance
+    else if (roll < 0.02 + 0.25) kind = 'basic'; // Rare-fish-like chance
+    if (!kind) return;
+    const amount = kind === 'pearl'
+      ? 50 + Math.floor(Math.random() * 51)
+      : 10 + Math.floor(Math.random() * 16);
+    await openChestOverlay(kind, amount);
+  };
+
+  /* -------------------------------------------------------------------
+     5. Fish food shop + ownership display
+     ------------------------------------------------------------------- */
+  function totalFood(counts) {
+    return Object.values(counts || {}).reduce((sum, value) => sum + num(value), 0);
+  }
+
+  function foodCountsFromDoc(data) {
+    const tools = (data && data.fishTools) || {};
+    const counts = {};
+    FISH_FOOD_TYPES.forEach(def => { counts[def.name] = 0; });
+    Object.keys(tools).forEach(name => {
+      const def = findFood(name);
+      const canonical = def ? def.name : name;
+      counts[canonical] = num(counts[canonical]) + num(tools[name]);
+    });
+    if (!Object.keys(tools).length && num(data && data.fishFoodCount) > 0) {
+      counts['Fish Food'] = num(data.fishFoodCount);
+    }
+    return counts;
+  }
+
+  /* -------------------------------------------------------------------
+     6. Aquarium: names, happiness, coins and feeding
+     ------------------------------------------------------------------- */
+  const AQ = {
+    open: false,
+    owner: false,
+    uid: '',
+    username: '',
+    roomKey: 'room_0',
+    slots: new Array(8).fill(null),
+    doc: null,
+    names: {},
+    happiness: {},
+    speciesMap: {},
+    foodCounts: {},
+    feedMode: false,
+    feedFood: 'Fish Food',
+    portions: [],
+    targetDots: new WeakMap(),
+    token: 0,
+    menuIndex: -1,
+    paying: false,
+    hapTimer: null
+  };
+
+  function slotElement(index) {
+    return $(index < 4 ? `shelf-top-${index}` : `shelf-bot-${index - 4}`);
+  }
+
+  function currentHappiness(key, species) {
+    const entry = AQ.happiness[key];
+    if (!entry) return HAPPINESS_START;
+    const hours = Math.max(0, nowMs() - (num(entry.t) || nowMs())) / 3600000;
+    return clamp(num(entry.v) - decayRate(species) * hours, 0, 100);
+  }
+
+  function updateSlotLabels() {
+    for (let i = 0; i < 8; i++) {
+      const species = AQ.slots[i];
+      const slot = slotElement(i);
+      if (!slot) continue;
+      const oldLabel = slot.querySelector('.fish-slot-label');
+      if (!species) {
+        if (oldLabel) oldLabel.remove();
+        continue;
+      }
+      const image = slot.querySelector('img[class*="swimming-fish-"]');
+      const viewport = image && image.parentElement;
+      if (!viewport) continue;
+      let label = viewport.querySelector('.fish-slot-label');
+      if (!label) {
+        label = document.createElement('div');
+        label.className = 'fish-slot-label';
+        viewport.appendChild(label);
+      }
+      const key = `${AQ.roomKey}:${i}`;
+      const name = AQ.names[key] || species;
+      const value = Math.round(currentHappiness(key, species));
+      label.innerHTML =
+        `<span class="fish-slot-name" title="${esc(name)}">${esc(name)}</span>` +
+        `<span class="fish-slot-happiness" title="Happiness: ${value}%">` +
+        `<span class="bar"><i style="width:${value}%"></i></span>${value}%</span>`;
+    }
+  }
+
+  function updateFeedHint() {
+    const hint = $('fish-food-hint');
+    if (!hint || !AQ.owner) return;
+    if (AQ.feedMode) {
+      const left = num(AQ.foodCounts[AQ.feedFood]);
+      hint.textContent = `Feeding with ${AQ.feedFood} • ${left} use${left === 1 ? '' : 's'} left • Click a fish to feed it.`;
+      hint.classList.add('is-feeding');
+    } else {
+      hint.classList.remove('is-feeding');
+      const owned = Object.keys(AQ.foodCounts)
+        .filter(name => num(AQ.foodCounts[name]) > 0)
+        .map(name => `${name} (${num(AQ.foodCounts[name])} use${num(AQ.foodCounts[name]) === 1 ? '' : 's'} left)`);
+      hint.textContent = owned.length
+        ? `Your food: ${owned.join(' • ')}. Click a fish to check its happiness.`
+        : "Buy Fish Food in Bob's Shop and keep your fish happy.";
+    }
+  }
+
+  function refreshFeedBarUI() {
+    const bar = $('aquarium-feed-bar');
+    if (bar) bar.style.display = AQ.owner ? 'block' : 'none';
+    const button = $('give-fish-food-btn');
+    if (button) {
+      const total = totalFood(AQ.foodCounts);
+      button.textContent = AQ.feedMode
+        ? 'Stop Feeding'
+        : (total > 0 ? `Give Fish Food (${total})` : 'Give Fish Food');
+      button.classList.toggle('is-active', AQ.feedMode);
+    }
+    const card = document.querySelector('#modal-aquarium .modal-card');
+    if (card) card.classList.toggle('fish-feeding', AQ.feedMode);
+    updateFeedHint();
+  }
+
+  function startFeedMode() {
+    AQ.feedMode = true;
+    refreshFeedBarUI();
+  }
+
+  function endFeedMode() {
+    AQ.feedMode = false;
+    refreshFeedBarUI();
+  }
+
+  function applyAquariumDoc(data, token) {
+    if (!data) return;
+    if (token != null && token !== AQ.token) return;
+    const names = { ...(data.aquariumFishNamesMap || {}) };
+    const happiness = { ...(data.aquariumHappinessMap || {}) };
+    const speciesMap = { ...(data.aquariumFishSpeciesMap || {}) };
+    const at = nowMs();
+    const nextNames = {};
+    const nextHappiness = {};
+
+    AQ.slots.forEach((species, index) => {
+      if (!species) return;
+      const key = `${AQ.roomKey}:${index}`;
+      if (speciesMap[key] && speciesMap[key] !== species) {
+        delete names[key];
+        delete happiness[key];
+      }
+      speciesMap[key] = species;
+      nextNames[key] = names[key] || '';
+      const entry = happiness[key];
+      nextHappiness[key] = entry && typeof entry === 'object'
+        ? { v: clamp(entry.v == null ? HAPPINESS_START : entry.v, 0, 100), t: num(entry.t) || at, p: num(entry.p) || at }
+        : { v: HAPPINESS_START, t: at, p: at };
+    });
+
+    AQ.names = nextNames;
+    AQ.happiness = nextHappiness;
+    AQ.speciesMap = speciesMap;
+    AQ.foodCounts = foodCountsFromDoc(data);
+    updateSlotLabels();
+    refreshFeedBarUI();
+  }
+
+  async function loadViewDoc(token) {
+    const uid = AQ.uid;
+    if (!uid) return null;
+    try {
+      const snap = await db.collection('jugadores').doc(uid).get();
+      if (!snap.exists) return null;
+      if (token != null && token !== AQ.token) return null;
+      const data = snap.data() || {};
+      AQ.doc = data;
+      applyAquariumDoc(data, token);
+      return data;
+    } catch (err) {
+      console.error('Could not load aquarium data', err);
+      return null;
+    }
+  }
+
+  async function settleRoom(token) {
+    if (!AQ.owner || !AQ.uid || AQ.paying) return;
+    if (token !== AQ.token) return;
+    const uid = AQ.uid;
+    const roomKey = AQ.roomKey;
+    AQ.paying = true;
+    try {
+      let outcome = null;
+      await db.runTransaction(async tx => {
+        const ref = db.collection('jugadores').doc(uid);
+        const snap = await tx.get(ref);
+        if (!snap.exists) return;
+        const data = snap.data() || {};
+        const happiness = { ...(data.aquariumHappinessMap || {}) };
+        const names = { ...(data.aquariumFishNamesMap || {}) };
+        const speciesMap = { ...(data.aquariumFishSpeciesMap || {}) };
+        const slots = (data.aquariumTanksMap || {})[roomKey] || [];
+        const at = nowMs();
+
+        Object.keys(happiness).forEach(key => {
+          const split = key.indexOf(':');
+          if (split < 0 || key.slice(0, split) !== roomKey) return;
+          const index = Number(key.slice(split + 1));
+          if (!Number.isInteger(index) || index < 0 || index >= 8 || !slots[index]) {
+            delete happiness[key];
+            delete names[key];
+            delete speciesMap[key];
+          }
+        });
+
+        let paid = 0;
+        for (let index = 0; index < 8; index++) {
+          const species = slots[index];
+          if (!species) continue;
+          const key = `${roomKey}:${index}`;
+          if (speciesMap[key] && speciesMap[key] !== species) {
+            delete names[key];
+            delete happiness[key];
+          }
+          speciesMap[key] = species;
+          const settled = settleHappiness(species, happiness[key] || { v: HAPPINESS_START, t: at, p: at }, at);
+          happiness[key] = { v: settled.v, t: at, p: settled.p };
+          paid += settled.coins;
+        }
+
+        const update = {
+          aquariumHappinessMap: happiness,
+          aquariumFishNamesMap: names,
+          aquariumFishSpeciesMap: speciesMap
+        };
+        if (paid > 0) update.coins = num(data.coins) + paid;
+        tx.update(ref, update);
+        outcome = { doc: { ...data, ...update }, paid };
+      });
+
+      if (!outcome || token !== AQ.token) return;
+      AQ.doc = outcome.doc;
+      applyAquariumDoc(outcome.doc, token);
+      if (outcome.paid > 0) {
+        updateGameHUD();
+        showToast(`Your fish earned ${outcome.paid} coins while you were away!`);
+        if (window.playGameSound) playGameSound('ding');
+      }
+    } catch (err) {
+      console.error('Could not settle fish happiness', err);
+    } finally {
+      AQ.paying = false;
+    }
+  }
+
+  function queueHappinessPersist() {
+    clearTimeout(AQ.hapTimer);
+    AQ.hapTimer = setTimeout(() => { persistHappiness(); }, 700);
+  }
+
+  async function persistHappiness() {
+    if (!AQ.owner || !AQ.uid) return;
+    const uid = AQ.uid;
+    const at = nowMs();
+    const snapshot = {};
+    Object.keys(AQ.happiness).forEach(key => {
+      const entry = AQ.happiness[key] || {};
+      snapshot[key] = {
+        v: clamp(entry.v == null ? HAPPINESS_START : entry.v, 0, 100),
+        t: num(entry.t) || at,
+        p: num(entry.p) || num(entry.t) || at
+      };
+    });
+    try {
+      await db.runTransaction(async tx => {
+        const ref = db.collection('jugadores').doc(uid);
+        const snap = await tx.get(ref);
+        if (!snap.exists) return;
+        const data = snap.data() || {};
+        const map = { ...(data.aquariumHappinessMap || {}) };
+        Object.keys(snapshot).forEach(key => { map[key] = snapshot[key]; });
+        tx.update(ref, { aquariumHappinessMap: map });
+      });
+    } catch (err) {
+      console.error('Could not save fish happiness', err);
+    }
+  }
+
+  async function persistFoodDelta(name, amount) {
+    if (!AQ.owner || !AQ.uid) return;
+    const uid = AQ.uid;
+    try {
+      await db.runTransaction(async tx => {
+        const ref = db.collection('jugadores').doc(uid);
+        const snap = await tx.get(ref);
+        if (!snap.exists) return;
+        const data = snap.data() || {};
+        const tools = { ...(data.fishTools || {}) };
+        tools[name] = Math.max(0, num(tools[name]) - amount);
+        tx.update(ref, { fishTools: tools, fishFoodCount: totalFood(tools) });
+      });
+    } catch (err) {
+      AQ.foodCounts[name] = num(AQ.foodCounts[name]) + amount;
+      updateFeedHint();
+      showToast('Could not save the fish food. Please try again.');
+      console.error('Could not save fish food', err);
+    }
+  }
+
+  function consumeFood(name, amount) {
+    const def = findFood(name);
+    const canonical = def ? def.name : name;
+    AQ.foodCounts[canonical] = Math.max(0, num(AQ.foodCounts[canonical]) - amount);
+    if (AQ.doc) {
+      const tools = { ...(AQ.doc.fishTools || {}) };
+      tools[canonical] = AQ.foodCounts[canonical];
+      AQ.doc.fishTools = tools;
+      AQ.doc.fishFoodCount = totalFood(AQ.foodCounts);
+    }
+    updateFeedHint();
+    persistFoodDelta(canonical, amount);
+  }
+
+  // Fish swim down to 70% of the tank (66% for jellyfish, ground for sand
+  // creatures). Food may fall 10 px past that line, but never out of the tank.
+  function foodFloorFor(viewport, image) {
+    const h = viewport.clientHeight || 100;
+    const ih = (image && image.offsetHeight) || 32;
+    const name = (image && image.alt) || '';
+    const isSand = name === 'Clam' || name === 'Sea Urchin' || name === 'Sponge';
+    const isJelly = name === 'Jellyfish';
+    let maxTop;
+    if (isSand) {
+      maxTop = h * 0.72 + 6.5 - ih;
+    } else {
+      maxTop = h * (isJelly ? 0.66 : 0.70);
+    }
+    maxTop = Math.max(3, Math.min(maxTop, h - ih - 3));
+    return Math.max(8, Math.min(h - 4, maxTop + 10));
+  }
+
+  function sinkDotsToFloor(container, floor) {
+    container.querySelectorAll('.fish-food-dot').forEach(dot => {
+      const y = num(dot.__y) || parseFloat(dot.style.top) || floor;
+      const distance = Math.max(0, floor - y);
+      dot.style.setProperty('--sink', distance.toFixed(1) + 'px');
+      dot.style.animationDelay = (Math.random() * 0.18).toFixed(2) + 's';
+    });
+    container.classList.add('sinking');
+  }
+
+  function spawnSinkingFood(viewport, image) {
+    const portion = document.createElement('div');
+    portion.className = 'fish-food-portion';
+    const width = viewport.clientWidth || 100;
+    const height = viewport.clientHeight || 100;
+    const floor = foodFloorFor(viewport, image);
+    for (let i = 0; i < DOTS_PER_FEED; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'fish-food-dot';
+      const x = clamp(width * (0.18 + Math.random() * 0.4), 4, Math.max(4, width - 8));
+      const y = clamp(height * (0.55 + Math.random() * 0.14), 4, floor);
+      dot.__x = x;
+      dot.__y = y;
+      dot.style.left = x + 'px';
+      dot.style.top = y + 'px';
+      portion.appendChild(dot);
+    }
+    viewport.appendChild(portion);
+    sinkDotsToFloor(portion, floor);
+    setTimeout(() => { try { portion.remove(); } catch (err) { /* ignore */ } }, 2400);
+  }
+
+  function spawnFoodDots(image, viewport, key, species) {
+    const portion = {
+      img: image,
+      vp: viewport,
+      key: key,
+      species: species,
+      dots: [],
+      remaining: DOTS_PER_FEED,
+      container: document.createElement('div')
+    };
+    portion.container.className = 'fish-food-portion';
+    viewport.appendChild(portion.container);
+
+    const width = viewport.clientWidth || 100;
+    const height = viewport.clientHeight || 100;
+    const floor = foodFloorFor(viewport, image);
+    portion.floor = floor;
+    const centerX = width * (0.16 + Math.random() * 0.4);
+    const centerY = Math.min(height * (0.52 + Math.random() * 0.16), floor - 10);
+
+    for (let i = 0; i < DOTS_PER_FEED; i++) {
+      const dot = document.createElement('span');
+      dot.className = 'fish-food-dot';
+      const x = clamp(centerX + (Math.random() - 0.5) * 40, 4, Math.max(4, width - 8));
+      const y = clamp(centerY + (Math.random() - 0.5) * 24, 4, floor);
+      dot.__x = x;
+      dot.__y = y;
+      dot.style.left = x + 'px';
+      dot.style.top = y + 'px';
+      dot.style.animationDelay = (Math.random() * 1.2).toFixed(2) + 's';
+      portion.dots.push(dot);
+      portion.container.appendChild(dot);
+    }
+    AQ.portions.push(portion);
+  }
+
+  async function feedFishAt(index) {
+    if (!AQ.owner) return;
+    if (!AQ.doc) await loadViewDoc(AQ.token);
+    if (!AQ.open) return;
+    const species = AQ.slots[index];
+    if (!species) {
+      showToast('No fish in this slot.');
+      return;
+    }
+    const foodName = AQ.feedFood || 'Fish Food';
+    const left = num(AQ.foodCounts[foodName]);
+    if (left <= 0) {
+      showToast(`You are out of ${foodName}. Buy more in Bob's Shop.`);
+      endFeedMode();
+      return;
+    }
+    const slot = slotElement(index);
+    const image = slot && slot.querySelector('img[class*="swimming-fish-"]');
+    const viewport = image && image.parentElement;
+    if (!image || !viewport) {
+      showToast('This fish is not ready yet. Try again.');
+      return;
+    }
+
+    const key = `${AQ.roomKey}:${index}`;
+    const name = AQ.names[key] || species;
+    const happiness = currentHappiness(key, species);
+    consumeFood(foodName, 1);
+
+    if (happiness >= 99.5) {
+      spawnSinkingFood(viewport, image);
+      showToast(`${name} is not hungry right now.`);
+      if (window.playGameSound) playGameSound('ding');
+      return;
+    }
+
+    spawnFoodDots(image, viewport, key, species);
+    if (window.playGameSound) playGameSound('place');
+    showToast(`Feeding ${name}...`);
+    if (num(AQ.foodCounts[foodName]) <= 0) endFeedMode();
+  }
+
+  window.FishFeeding = {
+    targetFor(image, fishX, fishY) {
+      let best = null;
+      let bestDistance = Infinity;
+      AQ.portions.forEach(portion => {
+        if (portion.img !== image) return;
+        portion.dots.forEach(dot => {
+          if (!dot || !dot.isConnected) return;
+          const distance = Math.hypot(dot.__x - num(fishX), dot.__y - num(fishY));
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            best = dot;
+          }
+        });
+      });
+      if (best) AQ.targetDots.set(image, best);
+      else AQ.targetDots.delete(image);
+      return best ? { x: best.__x, y: best.__y } : null;
+    },
+    consume(image) {
+      const dot = AQ.targetDots.get(image);
+      if (!dot || !dot.isConnected) return;
+      const portion = AQ.portions.find(item => item.dots.includes(dot));
+      if (!portion) return;
+      dot.remove();
+      const dotIndex = portion.dots.indexOf(dot);
+      if (dotIndex >= 0) portion.dots[dotIndex] = null;
+      portion.remaining = Math.max(0, portion.remaining - 1);
+
+      const current = currentHappiness(portion.key, portion.species);
+      const entry = AQ.happiness[portion.key] || { v: current, t: nowMs(), p: nowMs() };
+      AQ.happiness[portion.key] = {
+        v: clamp(current + HAPPINESS_PER_DOT, 0, 100),
+        t: nowMs(),
+        p: num(entry.p) || nowMs()
+      };
+      updateSlotLabels();
+
+      if (AQ.happiness[portion.key].v >= 99.5 && portion.remaining > 0) {
+        portion.remaining = 0;
+        sinkDotsToFloor(portion.container, portion.floor || foodFloorFor(portion.vp, portion.img));
+        setTimeout(() => { try { portion.container.remove(); } catch (err) { /* ignore */ } }, 2300);
+        showToast(`${AQ.names[portion.key] || portion.species} is full and happy!`);
+      } else if (portion.remaining <= 0) {
+        try { portion.container.remove(); } catch (err) { /* ignore */ }
+      }
+
+      if (portion.remaining <= 0) {
+        AQ.portions = AQ.portions.filter(item => item !== portion);
+        queueHappinessPersist();
+      }
+    }
+  };
+
+  function finalizeFeeding() {
+    if (!AQ.portions.length) {
+      endFeedMode();
+      return;
+    }
+    AQ.portions.forEach(portion => {
+      const alive = portion.dots.filter(dot => dot && dot.isConnected);
+      const happiness = currentHappiness(portion.key, portion.species);
+      const canEat = Math.max(0, Math.min(alive.length, Math.floor((100 - happiness) / HAPPINESS_PER_DOT)));
+      if (canEat > 0) {
+        const entry = AQ.happiness[portion.key] || { v: happiness, t: nowMs(), p: nowMs() };
+        AQ.happiness[portion.key] = {
+          v: clamp(happiness + canEat * HAPPINESS_PER_DOT, 0, 100),
+          t: nowMs(),
+          p: num(entry.p) || nowMs()
+        };
+      }
+      try { portion.container.remove(); } catch (err) { /* ignore */ }
+    });
+    AQ.portions = [];
+    endFeedMode();
+    updateSlotLabels();
+    persistHappiness();
+  }
+
+  /* ----- Fish details menu ----- */
+  function ensureFishMenu() {
+    if ($('tf-fish-menu')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'tf-fish-menu';
+    overlay.className = 'tf-overlay';
+    overlay.innerHTML = `
+      <div class="tf-card fish-menu-card" role="dialog" aria-modal="true" aria-labelledby="tf-fish-title">
+        <button type="button" class="tf-close" id="tf-fish-close" aria-label="Close fish menu">✕</button>
+        <div class="fm-head">
+          <img id="tf-fish-img" src="" alt="">
+          <div>
+            <span class="fm-rarity" id="tf-fish-rarity">Rare</span>
+            <h3 id="tf-fish-title">Fish</h3>
+            <p class="fm-owner" id="tf-fish-owner"></p>
+          </div>
+        </div>
+        <div id="tf-fish-name-edit">
+          <label for="tf-fish-name-input">Fish name</label>
+          <input class="fm-name-input" id="tf-fish-name-input" maxlength="24" autocomplete="off">
+          <button type="button" class="fm-save-name" id="tf-fish-name-save">Save Name</button>
+        </div>
+        <div id="tf-fish-name-view" style="display:none;">
+          <label>Fish name</label>
+          <div class="fm-name-readonly" id="tf-fish-name-readonly"></div>
+        </div>
+        <div class="fm-happiness-box">
+          <div class="fm-happiness-row"><strong>Happiness</strong><span class="fm-happiness-pct" id="tf-fish-happiness-pct">55%</span></div>
+          <div class="fm-happiness-track"><div class="fm-happiness-fill" id="tf-fish-happiness-fill"></div></div>
+          <p class="fm-happiness-hint" id="tf-fish-happiness-hint"></p>
+        </div>
+        <div class="fm-stats">
+          <div class="fm-stat"><span>Rarity</span><strong id="tf-fish-rarity-stat">—</strong></div>
+          <div class="fm-stat"><span>Raw Price</span><strong id="tf-fish-price">—</strong></div>
+          <div class="fm-stat"><span>Earnings</span><strong id="tf-fish-earn">—</strong></div>
+          <div class="fm-stat"><span>Status</span><strong id="tf-fish-status">—</strong></div>
+        </div>
+        <button type="button" class="fm-close-btn" style="background:#64748b;margin-bottom:8px;display:none;" id="tf-fish-manage">Change / Remove Fish</button>
+        <button type="button" class="fm-close-btn" id="tf-fish-close-btn">Close</button>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) hideFishMenu();
+    });
+    overlay.querySelector('#tf-fish-close').addEventListener('click', hideFishMenu);
+    overlay.querySelector('#tf-fish-close-btn').addEventListener('click', hideFishMenu);
+  }
+
+  function hideFishMenu() {
+    const menu = $('tf-fish-menu');
+    if (menu) menu.style.display = 'none';
+    AQ.menuIndex = -1;
+  }
+
+  const RARITY_COLORS = {
+    Common: ['#27ae60', '#fff'],
+    Rare: ['#3498db', '#fff'],
+    Epic: ['#9b59b6', '#fff'],
+    Legendary: ['#e67e22', '#fff'],
+    Mythic: ['#e74c3c', '#fff'],
+    Divine: ['#f1c40f', '#3b2f00'],
+    Legacy: ['#7f8c8d', '#fff'],
+    Secret: ['#111827', '#fff']
+  };
+
+  async function openFishMenu(index) {
+    if (!AQ.open) return;
+    if (AQ.portions.length) finalizeFeeding();
+    const species = AQ.slots[index];
+    if (!species) return;
+    ensureFishMenu();
+    AQ.menuIndex = index;
+
+    if (!AQ.doc) await loadViewDoc(AQ.token);
+    if (AQ.menuIndex !== index) return;
+
+    const key = `${AQ.roomKey}:${index}`;
+    const def = speciesDef(species);
+    const customName = AQ.names[key] || '';
+    const displayName = customName || species;
+    const happiness = Math.round(currentHappiness(key, species));
+    const perTick = Math.min(25, Math.round(25 * happiness / 100));
+    const colors = RARITY_COLORS[def.rarity] || RARITY_COLORS.Common;
+
+    const menu = $('tf-fish-menu');
+    menu.querySelector('#tf-fish-img').src = def.img;
+    menu.querySelector('#tf-fish-img').alt = species;
+    menu.querySelector('#tf-fish-title').textContent = displayName;
+    menu.querySelector('#tf-fish-owner').textContent = `${species} • ${AQ.owner ? 'Your fish' : 'Owned by ' + (AQ.username || 'a player')}`;
+    const rarityEl = menu.querySelector('#tf-fish-rarity');
+    rarityEl.textContent = def.rarity;
+    rarityEl.style.background = colors[0];
+    rarityEl.style.color = colors[1];
+
+    menu.querySelector('#tf-fish-name-edit').style.display = AQ.owner ? 'block' : 'none';
+    menu.querySelector('#tf-fish-name-view').style.display = AQ.owner ? 'none' : 'block';
+    menu.querySelector('#tf-fish-name-readonly').textContent = displayName;
+    const input = menu.querySelector('#tf-fish-name-input');
+    input.value = customName;
+    input.placeholder = species;
+
+    menu.querySelector('#tf-fish-happiness-pct').textContent = `${happiness}%`;
+    menu.querySelector('#tf-fish-happiness-fill').style.width = `${happiness}%`;
+    menu.querySelector('#tf-fish-happiness-hint').textContent = happiness >= 99.5
+      ? 'This fish is completely full. Extra food will sink and be wasted.'
+      : (AQ.owner
+        ? 'Feed with Fish Food to raise happiness. Happy fish earn up to 25 coins every 5 minutes.'
+        : 'Happiness decays over time. The owner can feed this fish with Fish Food.');
+
+    menu.querySelector('#tf-fish-rarity-stat').textContent = def.rarity;
+    menu.querySelector('#tf-fish-price').textContent = def.value ? `${def.value} 💰` : '—';
+    menu.querySelector('#tf-fish-earn').textContent = `${perTick} 💰 / 5 min`;
+    menu.querySelector('#tf-fish-status').textContent = happiness >= 99.5 ? 'Full' : happiness >= 60 ? 'Content' : happiness >= 25 ? 'Hungry' : 'Very hungry';
+
+    const manage = menu.querySelector('#tf-fish-manage');
+    manage.style.display = AQ.owner ? 'block' : 'none';
+    manage.onclick = () => {
+      hideFishMenu();
+      if (typeof originalHandleShelfClick === 'function') originalHandleShelfClick(index);
+    };
+
+    const save = menu.querySelector('#tf-fish-name-save');
+    save.disabled = false;
+    save.onclick = async () => {
+      if (!AQ.owner || !AQ.uid) return;
+      const value = input.value.trim().slice(0, 24);
+      const names = { ...((AQ.doc && AQ.doc.aquariumFishNamesMap) || {}) };
+      if (!value || value.toLowerCase() === species.toLowerCase()) delete names[key];
+      else names[key] = value;
+      save.disabled = true;
+      try {
+        await db.collection('jugadores').doc(AQ.uid).update({ aquariumFishNamesMap: names });
+        if (AQ.doc) AQ.doc.aquariumFishNamesMap = names;
+        if (names[key]) AQ.names[key] = names[key];
+        else delete AQ.names[key];
+        updateSlotLabels();
+        menu.querySelector('#tf-fish-title').textContent = names[key] || species;
+        menu.querySelector('#tf-fish-name-readonly').textContent = names[key] || species;
+        showToast(names[key] ? `Fish name saved: ${names[key]}` : 'Fish name reset to its species name.');
+        if (window.playGameSound) playGameSound('click');
+      } catch (err) {
+        showToast('Could not save the fish name: ' + err.message);
+      } finally {
+        save.disabled = false;
+      }
+    };
+
+    menu.style.display = 'flex';
+  }
+
+  /* ----- Food picker ----- */
+  function ensureFoodPicker() {
+    if ($('tf-food-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'tf-food-overlay';
+    overlay.className = 'tf-overlay';
+    overlay.innerHTML = `
+      <div class="tf-card" role="dialog" aria-modal="true">
+        <button type="button" class="tf-close" id="tf-food-close" aria-label="Close food picker">✕</button>
+        <h3 style="margin:2px 0 6px;color:#1e3a8a;">Choose Fish Food</h3>
+        <p style="font-size:.82rem;color:#64748b;margin:0;">Only the food you own is listed. Each use feeds one fish; each pack has 5 uses.</p>
+        <div id="tf-food-options"></div>
+        <p id="tf-food-empty" style="display:none;font-size:.85rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;margin-top:10px;">You do not have any fish food yet. Buy Fish Food in Bob's Shop.</p>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) hideFoodPicker();
+    });
+    overlay.querySelector('#tf-food-close').addEventListener('click', hideFoodPicker);
+  }
+
+  function hideFoodPicker() {
+    const picker = $('tf-food-overlay');
+    if (picker) picker.style.display = 'none';
+  }
+
+  function renderFoodOptions() {
+    const wrap = $('tf-food-options');
+    const empty = $('tf-food-empty');
+    if (!wrap) return;
+    const entries = Object.keys(AQ.foodCounts).filter(name => num(AQ.foodCounts[name]) > 0);
+    wrap.innerHTML = entries.map(name => {
+      const count = num(AQ.foodCounts[name]);
+      return `<button type="button" class="tf-food-option" data-food="${esc(name)}">
+        <img src="${esc(foodImg(name))}" alt="${esc(name)}">
+        <strong>${esc(name)}</strong>
+        <span>${count} use${count === 1 ? '' : 's'} left</span>
+      </button>`;
+    }).join('');
+    if (empty) empty.style.display = entries.length ? 'none' : 'block';
+    wrap.querySelectorAll('[data-food]').forEach(button => {
+      button.addEventListener('click', () => {
+        AQ.feedFood = button.getAttribute('data-food');
+        hideFoodPicker();
+        startFeedMode();
+        showToast(`Feeding with ${AQ.feedFood}. Click a fish.`);
+      });
+    });
+  }
+
+  async function openFoodPicker() {
+    if (!AQ.owner) {
+      showToast('Only the owner can feed these fish.');
+      return;
+    }
+    ensureFoodPicker();
+    if (!AQ.doc) await loadViewDoc(AQ.token);
+    renderFoodOptions();
+    $('tf-food-overlay').style.display = 'flex';
+  }
+
+  /* ----- Aquarium hooks ----- */
+  const originalRenderAquarium = window.renderAquarium;
+  const originalHandleShelfClick = window.handleShelfClick;
+  const originalCloseAquariumModal = window.closeAquariumModal;
+  const originalCloseAllModals = window.closeAllModals;
+
+  if (typeof originalRenderAquarium === 'function') {
+    window.renderAquarium = function (username, fishes, tanksMap, cosmeticMap, tankTypesMap) {
+      if (AQ.portions.length) finalizeFeeding();
+
+      AQ.open = true;
+      AQ.owner = !!isViewingMyAquarium;
+      AQ.uid = AQ.owner
+        ? (auth.currentUser ? auth.currentUser.uid : '')
+        : (viewingTargetUid || '');
+      AQ.username = username || 'Player';
+      AQ.roomKey = `room_${currentAquariumRoomIndex}`;
+      const slots = tanksMap && Array.isArray(tanksMap[AQ.roomKey]) ? tanksMap[AQ.roomKey].slice(0, 8) : [];
+      AQ.slots = new Array(8).fill(null);
+      for (let i = 0; i < slots.length; i++) AQ.slots[i] = slots[i] || null;
+      AQ.doc = null;
+      AQ.names = {};
+      AQ.happiness = {};
+      AQ.speciesMap = {};
+      AQ.foodCounts = {};
+      AQ.feedMode = false;
+      AQ.portions = [];
+      AQ.menuIndex = -1;
+
+      const result = originalRenderAquarium.apply(this, arguments);
+      AQ.token++;
+      const token = AQ.token;
+      refreshFeedBarUI();
+      updateSlotLabels();
+      loadViewDoc(token).then(data => {
+        if (data && AQ.owner) settleRoom(token);
+      });
+      return result;
+    };
+  }
+
+  if (typeof originalHandleShelfClick === 'function') {
+    window.handleShelfClick = function (index) {
+      if (AQ.open && Number.isInteger(index) && index >= 0 && index < 8) {
+        if (!AQ.owner) {
+          if (AQ.slots[index]) openFishMenu(index);
+          return;
+        }
+        if (AQ.feedMode) {
+          feedFishAt(index);
+          return;
+        }
+        if (AQ.slots[index]) {
+          openFishMenu(index);
+          return;
+        }
+      }
+      return originalHandleShelfClick.apply(this, arguments);
+    };
+  }
+
+  if (typeof originalCloseAquariumModal === 'function') {
+    window.closeAquariumModal = function () {
+      finalizeFeeding();
+      hideFishMenu();
+      hideFoodPicker();
+      AQ.open = false;
+      return originalCloseAquariumModal.apply(this, arguments);
+    };
+  }
+
+  if (typeof originalCloseAllModals === 'function') {
+    window.closeAllModals = function () {
+      const aquarium = $('modal-aquarium');
+      if (aquarium && aquarium.style.display && aquarium.style.display !== 'none') finalizeFeeding();
+      hideFishMenu();
+      hideFoodPicker();
+      AQ.open = false;
+      return originalCloseAllModals.apply(this, arguments);
+    };
+  }
+
+  const feedButton = $('give-fish-food-btn');
+  if (feedButton) {
+    feedButton.addEventListener('click', () => {
+      if (AQ.feedMode) endFeedMode();
+      else openFoodPicker();
+    });
+  }
+
+  /* -------------------------------------------------------------------
+     7. Admin panel: give fish food by exact name
+     ------------------------------------------------------------------- */
+  function initAdminFood() {
+    const datalist = $('adminFoodTypes');
+    if (datalist) {
+      datalist.innerHTML = FISH_FOOD_TYPES.map(def => `<option value="${esc(def.name)}"></option>`).join('');
+    }
+  }
+
+  const originalAdminGiveNamedItem = window.adminGiveNamedItem;
+  window.adminGiveNamedItem = async function (kind) {
+    if (kind !== 'food') {
+      return typeof originalAdminGiveNamedItem === 'function'
+        ? originalAdminGiveNamedItem.apply(this, arguments)
+        : undefined;
+    }
+    try {
+      if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) throw new Error('Admin only.');
+      const username = ($('adminTargetUsername') && $('adminTargetUsername').value.trim()) || '';
+      const typedName = ($('adminFoodName') && $('adminFoodName').value.trim()) || '';
+      const quantity = Math.floor(Number(($('adminFoodQty') && $('adminFoodQty').value) || '1'));
+      if (!username || !typedName) throw new Error('Enter the target username and the exact food name.');
+      if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error('Enter a whole number of feeds (1 or more).');
+      const def = findFood(typedName);
+      if (!def) throw new Error('Unknown fish food. Use the exact name shown in the list (Fish Food).');
+      const uid = await getUidByUsername(username);
+      if (!uid) throw new Error('Player not found.');
+      const ref = db.collection('jugadores').doc(uid);
+      await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw new Error('Player profile not found.');
+        const data = snap.data() || {};
+        const tools = { ...(data.fishTools || {}) };
+        tools[def.name] = num(tools[def.name]) + quantity;
+        tx.update(ref, { fishTools: tools, fishFoodCount: totalFood(tools) });
+      });
+      showToast(`Gave ${quantity} ${def.name} feed${quantity === 1 ? '' : 's'} to ${username}.`);
+      if (window.playGameSound) playGameSound('buy');
+      if ($('adminFoodName')) $('adminFoodName').value = '';
+      if (typeof loadTargetUserInventoryForAdmin === 'function') loadTargetUserInventoryForAdmin();
+    } catch (err) {
+      showToast('Admin grant failed: ' + err.message);
+    }
+  };
+
+  initMusic();
+  initClippyTypewriter();
+  initAdminFood();
+
+  setInterval(() => {
+    if (AQ.open) updateSlotLabels();
+  }, 30000);
+
+  setInterval(() => {
+    if (AQ.open && AQ.owner) settleRoom(AQ.token);
+  }, PAY_INTERVAL_MS);
+})();
+</script>
 </body>
 </html>
