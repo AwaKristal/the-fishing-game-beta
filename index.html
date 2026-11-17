@@ -8219,11 +8219,8 @@
   .fish-food-dot {
     position: absolute; width: 4px; height: 4px; margin: -2px; border-radius: 50%;
     background: #281407; box-shadow: 0 0 3px rgba(40, 20, 7, .6);
-    animation: tfFoodBob 1.8s ease-in-out infinite;
+    transition: opacity .55s ease;
   }
-  .fish-food-portion.sinking .fish-food-dot { animation: tfFoodSink 2.2s ease-in forwards; }
-  @keyframes tfFoodBob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-2px) scale(1.15); } }
-  @keyframes tfFoodSink { 0% { opacity: 1; transform: translateY(0); } 70% { opacity: .9; } 100% { opacity: 0; transform: translateY(var(--sink, 48px)); } }
 
   @media (max-width: 768px) {
     #tf-music-toggle { top: 6px; padding: 5px 10px; font-size: .68rem; }
@@ -9191,68 +9188,107 @@
     return { minX: minX + iw / 2, maxX: maxX + iw / 2, minY, maxY, floor };
   }
 
-  function sinkDotsToFloor(container, floor) {
-    container.querySelectorAll('.fish-food-dot').forEach(dot => {
-      const y = num(dot.__y) || parseFloat(dot.style.top) || floor;
-      const distance = Math.max(0, floor - y);
-      dot.style.setProperty('--sink', distance.toFixed(1) + 'px');
-      dot.style.animationDelay = (Math.random() * 0.18).toFixed(2) + 's';
-    });
-    container.classList.add('sinking');
+  const FOOD_FALL_TICK = 50;
+  const FOOD_FALL_MAX_SPEED = 2.4;
+  const FOOD_REST_MIN_MS = 9000;
+  const FOOD_REST_SPREAD_MS = 3000;
+  const FOOD_FADE_MS = 600;
+
+  function startFoodFall(portion) {
+    if (portion.fallTimer) clearInterval(portion.fallTimer);
+    portion.fallTimer = setInterval(() => {
+      if (!portion.container.isConnected) {
+        clearInterval(portion.fallTimer);
+        portion.fallTimer = null;
+        return;
+      }
+      const now = Date.now();
+      let pending = false;
+      portion.dots.forEach(dot => {
+        if (!dot || !dot.isConnected || dot.__expired) return;
+        pending = true;
+        if (dot.__y < dot.__targetY) {
+          dot.__vy = Math.min(num(dot.__vy) + num(dot.__gravity), FOOD_FALL_MAX_SPEED);
+          dot.__y = Math.min(dot.__targetY, dot.__y + dot.__vy);
+          dot.__sway += 0.16;
+          dot.__x = clamp(dot.__x + Math.sin(dot.__sway) * 0.22, portion.minX, portion.maxX);
+          dot.style.left = dot.__x.toFixed(1) + 'px';
+          dot.style.top = dot.__y.toFixed(1) + 'px';
+          return;
+        }
+        if (!dot.__landedAt) {
+          dot.__landedAt = now;
+        } else if (now - dot.__landedAt >= dot.__restMs) {
+          // Uneaten food slowly fades away after resting on the sand.
+          dot.__expired = true;
+          dot.style.opacity = '0';
+          setTimeout(() => { try { dot.remove(); } catch (err) { /* ignore */ } }, FOOD_FADE_MS);
+        }
+      });
+      if (!pending) {
+        clearInterval(portion.fallTimer);
+        portion.fallTimer = null;
+        setTimeout(() => {
+          try { portion.container.remove(); } catch (err) { /* ignore */ }
+          AQ.portions = AQ.portions.filter(item => item !== portion);
+        }, FOOD_FADE_MS + 60);
+      }
+    }, FOOD_FALL_TICK);
   }
 
-  function spawnSinkingFood(viewport, image) {
-    const portion = document.createElement('div');
-    portion.className = 'fish-food-portion';
+  function spawnFallingFood(viewport, image, opts) {
+    opts = opts || {};
     const bounds = feedingBounds(viewport, image);
-    for (let i = 0; i < DOTS_PER_FEED; i++) {
-      const dot = document.createElement('span');
-      dot.className = 'fish-food-dot';
-      const x = bounds.minX + Math.random() * Math.max(0, bounds.maxX - bounds.minX);
-      const y = clamp(bounds.minY + Math.random() * Math.max(0, bounds.maxY - bounds.minY), bounds.minY, bounds.floor);
-      dot.__x = x;
-      dot.__y = y;
-      dot.style.left = x + 'px';
-      dot.style.top = y + 'px';
-      portion.appendChild(dot);
-    }
-    viewport.appendChild(portion);
-    sinkDotsToFloor(portion, bounds.floor);
-    setTimeout(() => { try { portion.remove(); } catch (err) { /* ignore */ } }, 2400);
-  }
-
-  function spawnFoodDots(image, viewport, key, species) {
     const portion = {
-      img: image,
+      img: opts.target ? image : null,
       vp: viewport,
-      key: key,
-      species: species,
+      key: opts.key || null,
+      species: opts.species || null,
       dots: [],
       remaining: DOTS_PER_FEED,
-      container: document.createElement('div')
+      container: document.createElement('div'),
+      floor: bounds.floor,
+      minX: bounds.minX,
+      maxX: bounds.maxX,
+      fallTimer: null
     };
     portion.container.className = 'fish-food-portion';
     viewport.appendChild(portion.container);
 
-    const bounds = feedingBounds(viewport, image);
-    portion.floor = bounds.floor;
-    const centerX = bounds.minX + Math.random() * Math.max(0, bounds.maxX - bounds.minX);
-    const centerY = bounds.minY + Math.random() * Math.max(0, bounds.maxY - bounds.minY);
+    const fishCenterX = image
+      ? (image.offsetLeft || 0) + (image.offsetWidth || 32) / 2
+      : (bounds.minX + bounds.maxX) / 2;
+    const halfSpread = Math.min(26, Math.max(0, bounds.maxX - bounds.minX) / 2);
 
     for (let i = 0; i < DOTS_PER_FEED; i++) {
       const dot = document.createElement('span');
       dot.className = 'fish-food-dot';
-      const x = clamp(centerX + (Math.random() - 0.5) * 30, bounds.minX, bounds.maxX);
-      const y = clamp(centerY + (Math.random() - 0.5) * 20, bounds.minY, bounds.floor);
+      const x = clamp(fishCenterX + (Math.random() - 0.5) * 2 * halfSpread, bounds.minX, bounds.maxX);
+      const y = bounds.minY + Math.random() * 3;
       dot.__x = x;
       dot.__y = y;
-      dot.style.left = x + 'px';
-      dot.style.top = y + 'px';
-      dot.style.animationDelay = (Math.random() * 1.2).toFixed(2) + 's';
+      dot.__targetY = clamp(bounds.floor - Math.random() * 9, y, bounds.floor);
+      dot.__vy = 0.15 + Math.random() * 0.4;
+      dot.__gravity = 0.045 + Math.random() * 0.02;
+      dot.__sway = Math.random() * Math.PI * 2;
+      dot.__restMs = FOOD_REST_MIN_MS + Math.random() * FOOD_REST_SPREAD_MS;
+      dot.__landedAt = 0;
+      dot.__expired = false;
+      dot.style.left = x.toFixed(1) + 'px';
+      dot.style.top = y.toFixed(1) + 'px';
       portion.dots.push(dot);
       portion.container.appendChild(dot);
     }
     AQ.portions.push(portion);
+    startFoodFall(portion);
+  }
+
+  function spawnSinkingFood(viewport, image) {
+    spawnFallingFood(viewport, image, { target: false });
+  }
+
+  function spawnFoodDots(image, viewport, key, species) {
+    spawnFallingFood(viewport, image, { target: true, key: key, species: species });
   }
 
   async function feedFishAt(index) {
@@ -9303,9 +9339,9 @@
       let best = null;
       let bestDistance = Infinity;
       AQ.portions.forEach(portion => {
-        if (portion.img !== image) return;
+        if (!portion.img || portion.img !== image) return;
         portion.dots.forEach(dot => {
-          if (!dot || !dot.isConnected) return;
+          if (!dot || !dot.isConnected || dot.__expired) return;
           const distance = Math.hypot(dot.__x - num(fishX), dot.__y - num(fishY));
           if (distance < bestDistance) {
             bestDistance = distance;
@@ -9319,13 +9355,13 @@
     },
     consume(image) {
       const dot = AQ.targetDots.get(image);
-      if (!dot || !dot.isConnected) return;
+      if (!dot || !dot.isConnected || dot.__expired) return;
       const portion = AQ.portions.find(item => item.dots.includes(dot));
-      if (!portion) return;
+      if (!portion || !portion.key) return;
       dot.remove();
       const dotIndex = portion.dots.indexOf(dot);
       if (dotIndex >= 0) portion.dots[dotIndex] = null;
-      portion.remaining = Math.max(0, portion.remaining - 1);
+      portion.remaining = portion.dots.filter(item => item && item.isConnected && !item.__expired).length;
 
       const current = currentHappiness(portion.key, portion.species);
       const entry = AQ.happiness[portion.key] || { v: current, t: nowMs(), p: nowMs() };
@@ -9337,15 +9373,11 @@
       updateSlotLabels();
 
       if (AQ.happiness[portion.key].v >= 99.5 && portion.remaining > 0) {
-        portion.remaining = 0;
-        sinkDotsToFloor(portion.container, portion.floor || feedingBounds(portion.vp, portion.img).floor);
-        setTimeout(() => { try { portion.container.remove(); } catch (err) { /* ignore */ } }, 2300);
+        // The fish stops chasing; the rest keeps falling and fades on the sand.
+        portion.img = null;
+        queueHappinessPersist();
         showToast(`${AQ.names[portion.key] || portion.species} is full and happy!`);
       } else if (portion.remaining <= 0) {
-        try { portion.container.remove(); } catch (err) { /* ignore */ }
-      }
-
-      if (portion.remaining <= 0) {
         AQ.portions = AQ.portions.filter(item => item !== portion);
         queueHappinessPersist();
       }
@@ -9358,7 +9390,13 @@
       return;
     }
     AQ.portions.forEach(portion => {
-      const alive = portion.dots.filter(dot => dot && dot.isConnected);
+      if (portion.fallTimer) clearInterval(portion.fallTimer);
+      portion.fallTimer = null;
+      if (!portion.key) {
+        try { portion.container.remove(); } catch (err) { /* ignore */ }
+        return;
+      }
+      const alive = portion.dots.filter(dot => dot && dot.isConnected && !dot.__expired);
       const happiness = currentHappiness(portion.key, portion.species);
       const canEat = Math.max(0, Math.min(alive.length, Math.floor((100 - happiness) / HAPPINESS_PER_DOT)));
       if (canEat > 0) {
