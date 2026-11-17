@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -68,6 +68,16 @@
       border: 1px solid #cbd5e1;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
+
+    .mouse-overlay { display:none; position:fixed; inset:0; z-index:12000; align-items:center; justify-content:center; padding:14px; background:rgba(15,23,42,.72); backdrop-filter:blur(4px); }
+    .mouse-panel { width:min(600px,96vw); max-height:90vh; overflow:auto; position:relative; padding:20px; border:2px solid #cbd5e1; border-radius:16px; background:#fff; box-shadow:0 10px 30px #0003; color:#1f2937; text-align:center; }
+    .mouse-close { position:absolute; top:12px; right:12px; border:0; border-radius:9px; padding:7px 12px; background:#e74c3c; color:white; font-weight:800; cursor:pointer; }
+    .mouse-dialog { display:flex; align-items:center; justify-content:center; gap:13px; min-height:152px; margin:12px 0; padding:12px; border:1px solid #c4b5fd; border-radius:13px; background:#f3f0ff; }
+    .mouse-dialog img { width:104px; height:104px; object-fit:contain; }
+    .mouse-dialog div { flex:1; min-width:0; font-weight:700; line-height:1.5; }
+    .mouse-action { border:0; border-radius:9px; padding:10px 16px; background:#6d4acb; color:#fff; font-weight:800; cursor:pointer; }
+    .mouse-portrait { width:140px; height:140px; object-fit:contain; }
+    @media(max-width:480px) { .mouse-dialog img { width:82px; height:82px; } }
 
     .rules-header-btn {
       background: none;
@@ -776,7 +786,12 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.5 BETA</div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <div class="version-tag">v.1.0.0.5</div>
+        <button type="button" class="img-btn" onclick="openMouseHole()" title="Mouse Hole" aria-label="Open the mouse hole" style="width:42px;height:42px;">
+          <img src="https://i.postimg.cc/DzmLzdzR/hole.png" alt="Mouse Hole" style="width:42px;height:42px;object-fit:contain;">
+        </button>
+      </div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
@@ -784,10 +799,30 @@
         <img src="https://i.postimg.cc/NjwRPPmr/tutorial.png" alt="Tutorial">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
+
+  <div id="mouse-hole-modal" class="mouse-overlay" role="dialog" aria-modal="true" aria-labelledby="mouse-hole-title">
+    <div class="mouse-panel">
+      <button type="button" class="mouse-close" onclick="closeMouseHole()" aria-label="Close mouse hole">✕</button>
+      <h2 id="mouse-hole-title">Sir. Squeaksalot Mouse Hole</h2>
+      <img class="mouse-portrait" src="https://i.postimg.cc/0NtnWyzt/sir-squeaksalot.png" alt="Sir. Squeaksalot">
+      <p id="mouse-quest-status" style="color:#64748b;font-size:.9rem;" aria-live="polite"></p>
+      <button type="button" class="mouse-action" onclick="talkToSqueaksalot()">Talk</button>
+    </div>
+  </div>
+  <div id="mouse-dialog-overlay" class="mouse-overlay" role="dialog" aria-modal="true" aria-labelledby="mouse-dialog-name" style="z-index:12001;" onclick="advanceMouseDialog()">
+    <div class="mouse-panel">
+      <button type="button" class="mouse-close" onclick="event.stopPropagation();closeMouseDialog()" aria-label="Close dialogue">✕</button>
+      <div class="mouse-dialog">
+        <img src="https://i.postimg.cc/0NtnWyzt/sir-squeaksalot.png" alt="Sir. Squeaksalot">
+        <div><h2 id="mouse-dialog-name" style="margin:0 0 8px;color:#5b3aa8;">???</h2><div id="mouse-dialog-text"></div></div>
+      </div>
+      <button type="button" class="mouse-action">Continue</button>
+    </div>
+  </div>
 
   <div class="corner-bottom-left">
     <div style="display:flex;align-items:center;justify-content:flex-start;margin-bottom:7px;">
@@ -1334,7 +1369,6 @@
 
       <div id="aquarium-feed-bar" style="display: none; margin-top: 4px;">
         <button id="give-fish-food-btn" type="button" class="modal-action-btn" style="background: #6d4acb; font-size: 0.95rem;">Give Fish Food</button>
-        <p id="fish-food-hint" style="font-size: 0.8rem; color: #64748b; text-align: center; margin: 6px 0 0;">Buy Fish Food in Bob's Shop and keep your fish happy.</p>
       </div>
 
     </div>
@@ -1936,6 +1970,8 @@
       { name: "Bluefin Tuna", value:100, rarity: "Epic", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
       { name: "Largemouth Bass", value:85, rarity: "Epic", desc: "A powerful freshwater predator that ambushes prey with explosive strikes.", img: "https://i.postimg.cc/tTVmBt2d/largemouth-bass.png" },
       { name: "Mahi Mahi", value:115, rarity: "Epic", desc: "A brilliantly colored ocean hunter known for its speed and acrobatic leaps.", img: "https://i.postimg.cc/zBRPxS0S/mahi-mahi.png" },
+      { name: "Angelfish", value:100, rarity: "Epic", desc: "An elegant tropical fish with tall fins that glides among colorful reefs.", img: "https://i.postimg.cc/FKPpWHYD/angelfish.png" },
+      { name: "Slippery", value:120, rarity: "Epic", desc: "A slippery little swimmer that is surprisingly tricky to hold onto.", img: "https://i.postimg.cc/TPk073K4/slippery.png" },
       { name: "Manta ray", value:280, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
       { name: "Great White Shark", value:350, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
       { name: "Turtle", value:350, rarity: "Legendary", desc: "A peaceful sea turtle that glides through the water with its powerful flippers.", img: "https://i.postimg.cc/g0wMdW8S/turtle2.png", creatureType: "turtle" },
@@ -1945,6 +1981,7 @@
       { name: "Piranha", value:480, rarity: "Legendary", desc: "A sharp-toothed freshwater fish that lives in lively schools.", img: "https://i.postimg.cc/kGLfNV8m/piranha.png" },
       { name: "Atlantic Wolffish", value:520, rarity: "Legendary", desc: "A cold-water fish with a broad head and powerful crushing jaws.", img: "https://i.postimg.cc/qBFbHFFM/atlantic-wolffish.png" },
       { name: "Channel Catfish", value:300, rarity: "Legendary", desc: "A whiskered river giant that patrols muddy bottoms in search of food.", img: "https://i.postimg.cc/Px8FSz2y/channel-catfish.png" },
+      { name: "Flounder", value:400, rarity: "Legendary", desc: "A flat ocean fish that blends into the sandy seabed while watching for prey.", img: "https://i.postimg.cc/Xv2LHYrh/flounder.png", creatureType: "sand" },
       { name: "Swordfish", value:750, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
       { name: "Whale Shark", value:900, rarity: "Mythic", desc: "The massive yet gentle giant filter-feeder of the deep sea.", img: "https://i.postimg.cc/HW9ghJbQ/whale-shark.png" },
       { name: "Leafy Seadragon", value:650, rarity: "Mythic", desc: "A master of camouflage adorned with leaf-like appendages.", img: "https://i.postimg.cc/rwsYSdfb/leafy-seadragon.png" },
@@ -1956,6 +1993,8 @@
       { name: "Oarfish", value:1300, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
       { name: "Octopus", value:1200, rarity: "Divine", desc: "An intelligent sea creature with eight flexible arms that curl as it explores.", img: "https://i.postimg.cc/Qx8QXmhH/octopus.png", creatureType: "octopus" },
       { name: "Killer Whale", value:1150, rarity: "Divine", desc: "A powerful ocean predator that travels and hunts in close-knit pods.", img: "https://i.postimg.cc/P5vJf8Nw/killer-whale.png", creatureType: "fish" },
+      { name: "Blue Whale", value:1400, rarity: "Divine", desc: "A magnificent ocean giant that travels vast distances feeding on tiny krill.", img: "https://i.postimg.cc/zfd7tGyt/blue-whale.png", creatureType: "fish" },
+      { name: "Hammerhead Shark", value:1250, rarity: "Divine", desc: "A swift shark with a distinctive hammer-shaped head that helps it find prey.", img: "https://i.postimg.cc/tgrkS4sv/hammerhead-shark.png" },
       { name: "Legacy Fish", value:4500, rarity: "Legacy", isLimited: true, desc: "A mysterious fish from ancient and divine waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
       { name: "Goldfish Snack", value:6500, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
@@ -2548,6 +2587,16 @@
         (Array.isArray(room)?room:[]).forEach(name=>{if(name)counts[name]=(counts[name]||0)+1;});
       });
       return counts;
+    }
+    function getUnplacedFishes(data, fishes = data.fishes || []) {
+      const protectedCounts = getAquariumPlacedFishCounts(data);
+      return fishes.filter(fish => {
+        if (!fish.cooking && protectedCounts[fish.name] > 0) {
+          protectedCounts[fish.name]--;
+          return false;
+        }
+        return true;
+      });
     }
     function getAquariumPlacedCosmeticCounts(data){
       const counts={};
@@ -6217,7 +6266,7 @@
     return db.collection('jugadores').doc(u.uid);
   };
   const stage = p => { const n = Number(p) || 0; if (n <= 0) return 'Raw'; if (n <= 45) return 'Slightly Cooked'; if (n <= 60) return 'Well Cooked'; if (n <= 85) return 'Overcooked'; return 'Burnt'; };
-  const safeInt = (v, min=1) => { const n = Number(v); return Number.isInteger(n) && n >= min ? n : null; };
+  const safeInt = (v, min=1) => { const n = Number(v); return Number.isSafeInteger(n) && n >= min ? n : null; };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let grillTimer = null, grillSaveTimer = null, grillState = null, grillHot = true;
   let selectedOffer = null, shopPage = 0;
@@ -6278,7 +6327,7 @@
       <div id="modal-make-offer" class="rebuild-modal"><div class="rebuild-card" style="max-width:560px">
   <button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-make-offer')">Close</button>
   <h2 style="margin-top:0">Make Custom Offer</h2>
-  <p style="font-size:.85rem;color:#64748b;margin:0 0 10px">Mix different fish types (raw or cooked), cosmetics, or baits into a single bundle offer!</p>
+  <p style="font-size:.85rem;color:#64748b;margin:0 0 10px">Mix fish, cosmetics, baits, fish food, and tanks into a single bundle offer!</p>
   
   <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:10px;margin-bottom:10px">
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -6288,6 +6337,8 @@
           <option value="fish">Fish</option>
           <option value="cosmetic">Cosmetics</option>
           <option value="bait">Baits</option>
+          <option value="food">Fish Food</option>
+          <option value="tank">Tanks</option>
         </select>
       </div>
       <div style="flex:2;min-width:160px">
@@ -6428,7 +6479,7 @@
     {id:'sandcastle',name:'Sandcastle',price:500,img:IMG.sandcastle,buy:async r=>r.update({})},
     {id:'verity',name:'Verity',price:350,img:IMG.verity,buy:async r=>r.update({})},
     {id:'trade',name:'Trade',price:1000,img:'https://i.postimg.cc/NMG4CPhB/trade.png',buy:async r=>r.update({tradeOwned:true})},
-    {id:'food',name:'Fish Food',price:150,note:'1 pack · 5 uses',img:'https://i.postimg.cc/CLp4gVxy/fish-food.png',buy:async r=>r.update({})}
+    {id:'food',name:'Fish Food',price:150,note:'5 uses',img:'https://i.postimg.cc/CLp4gVxy/fish-food.png',buy:async r=>r.update({})}
   ];
   // Correct cosmetic purchase uses a transaction so the map is merged, not replaced.
   async function buyShopItem(id){
@@ -6448,7 +6499,7 @@
         if(id==='grill')updates.grillOwned=true;
         if(id==='trade')updates.tradeOwned=true;
         if(id==='food'){
-          const tools={...(d.fishTools||{})};
+          const tools=window.getFishFoodCounts(d);
           tools['Fish Food']=(Number(tools['Fish Food'])||0)+5;
           updates.fishTools=tools;
           updates.fishFoodCount=Object.values(tools).reduce((sum,v)=>sum+(Number(v)||0),0);
@@ -6456,7 +6507,7 @@
         if(id==='sandcastle'||id==='verity'){const inv={...(d.cosmeticsInventory||{})};const cosmeticName=id==='sandcastle'?'Sandcastle':'Verity';inv[cosmeticName]=(inv[cosmeticName]||0)+1;updates.cosmeticsInventory=inv;}
         tx.update(ref,updates);
       });
-      showToast(id==='food'?'Bought 1 Fish Food pack (5 uses)!':`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); playGameSound('buy'); updateGameHUD(); loadBackpackData();
+      showToast(id==='food'?'Bought Fish Food (5 uses)!':`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); playGameSound('buy'); updateGameHUD(); loadBackpackData();
     }catch(e){showToast('Purchase failed: '+e.message);}
   }
   function openPaginatedShop(){shopPage=0;renderShopPage();document.getElementById('modal-shop-pages').style.display='flex';}
@@ -6734,6 +6785,8 @@
   function getItemIcon(kind, name){
     if(kind==='cosmetic') return TANK_PLACEABLE_COSMETICS[name] || '';
     if(kind==='bait') return /^mini tung cube$/i.test(name)?IMG.miniTungCube:/^mini tuna cube$/i.test(name)?IMG.tunaCube:'https://i.postimg.cc/KYgqH6Sn/worm-bait.png';
+    if(kind==='food') return (window.FISH_FOOD_TYPES.find(f=>f.name===name)||{}).img || '';
+    if(kind==='tank') return (window.TANK_TYPES.find(t=>t.name===name)||{}).img || '';
     const meta=ALLOWED_FISH_TYPES.find(f=>f.name===name);
     return meta?meta.img:'';
   }
@@ -6744,9 +6797,7 @@
       const d=(await playerRef().get()).data()||{};
       let opts=[];
       if(kind==='fish'){
-        const fs=d.fishes||[];
-        const displayedCounts={};
-        Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean).forEach(n=>{displayedCounts[n]=(displayedCounts[n]||0)+1;});
+        const fs=getUnplacedFishes(d);
         const snap=await db.collection('marketListings').where('sellerUid','==',auth.currentUser.uid).get();
         const reserved=new Set();
         snap.forEach(doc=>{
@@ -6756,14 +6807,9 @@
           if(x.fishId)reserved.add(x.fishId);
         });
         const groups={};
-        const skippedDisplayed={};
         fs.forEach(f=>{
           const m=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);
           if(!m||m.isLimited||['Legacy','Secret'].includes(m.rarity)||(f.id&&reserved.has(f.id)))return;
-          if((skippedDisplayed[f.name]||0)<(displayedCounts[f.name]||0)){
-            skippedDisplayed[f.name]=(skippedDisplayed[f.name]||0)+1;
-            return;
-          }
           const cook=f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw';
           const k=`${f.name}::${cook}`;
           (groups[k]||(groups[k]={name:f.name,cook,fishes:[],baseValue:m.value})).fishes.push(f);
@@ -6803,6 +6849,16 @@
           if(avail>0){
             opts.push({kind:'bait',value:b.name,key:b.name,name:b.name,baseValue:b.baseValue,available:avail,label:b.name});
           }
+        });
+      } else if(kind==='food' || kind==='tank'){
+        const counts=kind==='food'?window.getFishFoodCounts(d):null;
+        const definitions=kind==='food'?window.FISH_FOOD_TYPES:window.TANK_TYPES;
+        definitions.forEach(def=>{
+          const count=kind==='food'?(Number(counts[def.name])||0):getTankCount(d,def);
+          const already=offerBundle.filter(b=>b.kind===kind&&b.name===def.name).reduce((sum,b)=>sum+b.quantity,0);
+          const available=Math.max(0,count-already);
+          const baseValue=kind==='food'?(def.price?Math.round(def.price/def.feedsPerPurchase):30):(def.id==='mini'?500:1000);
+          if(available>0)opts.push({kind,value:def.name,key:def.name,name:def.name,baseValue,available,label:def.name});
         });
       }
       sel.innerHTML=opts.length?opts.map(o=>`<option value="${esc(o.value)}">${esc(o.label)} (Available: ${o.available})</option>`).join(''):'<option value="">No available items</option>';
@@ -6909,12 +6965,14 @@
         let inv={...(d.cosmeticsInventory||{})};
         let wormCount=d.wormBaitsCount||0;
         let cubeCount=d.miniTunaCubesCount||0;
+        const foods=window.getFishFoodCounts(d);
+        const tanks=Object.fromEntries(window.TANK_TYPES.map(t=>[t.field,getTankCount(d,t)]));
         const resolvedBundle=[];
         const allTakenFishes=[];
 
         for(const item of offerBundle){
           if(item.kind==='fish'){
-            const chosen=fs.filter(f=>`${f.name}::${f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw'}`===item.key);
+            const chosen=getUnplacedFishes(d,fs).filter(f=>`${f.name}::${f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw'}`===item.key);
             if(chosen.length<item.quantity)throw Error(`Not enough ${item.label} in your inventory.`);
             const take=chosen.slice(0,item.quantity);
             const takenSet=new Set(take);
@@ -6934,6 +6992,15 @@
               cubeCount-=item.quantity;
             }
             resolvedBundle.push({kind:'bait',name:item.name,label:item.label,quantity:item.quantity});
+          } else if(item.kind==='food'){
+            if(!window.FISH_FOOD_TYPES.some(f=>f.name===item.name)||(foods[item.name]||0)<item.quantity)throw Error(`Not enough ${item.name} in your inventory.`);
+            foods[item.name]-=item.quantity;
+            resolvedBundle.push({kind:'food',name:item.name,label:item.label,quantity:item.quantity});
+          } else if(item.kind==='tank'){
+            const tank=window.TANK_TYPES.find(t=>t.name===item.name);
+            if(!tank||tanks[tank.field]<item.quantity)throw Error(`Not enough ${item.name} in your inventory.`);
+            tanks[tank.field]-=item.quantity;
+            resolvedBundle.push({kind:'tank',name:item.name,label:item.label,quantity:item.quantity});
           }
         }
 
@@ -6941,7 +7008,10 @@
           fishes:fs,
           cosmeticsInventory:inv,
           wormBaitsCount:wormCount,
-          miniTunaCubesCount:cubeCount
+          miniTunaCubesCount:cubeCount,
+          fishTools:foods,
+          fishFoodCount:Object.values(foods).reduce((sum,n)=>sum+(Number(n)||0),0),
+          ...tanks
         });
 
         const first=resolvedBundle[0];
@@ -7057,6 +7127,8 @@
         let newCosmetics={...(buyerData.cosmeticsInventory||{})};
         let newWorms=buyerData.wormBaitsCount||0;
         let newCubes=buyerData.miniTunaCubesCount||0;
+        const foods=window.getFishFoodCounts(buyerData);
+        const tanks=Object.fromEntries(window.TANK_TYPES.map(t=>[t.field,getTankCount(buyerData,t)]));
 
         for(const it of items){
           if(it.kind==='fish'){
@@ -7068,6 +7140,13 @@
           } else if(it.kind==='bait'){
             if(/^mini tuna cube$/i.test(it.name)) newCubes+=(it.quantity||1);
             else newWorms+=(it.quantity||1);
+          } else if(it.kind==='food'){
+            if(!window.FISH_FOOD_TYPES.some(f=>f.name===it.name))throw Error('Unknown fish food in offer.');
+            foods[it.name]=(Number(foods[it.name])||0)+(it.quantity||1);
+          } else if(it.kind==='tank'){
+            const tank=window.TANK_TYPES.find(t=>t.name===it.name);
+            if(!tank)throw Error('Unknown tank in offer.');
+            tanks[tank.field]+=(it.quantity||1);
           }
         }
 
@@ -7076,7 +7155,10 @@
           fishes:newFishes,
           cosmeticsInventory:newCosmetics,
           wormBaitsCount:newWorms,
-          miniTunaCubesCount:newCubes
+          miniTunaCubesCount:newCubes,
+          fishTools:foods,
+          fishFoodCount:Object.values(foods).reduce((sum,n)=>sum+(Number(n)||0),0),
+          ...tanks
         });
 
         if(sellerSnap.exists){
@@ -7132,6 +7214,8 @@
         let newCosmetics={...(d.cosmeticsInventory||{})};
         let newWorms=d.wormBaitsCount||0;
         let newCubes=d.miniTunaCubesCount||0;
+        const foods=window.getFishFoodCounts(d);
+        const tanks=Object.fromEntries(window.TANK_TYPES.map(t=>[t.field,getTankCount(d,t)]));
 
         for(const it of items){
           if(it.kind==='fish'){
@@ -7143,6 +7227,13 @@
           } else if(it.kind==='bait'){
             if(/^mini tuna cube$/i.test(it.name)) newCubes+=(it.quantity||1);
             else newWorms+=(it.quantity||1);
+          } else if(it.kind==='food'){
+            if(!window.FISH_FOOD_TYPES.some(f=>f.name===it.name))throw Error('Unknown fish food in offer.');
+            foods[it.name]=(Number(foods[it.name])||0)+(it.quantity||1);
+          } else if(it.kind==='tank'){
+            const tank=window.TANK_TYPES.find(t=>t.name===it.name);
+            if(!tank)throw Error('Unknown tank in offer.');
+            tanks[tank.field]+=(it.quantity||1);
           }
         }
 
@@ -7150,7 +7241,10 @@
           fishes:newFishes,
           cosmeticsInventory:newCosmetics,
           wormBaitsCount:newWorms,
-          miniTunaCubesCount:newCubes
+          miniTunaCubesCount:newCubes,
+          fishTools:foods,
+          fishFoodCount:Object.values(foods).reduce((sum,n)=>sum+(Number(n)||0),0),
+          ...tanks
         });
         tx.delete(lr);
       });
@@ -7269,8 +7363,8 @@
         if(x.coins)rewards.push(`${x.coins} Coins`);
         if((x.items||[]).length){
           const fishes=[...(d.fishes||[])],cosmetics={...(d.cosmeticsInventory||{})};
-          const fishTools={...(d.fishTools||{})};
-          let fishFoodTotal=Number(d.fishFoodCount)||0;
+          const fishTools=window.getFishFoodCounts(d);
+          let fishFoodTotal=Object.values(fishTools).reduce((sum,n)=>sum+(Number(n)||0),0);
           let worms=d.wormBaitsCount||0,cubes=d.miniTunaCubesCount||0,tung=d.miniTungCubesCount||0;
           let miniTanks=Number(d.miniTanksCount)||0,rockyTanks=Number(d.rockyTanksCount)||0,pearls=Number(d.pearls)||0;
           x.items.forEach(it=>{
@@ -8213,7 +8307,6 @@
   #modal-aquarium .modal-card.fish-feeding [id^="shelf-"] { cursor: crosshair !important; }
   #modal-aquarium .modal-card.fish-feeding img[class*="swimming-fish"] { filter: drop-shadow(0 0 5px rgba(109, 74, 203, .9)); }
   #give-fish-food-btn.is-active { background: #e74c3c !important; }
-  #fish-food-hint.is-feeding { color: #6d4acb; font-weight: 800; }
 
   .fish-food-portion { position: absolute; left: 0; top: 0; z-index: 5; width: 0; height: 0; pointer-events: none; }
   .fish-food-dot {
@@ -8261,6 +8354,14 @@
       usesPerPack: 5,
       happiness: 20,
       desc: 'A balanced meal that keeps any fish happy.'
+    },
+    {
+      id: 'tiny-cheese',
+      name: 'Tiny Cheese',
+      img: 'https://i.postimg.cc/Xv2LHYrP/cheese.png',
+      usesPerPack: 1,
+      happiness: 20,
+      desc: 'A tiny cheesy treat from Sir. Squeaksalot.'
     }
   ];
   window.FISH_FOOD_TYPES = FISH_FOOD_TYPES;
@@ -8799,6 +8900,7 @@
     }
     return counts;
   }
+  window.getFishFoodCounts = foodCountsFromDoc;
 
   const AQ = {
     open: false,
@@ -8813,6 +8915,7 @@
     speciesMap: {},
     foodCounts: {},
     feedMode: false,
+    feedPending: false,
     feedFood: 'Fish Food',
     portions: [],
     targetDots: new WeakMap(),
@@ -8894,38 +8997,17 @@
     }
   }
 
-  function updateFeedHint() {
-    const hint = $('fish-food-hint');
-    if (!hint || !AQ.owner) return;
-    if (AQ.feedMode) {
-      const left = num(AQ.foodCounts[AQ.feedFood]);
-      hint.textContent = `Feeding with ${AQ.feedFood} • ${left} use${left === 1 ? '' : 's'} left • Click a fish to feed it.`;
-      hint.classList.add('is-feeding');
-    } else {
-      hint.classList.remove('is-feeding');
-      const owned = Object.keys(AQ.foodCounts)
-        .filter(name => num(AQ.foodCounts[name]) > 0)
-        .map(name => `${name} (${num(AQ.foodCounts[name])} use${num(AQ.foodCounts[name]) === 1 ? '' : 's'} left)`);
-      hint.textContent = owned.length
-        ? `Your food: ${owned.join(' • ')}. Click a fish to check its happiness.`
-        : "Buy Fish Food in Bob's Shop and keep your fish happy.";
-    }
-  }
-
   function refreshFeedBarUI() {
     const bar = $('aquarium-feed-bar');
     if (bar) bar.style.display = AQ.owner ? 'block' : 'none';
     const button = $('give-fish-food-btn');
     if (button) {
-      const total = totalFood(AQ.foodCounts);
-      button.textContent = AQ.feedMode
-        ? 'Stop Feeding'
-        : (total > 0 ? `Give Fish Food (${total})` : 'Give Fish Food');
+      button.textContent = 'Give Fish Food';
+      button.setAttribute('aria-pressed', String(AQ.feedMode));
       button.classList.toggle('is-active', AQ.feedMode);
     }
     const card = document.querySelector('#modal-aquarium .modal-card');
     if (card) card.classList.toggle('fish-feeding', AQ.feedMode);
-    updateFeedHint();
   }
 
   function startFeedMode() {
@@ -9091,39 +9173,32 @@
     }
   }
 
-  async function persistFoodDelta(name, amount) {
-    if (!AQ.owner || !AQ.uid) return;
+  async function consumeFood(name, amount) {
     const uid = AQ.uid;
     try {
-      await db.runTransaction(async tx => {
+      const tools = await db.runTransaction(async tx => {
         const ref = db.collection('jugadores').doc(uid);
         const snap = await tx.get(ref);
-        if (!snap.exists) return;
-        const data = snap.data() || {};
-        const tools = { ...(data.fishTools || {}) };
-        tools[name] = Math.max(0, num(tools[name]) - amount);
-        tx.update(ref, { fishTools: tools, fishFoodCount: totalFood(tools) });
+        if (!snap.exists) throw new Error('Player profile not found.');
+        const counts = foodCountsFromDoc(snap.data());
+        if (num(counts[name]) < amount) throw new Error(`You are out of ${name}.`);
+        counts[name] -= amount;
+        tx.update(ref, { fishTools: counts, fishFoodCount: totalFood(counts) });
+        return counts;
       });
+      if (AQ.uid === uid) {
+        AQ.foodCounts = tools;
+        if (AQ.doc) {
+          AQ.doc.fishTools = tools;
+          AQ.doc.fishFoodCount = totalFood(tools);
+        }
+      }
+      return true;
     } catch (err) {
-      AQ.foodCounts[name] = num(AQ.foodCounts[name]) + amount;
-      updateFeedHint();
-      showToast('Could not save the fish food. Please try again.');
-      console.error('Could not save fish food', err);
+      showToast('Could not feed fish: ' + err.message);
+      await loadViewDoc(AQ.token);
+      return false;
     }
-  }
-
-  function consumeFood(name, amount) {
-    const def = findFood(name);
-    const canonical = def ? def.name : name;
-    AQ.foodCounts[canonical] = Math.max(0, num(AQ.foodCounts[canonical]) - amount);
-    if (AQ.doc) {
-      const tools = { ...(AQ.doc.fishTools || {}) };
-      tools[canonical] = AQ.foodCounts[canonical];
-      AQ.doc.fishTools = tools;
-      AQ.doc.fishFoodCount = totalFood(AQ.foodCounts);
-    }
-    updateFeedHint();
-    persistFoodDelta(canonical, amount);
   }
 
   // Tank PNGs are square drawings with transparent margins and a thick frame,
@@ -9261,8 +9336,13 @@
     const halfSpread = Math.min(26, Math.max(0, bounds.maxX - bounds.minX) / 2);
 
     for (let i = 0; i < DOTS_PER_FEED; i++) {
-      const dot = document.createElement('span');
+      const dot = document.createElement(opts.foodName === 'Tiny Cheese' ? 'img' : 'span');
       dot.className = 'fish-food-dot';
+      if (opts.foodName === 'Tiny Cheese') {
+        dot.src = foodImg(opts.foodName);
+        dot.alt = '';
+        dot.style.cssText = 'width:12px;height:12px;margin:-6px;background:transparent;box-shadow:none;object-fit:contain;';
+      }
       const x = clamp(fishCenterX + (Math.random() - 0.5) * 2 * halfSpread, bounds.minX, bounds.maxX);
       const y = bounds.minY + Math.random() * 3;
       dot.__x = x;
@@ -9283,16 +9363,16 @@
     startFoodFall(portion);
   }
 
-  function spawnSinkingFood(viewport, image) {
-    spawnFallingFood(viewport, image, { target: false });
+  function spawnSinkingFood(viewport, image, foodName) {
+    spawnFallingFood(viewport, image, { target: false, foodName });
   }
 
-  function spawnFoodDots(image, viewport, key, species) {
-    spawnFallingFood(viewport, image, { target: true, key: key, species: species });
+  function spawnFoodDots(image, viewport, key, species, foodName) {
+    spawnFallingFood(viewport, image, { target: true, key, species, foodName });
   }
 
   async function feedFishAt(index) {
-    if (!AQ.owner) return;
+    if (!AQ.owner || AQ.feedPending) return;
     if (!AQ.doc) await loadViewDoc(AQ.token);
     if (!AQ.open) return;
     const species = AQ.slots[index];
@@ -9303,7 +9383,7 @@
     const foodName = AQ.feedFood || 'Fish Food';
     const left = num(AQ.foodCounts[foodName]);
     if (left <= 0) {
-      showToast(`You are out of ${foodName}. Buy more in Bob's Shop.`);
+      showToast(`You are out of ${foodName}.`);
       endFeedMode();
       return;
     }
@@ -9318,16 +9398,21 @@
     const key = `${AQ.roomKey}:${index}`;
     const name = AQ.names[key] || species;
     const happiness = currentHappiness(key, species);
-    consumeFood(foodName, 1);
+    const token = AQ.token;
+    AQ.feedPending = true;
+    const consumed = await consumeFood(foodName, 1);
+    AQ.feedPending = false;
+    if (!consumed || !AQ.open || token !== AQ.token) return;
 
     if (happiness >= 99.5) {
-      spawnSinkingFood(viewport, image);
+      spawnSinkingFood(viewport, image, foodName);
       showToast(`${name} is not hungry right now.`);
       if (window.playGameSound) playGameSound('ding');
+      if (num(AQ.foodCounts[foodName]) <= 0) endFeedMode();
       return;
     }
 
-    spawnFoodDots(image, viewport, key, species);
+    spawnFoodDots(image, viewport, key, species, foodName);
     unlockTinyButHungry();
     if (window.playGameSound) playGameSound('place');
     showToast(`Feeding ${name}...`);
@@ -9575,7 +9660,7 @@
       <div class="tf-card" role="dialog" aria-modal="true">
         <button type="button" class="tf-close" id="tf-food-close" aria-label="Close food picker">✕</button>
         <h3 style="margin:2px 0 6px;color:#1e3a8a;">Choose Fish Food</h3>
-        <p style="font-size:.82rem;color:#64748b;margin:0;">Only the food you own is listed. Each use feeds one fish; each pack has 5 uses.</p>
+        <p style="font-size:.82rem;color:#64748b;margin:0;">Only the food you own is listed. Each use feeds one fish.</p>
         <div id="tf-food-options"></div>
         <p id="tf-food-empty" style="display:none;font-size:.85rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;margin-top:10px;">You do not have any fish food yet. Buy Fish Food in Bob's Shop.</p>
       </div>`;
@@ -9792,7 +9877,7 @@
       if (!username || !typedName) throw new Error('Enter the target username and the exact food name.');
       if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error('Enter a whole number of feeds (1 or more).');
       const def = findFood(typedName);
-      if (!def) throw new Error('Unknown fish food. Use the exact name shown in the list (Fish Food).');
+      if (!def) throw new Error('Unknown fish food. Use the exact name shown in the list.');
       const uid = await getUidByUsername(username);
       if (!uid) throw new Error('Player not found.');
       const ref = db.collection('jugadores').doc(uid);
@@ -9800,7 +9885,7 @@
         const snap = await tx.get(ref);
         if (!snap.exists) throw new Error('Player profile not found.');
         const data = snap.data() || {};
-        const tools = { ...(data.fishTools || {}) };
+        const tools = foodCountsFromDoc(data);
         tools[def.name] = num(tools[def.name]) + quantity;
         tx.update(ref, { fishTools: tools, fishFoodCount: totalFood(tools) });
       });
@@ -9824,6 +9909,186 @@
   setInterval(() => {
     if (AQ.open && AQ.owner) settleRoom(AQ.token);
   }, PAY_INTERVAL_MS);
+})();
+</script>
+<script>
+(function () {
+  const QUEST_DURATION = 30 * 60 * 1000;
+  const $ = id => document.getElementById(id);
+  let lines = [], lineIndex = 0, onDialogEnd = null, dialogSession = 0;
+  let dialogBusy = false, talkBusy = false, currentQuest = null, questTimer = null;
+
+  function playerRef() {
+    if (!auth.currentUser) throw new Error('You must be logged in.');
+    return db.collection('jugadores').doc(auth.currentUser.uid);
+  }
+  function nextQuest(previous) {
+    const choices = ALLOWED_FISH_TYPES.filter(f => !f.isLimited && f.name !== previous);
+    return { fishName: choices[Math.floor(Math.random() * choices.length)].name, startedAt: Date.now() };
+  }
+  function renderQuestStatus() {
+    const status = $('mouse-quest-status');
+    if (!currentQuest) {
+      status.textContent = 'Talk to Sir. Squeaksalot to see how you can help.';
+      return;
+    }
+    const remaining = Math.max(0, Number(currentQuest.startedAt) + QUEST_DURATION - Date.now());
+    const seconds = Math.ceil(remaining / 1000);
+    status.textContent = remaining > 0
+      ? `Looking for: ${currentQuest.fishName} · Time left: ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+      : 'The request has expired. Talk to Sir. Squeaksalot.';
+  }
+  function openHouse(quest) {
+    currentQuest = quest || null;
+    renderQuestStatus();
+    clearInterval(questTimer);
+    questTimer = setInterval(renderQuestStatus, 1000);
+    $('mouse-hole-modal').style.display = 'flex';
+  }
+  function showDialog(dialogLines, done) {
+    lines = dialogLines;
+    lineIndex = 0;
+    onDialogEnd = done || null;
+    dialogSession++;
+    $('mouse-dialog-overlay').style.display = 'flex';
+    renderDialog();
+  }
+  function renderDialog() {
+    const line = lines[lineIndex];
+    $('mouse-dialog-name').textContent = line.name || 'Sir. Squeaksalot';
+    $('mouse-dialog-text').textContent = line.text;
+  }
+  window.closeMouseDialog = function () {
+    dialogSession++;
+    $('mouse-dialog-overlay').style.display = 'none';
+    onDialogEnd = null;
+  };
+  window.closeMouseHole = function () {
+    closeMouseDialog();
+    $('mouse-hole-modal').style.display = 'none';
+    clearInterval(questTimer);
+    questTimer = null;
+  };
+  window.advanceMouseDialog = async function () {
+    if (dialogBusy) return;
+    if (lineIndex < lines.length - 1) {
+      lineIndex++;
+      renderDialog();
+      return;
+    }
+    const done = onDialogEnd;
+    if (!done) { closeMouseDialog(); return; }
+    onDialogEnd = null;
+    const session = dialogSession;
+    dialogBusy = true;
+    try {
+      await done(session);
+    } catch (err) {
+      showToast('Could not complete the request: ' + err.message);
+      if (session === dialogSession) closeMouseDialog();
+    } finally {
+      dialogBusy = false;
+    }
+  };
+  window.openMouseHole = async function () {
+    if (!auth.currentUser) { showToast('You must be logged in.'); openModal('modal-account'); return; }
+    try {
+      const uid = auth.currentUser.uid;
+      const snap = await playerRef().get();
+      if (!snap.exists) throw new Error('Player profile not found.');
+      const data = snap.data() || {};
+      if (data.mouseHoleUnlocked) { openHouse(data.mouseQuest); return; }
+      showDialog([
+        { name:'???', text:'Mmm... What do we have here?' },
+        { name:'???', text:"That doesn't matter" },
+        { text:'My name is... Sir. Squeaksalot' },
+        { text:'I need you help, come inside.' }
+      ], async session => {
+        if (!auth.currentUser || auth.currentUser.uid !== uid) throw new Error('Please log in again.');
+        await db.collection('jugadores').doc(uid).update({ mouseHoleUnlocked:true });
+        if (session !== dialogSession) return;
+        closeMouseDialog();
+        openHouse(null);
+      });
+    } catch (err) { showToast('Could not open the mouse hole: ' + err.message); }
+  };
+  function showExpiredQuest(quest) {
+    currentQuest = quest;
+    renderQuestStatus();
+    showDialog([
+      { text:'You took so long.' },
+      { text:'You know what?' },
+      { text:`Come get me a "${quest.fishName}"` }
+    ]);
+  }
+  async function checkQuest(uid, expectedQuest, session) {
+    if (!auth.currentUser || auth.currentUser.uid !== uid) throw new Error('Please log in again.');
+    const ref = db.collection('jugadores').doc(uid);
+    const result = await db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Player profile not found.');
+      const data = snap.data() || {}, quest = data.mouseQuest;
+      if (!quest) return { status:'finished' };
+      if (quest.fishName !== expectedQuest.fishName || quest.startedAt !== expectedQuest.startedAt) return { status:'changed', quest };
+      if (Date.now() - Number(quest.startedAt) >= QUEST_DURATION) {
+        const replacement = nextQuest(quest.fishName);
+        tx.update(ref, { mouseQuest:replacement });
+        return { status:'expired', quest:replacement };
+      }
+      const fish = getUnplacedFishes(data).find(f => f.name === quest.fishName);
+      if (!fish) return { status:'missing', quest };
+      const fishes = [...(data.fishes || [])];
+      fishes.splice(fishes.indexOf(fish), 1);
+      const foods = window.getFishFoodCounts(data);
+      foods['Tiny Cheese'] = (Number(foods['Tiny Cheese']) || 0) + 1;
+      tx.update(ref, { fishes, fishTools:foods, fishFoodCount:Object.values(foods).reduce((sum,n)=>sum+(Number(n)||0),0), mouseQuest:null });
+      return { status:'complete' };
+    });
+    currentQuest = result.quest || null;
+    renderQuestStatus();
+    if (result.status === 'complete') loadBackpackData();
+    if (session !== dialogSession) return;
+    if (result.status === 'expired' || result.status === 'changed') { showExpiredQuest(result.quest); return; }
+    if (result.status === 'complete') {
+      showDialog([{ text:'Gotcha! Thanks for your help, as a reward...' }, { text:'A Tiny Cheese!' }]);
+    } else if (result.status === 'missing') {
+      showDialog([{ text:"You don't have the fish i told you.. Come back when you find it." }]);
+    } else {
+      showDialog([{ text:'That request is already complete. Talk to me for another one.' }]);
+    }
+  }
+  window.talkToSqueaksalot = async function () {
+    if (talkBusy) return;
+    talkBusy = true;
+    try {
+      const uid = auth.currentUser && auth.currentUser.uid;
+      const ref = playerRef();
+      const result = await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw new Error('Player profile not found.');
+        const data = snap.data() || {}, oldQuest = data.mouseQuest;
+        if (!oldQuest || Date.now() - Number(oldQuest.startedAt) >= QUEST_DURATION) {
+          const quest = nextQuest(oldQuest && oldQuest.fishName);
+          tx.update(ref, { mouseQuest:quest });
+          return { status:oldQuest?'expired':'new', quest };
+        }
+        return { status:'active', quest:oldQuest };
+      });
+      currentQuest = result.quest;
+      renderQuestStatus();
+      if (result.status === 'expired') { showExpiredQuest(result.quest); return; }
+      if (result.status === 'new') {
+        showDialog([
+          { text:'So... i need your help' },
+          { text:'Could you help me bring some fishes over here?' },
+          { text:`Bring me a "${result.quest.fishName}"` }
+        ]);
+      } else {
+        showDialog([{ text:'Did you find it?' }, { text:'Let me see...' }], session => checkQuest(uid, result.quest, session));
+      }
+    } catch (err) { showToast('Could not talk to Sir. Squeaksalot: ' + err.message); }
+    finally { talkBusy = false; }
+  };
 })();
 </script>
 </body>
