@@ -3,16 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game</title>
+  <title>The Fishing Game BETA</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
-  <!-- Firebase v10.8.0 Compat SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-functions-compat.js"></script>
 
-  <!-- Google reCAPTCHA v2 API -->
   <script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 
   <style>
@@ -292,7 +290,6 @@
       object-fit: cover;
     }
 
-    /* MOCHILA PEQUEÑA JUNTO AL USUARIO EN LA ESQUINA INFERIOR IZQUIERDA */
     .backpack-badge-inline {
       display: none; /* Se muestra al iniciar sesión */
       width: 38px;
@@ -390,7 +387,6 @@
     }
     .cast-line-btn:hover { background: #27ae60; }
 
-    /* Animación de Pez Capturado Saliendo del Agua */
     .caught-fish-popup {
       position: fixed;
       top: 50%;
@@ -780,7 +776,7 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0.4</div>
+      <div class="version-tag">v.1.0.0.5 BETA</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
@@ -788,7 +784,7 @@
         <img src="https://i.postimg.cc/NjwRPPmr/tutorial.png" alt="Tutorial">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -804,7 +800,6 @@
         <img id="user-avatar" src="https://via.placeholder.com/40" alt="Avatar">
         <span id="user-display-name">Username</span>
       </div>
-      <!-- MOCHILA PEQUEÑA COLOCADA A LA DERECHA DEL "USUARIO" EN LA ESQUINA INFERIOR IZQUIERDA -->
       <img id="backpack-badge-inline" src="https://i.postimg.cc/bNcMt94Y/backpack.png" alt="Backpack" class="backpack-badge-inline" onclick="openModal('modal-backpack')" title="Open Backpack">
     </div>
     <div style="display: flex; gap: 6px; margin-top: 4px;">
@@ -897,7 +892,6 @@
     <img src="https://i.postimg.cc/L6SrYVZf/admin.png" alt="Admin Panel">
   </button>
 
-  <!-- How to Play Tutorial -->
   <div id="modal-tutorial" class="modal-overlay" style="z-index:3500;">
     <div class="modal-card" style="max-width:560px;">
       <button class="modal-close" onclick="document.getElementById('modal-tutorial').style.display='none'">✖</button>
@@ -917,7 +911,6 @@
     </div>
   </div>
 
-  <!-- Rules Modal -->
   <div id="modal-rules" class="modal-overlay" style="z-index: 3500;">
     <div class="modal-card" style="max-width: 500px;">
       <button id="rules-modal-close" class="modal-close" onclick="closeRulesModal()">✖</button>
@@ -958,7 +951,6 @@
     </div>
   </div>
 
-  <!-- Modal Friends -->
   <div id="modal-friends" class="modal-overlay">
     <div class="modal-card" style="max-width: 550px;">
       <button class="modal-close" onclick="closeAllModals()">✖</button>
@@ -1005,7 +997,6 @@
     </div>
   </div>
 
-  <!-- Warning Notice Modal for Players -->
   <div id="modal-warning-notice" class="modal-overlay" style="z-index: 3200;">
     <div class="modal-card" style="max-width: 420px; text-align: center; border: 3px solid #f39c12;">
       <h2 style="color: #d35400; margin-top: 0;">ACCOUNT WARNING</h2>
@@ -1020,7 +1011,6 @@
     </div>
   </div>
 
-  <!-- Ban Notification Modal -->
   <div id="modal-ban-notice" class="modal-overlay" style="z-index: 3000;">
     <div class="modal-card" style="max-width: 400px; text-align: center; border: 3px solid #e74c3c;">
       <h2 style="color: #e74c3c; margin-top: 0;">ACCESS DENIED</h2>
@@ -1033,7 +1023,6 @@
     </div>
   </div>
 
-  <!-- Admin Warning Prompt Modal -->
   <div id="modal-admin-warning-prompt" class="modal-overlay" style="z-index: 1060;">
     <div class="modal-card" style="max-width: 360px;">
       <button class="modal-close" onclick="document.getElementById('modal-admin-warning-prompt').style.display='none'">✖</button>
@@ -1048,7 +1037,6 @@
     </div>
   </div>
 
-  <!-- Bot Sell Quantity Prompt Modal -->
   <div id="modal-botsell-prompt" class="modal-overlay" style="z-index: 1050;">
     <div class="modal-card" style="max-width: 320px;">
       <button class="modal-close" onclick="document.getElementById('modal-botsell-prompt').style.display='none'">✖</button>
@@ -1065,7 +1053,6 @@
     </div>
   </div>
 
-  <!-- Admin Ban Reason Prompt Modal -->
   <div id="modal-admin-ban-prompt" class="modal-overlay" style="z-index: 1050;">
     <div class="modal-card" style="max-width: 350px;">
       <button class="modal-close" onclick="document.getElementById('modal-admin-ban-prompt').style.display='none'">✖</button>
@@ -1291,7 +1278,6 @@
     </div>
   </div>
 
-  <!-- Modal View Other Profile -->
   <div id="modal-view-profile" class="modal-overlay">
     <div class="modal-card">
       <button class="modal-close" onclick="openModal('modal-profile')">✖</button>
@@ -1611,7 +1597,6 @@
         </div>
       </form>
 
-      <!-- Target User Stats Info Box -->
       <div id="admin-user-stats-box" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 0.9rem; display: flex; flex-direction: column; gap: 4px;">
         <span style="font-weight: bold; color: #1e3a8a;">User Overview:</span>
         <span id="admin-stat-coins">💰 Coins: 0</span>
@@ -1678,7 +1663,10 @@
       <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('bait')">Give Baits</button>
 
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
-      <h3>User Fish Food (Give)</h3>
+      <h3>User Fish Food (Give / Remove)</h3>
+      <div id="admin-target-foods-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
+        <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view fish food...</p>
+      </div>
       <div class="form-group">
         <label>Give Fish Food (type the exact food name)</label>
         <div style="display:flex; gap:8px;">
@@ -2023,7 +2011,6 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-
     const ADMIN_UID = "09SjiwOt9fYdFbc1wQp17Ot467F2";
 
     let newsList = [];
@@ -2296,7 +2283,6 @@
       }, 1000);
     }
 
-    /* FRIENDS: requests, list, trade invitations and profile shortcuts */
     function openFriendsModal() {
       openModal('modal-friends');
       switchFriendsTab('list');
@@ -3266,8 +3252,8 @@
       document.getElementById('index-fish-desc').innerText = fish.desc;
       const valEl = document.getElementById('index-fish-value');
       if (fish.isLimited || fish.name === "Legacy Fish" || fish.name === "Goldfish Snack") {
-        valEl.innerText = "";
-        valEl.style.display = "none";
+        valEl.style.display = "block";
+        valEl.innerText = "Raw value: Not defined";
       } else {
         valEl.style.display = "block";
         valEl.innerText = `Raw value: 💰 ${fish.value}`;
@@ -4916,7 +4902,7 @@
           isBaitActive: false,
           aquariumRoomsOwned: 1,
           aquariumTanksMap: { room_0: new Array(8).fill(null) },
-          achievements: { catchFirst: false, gluGluTank: false, wormBaitAch: false, divineAch: false, makingBusiness: false, cookMaster: false, bobMaster: false },
+          achievements: { catchFirst: false, gluGluTank: false, wormBaitAch: false, divineAch: false, makingBusiness: false, cookMaster: false, bobMaster: false, tinyButHungry: false },
           redeemedCodes: [],
           lastUsernameChange: null,
           isBanned: false,
@@ -5488,6 +5474,7 @@
       const statBaits = document.getElementById('admin-stat-baits');
       const baitsListEl = document.getElementById('admin-target-baits-list');
       const cosListEl = document.getElementById('admin-target-cosmetics-list');
+      const foodsListEl = document.getElementById('admin-target-foods-list');
 
       const setText = (el, value) => { if (el) el.innerText = value; };
       const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -5498,6 +5485,7 @@
         listContainer.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Select a target username above to view fishes...</p>';
         if (baitsListEl) baitsListEl.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Select a target username above to view baits...</p>';
         if (cosListEl) cosListEl.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Select a target username above to view cosmetics...</p>';
+        if (foodsListEl) foodsListEl.innerHTML = '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">Select a target username above to view fish food...</p>';
         setText(statCoins, '💰 Coins: 0');
         setText(statTanks, 'Tanks: 0');
         setText(statTanksInventory, 'Mini Tanks in inventory: 0');
@@ -5517,6 +5505,7 @@
           listContainer.innerHTML = '<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">User not found. Check the exact username.</p>';
           if (baitsListEl) baitsListEl.innerHTML = '<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">User not found.</p>';
           if (cosListEl) cosListEl.innerHTML = '<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">User not found.</p>';
+          if (foodsListEl) foodsListEl.innerHTML = '<p style="font-size:0.8rem;color:#e74c3c;text-align:center;margin:10px 0;">User not found.</p>';
           setText(statCoins, '💰 Coins: 0');
           setText(statTanks, 'Tanks: 0');
           setText(statRooms, 'Aquarium Rooms: 1');
@@ -5586,6 +5575,9 @@
 
         if (typeof renderAdminBaitsAndCosmeticsLists === 'function') {
           renderAdminBaitsAndCosmeticsLists(data);
+        }
+        if (typeof window.renderAdminFishFoodList === 'function') {
+          window.renderAdminFishFoodList(data);
         }
       } catch (err) {
         if (reqSeq !== adminInventoryLookupSeq) return;
@@ -6105,7 +6097,7 @@
               isBaitActive: false,
               aquariumRoomsOwned: 1,
               aquariumTanksMap: { room_0: new Array(8).fill(null) },
-              achievements: { catchFirst: false, gluGluTank: false, wormBaitAch: false, divineAch: false, cookMaster: false, bobMaster: false },
+              achievements: { catchFirst: false, gluGluTank: false, wormBaitAch: false, divineAch: false, cookMaster: false, bobMaster: false, tinyButHungry: false },
               redeemedCodes: [],
               lastUsernameChange: null,
               isBanned: false,
@@ -6216,7 +6208,6 @@
   </script>
 
 <script>
-/* Reconstructed systems extension: built on the supplied ORIGINAL game HTML. */
 (function () {
   'use strict';
 
@@ -6422,7 +6413,6 @@
     if (admin && !document.getElementById('admin-give-rebuild')) {
       const sec=document.createElement('section'); sec.id='admin-give-rebuild'; sec.style.cssText='border:1px solid #cbd5e1;padding:10px;border-radius:9px;margin:12px 0';
       const overview=document.getElementById('admin-user-stats-box');const extra=document.getElementById('admin-stat-rebuild-items');if(extra)extra.remove();
-      /* Removed duplicated bottom Give Bait/Cosmetic section */
     }
   }
 
@@ -7520,6 +7510,12 @@
         name: 'You look fancy!',
         description: 'Richest kid in town.',
         objective: 'Put a cosmetic in a Mini Tank.'
+      },
+      {
+        id: 'tiny-but-hungry',
+        name: 'Tiny but hungry',
+        description: 'Do i have to do this every day??',
+        objective: 'Feed a fish.'
       }
     ];
 
@@ -7558,7 +7554,8 @@
             ['cook-master', 'cookMaster'],
             ['bob-master', 'bobMaster'],
             ['ding-ready', 'dingReady'],
-            ['you-look-fancy', 'youLookFancy']
+            ['you-look-fancy', 'youLookFancy'],
+            ['tiny-but-hungry', 'tinyButHungry']
           ];
 
           achievementStatus.forEach(([id, key]) => {
@@ -7585,7 +7582,6 @@
   };
   const origSwitchAuthTab=window.switchAuthTab;window.switchAuthTab=function(tab){if(origSwitchAuthTab)origSwitchAuthTab(tab);setTimeout(renderVisibleRecaptcha,150);};
 
-
   // reCAPTCHA v2: wait until Google's API and target nodes exist; avoid incorrect greCAPTCHA casing.
   window.onloadCallback=function(){let tries=0;const wait=()=>{if(!window.grecaptcha||typeof grecaptcha.render!=='function'){if(tries++<40)setTimeout(wait,250);return;}recaptchaReady=true;renderVisibleRecaptcha();};wait();};
   window.onloadCallback();
@@ -7601,9 +7597,6 @@
 </script>
 
 <script>
-/* Aquarium movement constrained to the actual visible tank slot.
-   Positions are calculated in pixels so large sprites (especially Turtle)
-   can never travel beyond the clipped tank viewport. */
 (function () {
   const motionTimers = new Map();
   const rand = (min, max) => min + Math.random() * (max - min);
@@ -7795,9 +7788,7 @@
   };
 })();</script>
 
-
 <script>
-/* Clippy Workshop, Pearl chests, Rocky Tanks and related achievements. */
 (function(){
   const CHEST_IMG='https://i.postimg.cc/ydJtCz7n/chest.png';
   const CLIPPY_IMG='https://i.postimg.cc/DzFvDR2r/clippy.png';
@@ -8008,9 +7999,6 @@
 </script>
 
 <style id="deluxe-ui-css">
-  /* ================================================================
-     Shared entrance animations (modals, menus, HUD and shop cards)
-     ================================================================ */
   @keyframes tfOverlayIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes tfCardIn { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
   @keyframes tfRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
@@ -8040,9 +8028,6 @@
   .rebuild-grid > *:nth-child(3), #tank-choice-options > *:nth-child(3) { animation-delay: .08s; }
   .rebuild-grid > *:nth-child(4), #tank-choice-options > *:nth-child(4) { animation-delay: .12s; }
 
-  /* ================================================================
-     Background music toggle
-     ================================================================ */
   #tf-music-toggle {
     position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
     z-index: 14000; display: inline-flex; align-items: center; gap: 7px;
@@ -8054,13 +8039,46 @@
   }
   #tf-music-toggle:hover { transform: translateX(-50%) translateY(-1px) scale(1.03); }
   #tf-music-toggle.is-off { color: #64748b; border-color: #cbd5e1; background: rgba(255, 255, 255, .86); }
-  #tf-music-toggle .tf-music-note { font-size: 1rem; line-height: 1; }
-  #tf-music-toggle.is-playing .tf-music-note { animation: tfMusicPulse 2.4s ease-in-out infinite; }
-  @keyframes tfMusicPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.22) rotate(-6deg); } }
+  #tf-music-toggle.is-playing { background: #1e3a8a; border-color: #1e3a8a; color: #ffffff; }
+  #tf-music-panel {
+    display: none; position: fixed; top: 54px; left: 50%; transform: translateX(-50%);
+    z-index: 14100; width: min(344px, 92vw); max-height: 72vh; overflow-y: auto;
+    background: #ffffff; color: #1f2937; border: 2px solid #cbd5e1; border-radius: 16px;
+    padding: 14px; box-shadow: 0 24px 70px rgba(15, 23, 42, .32);
+    animation: tfCardIn .25s cubic-bezier(.2, .9, .25, 1.12) both;
+  }
+  #tf-music-panel.is-open { display: block; }
+  .tf-music-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+  .tf-music-head strong { display: block; font-size: .95rem; color: #1e3a8a; }
+  .tf-music-head p { margin: 3px 0 0; font-size: .72rem; color: #64748b; line-height: 1.35; }
+  #tf-music-close {
+    flex: 0 0 auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 4px 9px;
+    background: #f8fafc; color: #475569; font: inherit; font-size: .68rem; font-weight: 800; cursor: pointer;
+  }
+  #tf-music-close:hover { background: #e2e8f0; }
+  .tf-music-track {
+    width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    text-align: left; padding: 10px 11px; margin-bottom: 7px; border: 1px solid #e2e8f0;
+    border-radius: 11px; background: #f8fafc; color: #1f2937; font: inherit; cursor: pointer;
+    transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+  }
+  .tf-music-track:hover { border-color: #93c5fd; background: #eff6ff; }
+  .tf-music-track.is-active { border-color: #1e3a8a; background: #eff6ff; box-shadow: inset 0 0 0 1px rgba(30, 58, 138, .22); }
+  .tf-music-track-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .tf-music-track-name { font-size: .84rem; font-weight: 800; color: #1e293b; }
+  .tf-music-track-desc { font-size: .69rem; color: #64748b; }
+  .tf-music-track-state {
+    flex: 0 0 auto; font-size: .62rem; font-weight: 900; letter-spacing: .05em; text-transform: uppercase;
+    color: #1e3a8a; background: #dbeafe; border-radius: 999px; padding: 3px 7px;
+  }
+  .tf-music-track.is-active .tf-music-track-state { background: #1e3a8a; color: #ffffff; }
+  #tf-music-off {
+    width: 100%; border: 0; border-radius: 10px; padding: 10px; margin-top: 4px;
+    background: #e74c3c; color: #ffffff; font: inherit; font-weight: 800; cursor: pointer;
+  }
+  #tf-music-off:hover { background: #c0392b; }
+  #tf-music-off:disabled { background: #e2e8f0; color: #94a3b8; cursor: default; }
 
-  /* ================================================================
-     Clippy dialog typewriter
-     ================================================================ */
   #clippy-dialog-text.typewriter-active::after {
     content: '▍'; color: #6d4acb; margin-left: 2px; animation: tfBlink .8s step-end infinite;
   }
@@ -8069,9 +8087,6 @@
     letter-spacing: .03em; animation: tfBlink 2s ease-in-out infinite;
   }
 
-  /* ================================================================
-     Generic overlays used by chests, fish menu and food picker
-     ================================================================ */
   .tf-overlay {
     display: none; position: fixed; inset: 0; z-index: 14500; align-items: center; justify-content: center;
     padding: 14px; background: rgba(15, 23, 42, .68); backdrop-filter: blur(5px);
@@ -8090,9 +8105,6 @@
   }
   .tf-close:hover { background: #e2e8f0; color: #0f172a; }
 
-  /* ================================================================
-     Chest reward overlay
-     ================================================================ */
   #tf-chest-overlay { z-index: 15000; }
   .tf-chest-card { text-align: center; width: min(360px, 94vw); }
   .tf-chest-card h2 { margin: 2px 0 0; color: #8b5e16; }
@@ -8126,9 +8138,6 @@
   }
   .tf-chest-collect:hover { background: #1d4ed8; }
 
-  /* ================================================================
-     Fish details menu
-     ================================================================ */
   .fish-menu-card { width: min(440px, 96vw); }
   .fm-head { display: flex; gap: 14px; align-items: center; margin: 2px 0 14px; padding-right: 28px; }
   .fm-head img { width: 86px; height: 86px; object-fit: contain; flex: 0 0 86px; filter: drop-shadow(0 5px 10px rgba(0, 0, 0, .16)); }
@@ -8160,9 +8169,6 @@
   .fm-close-btn { width: 100%; border: 0; border-radius: 10px; padding: 10px; background: #1e3a8a; color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
   .fm-close-btn:hover { background: #1e40af; }
 
-  /* ================================================================
-     Food picker
-     ================================================================ */
   #tf-food-overlay { z-index: 14600; }
   #tf-food-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin-top: 10px; }
   .tf-food-option {
@@ -8175,9 +8181,6 @@
   .tf-food-option strong { display: block; font-size: .82rem; color: #1e293b; }
   .tf-food-option span { display: block; font-size: .7rem; color: #6d4acb; font-weight: 800; margin-top: 2px; }
 
-  /* ================================================================
-     Aquarium fish labels, feeding mode and food particles
-     ================================================================ */
   .fish-slot-label {
     position: absolute; top: 2px; left: 3px; right: 3px; z-index: 6;
     display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none;
@@ -8211,6 +8214,7 @@
 
   @media (max-width: 768px) {
     #tf-music-toggle { top: 6px; padding: 5px 10px; font-size: .68rem; }
+    #tf-music-panel { top: 44px; }
     .tf-card { padding: 16px; }
     .fm-head img { width: 72px; height: 72px; flex-basis: 72px; }
     .fish-slot-name { font-size: .5rem; padding: 1px 4px; }
@@ -8228,11 +8232,6 @@
 </style>
 
 <script>
-/* =====================================================================
-   FISHING DELUXE SYSTEMS
-   Background music, dialog typewriter, interactive chests, fish food,
-   fish happiness + coins, fish menus, and fish-food admin support.
-   ===================================================================== */
 (function () {
   'use strict';
 
@@ -8242,9 +8241,6 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const nowMs = () => Date.now();
 
-  /* -------------------------------------------------------------------
-     1. Fish food catalog and happiness tuning
-     ------------------------------------------------------------------- */
   const FISH_FOOD_TYPES = [
     {
       id: 'fish-food',
@@ -8262,14 +8258,18 @@
   const findFood = name => FISH_FOOD_TYPES.find(f => f.name.toLowerCase() === String(name || '').toLowerCase()) || null;
   const foodImg = name => (findFood(name) || {}).img || 'https://i.postimg.cc/CLp4gVxy/fish-food.png';
 
-  const DECAY_PER_HOUR = { Common: 3.5, Rare: 5, Epic: 7, Legendary: 10, Mythic: 14, Divine: 18, Legacy: 22, Secret: 26 };
+  // Fish food/happiness drops 1% every 90 seconds for every species.
+  const DECAY_PER_INTERVAL = 1;
+  const DECAY_INTERVAL_MS = 90 * 1000;
+  const DECAY_PER_HOUR = DECAY_PER_INTERVAL * (3600000 / DECAY_INTERVAL_MS);
   const PAY_INTERVAL_MS = 5 * 60 * 1000;
   const HAPPINESS_START = 55;
   const DOTS_PER_FEED = 10;
   const HAPPINESS_PER_DOT = 2;
 
   const speciesDef = name => (ALLOWED_FISH_TYPES || []).find(f => f.name === name) || { name: name, rarity: 'Common', value: 0, img: '' };
-  const decayRate = species => DECAY_PER_HOUR[speciesDef(species).rarity] || DECAY_PER_HOUR.Common;
+  const isLimitedFish = def => !!(def && (def.isLimited || ['Legacy', 'Secret'].includes(def.rarity)));
+  const decayRate = () => DECAY_PER_HOUR;
 
   function settleHappiness(species, entry, at) {
     const lastT = num(entry && entry.t) || at;
@@ -8281,23 +8281,106 @@
     return { v: value, p: lastP + intervals * PAY_INTERVAL_MS, coins: intervals * perInterval };
   }
 
-  /* -------------------------------------------------------------------
-     2. Relaxing procedural background music
-     ------------------------------------------------------------------- */
   const TFMusic = (function () {
-    let ctx = null, master = null, delayNode = null, timer = null;
-    let playing = false;
-    const active = new Set();
-
-    const CHORDS = [
-      [130.81, 164.81, 196.00, 246.94], // Cmaj7
-      [110.00, 130.81, 164.81, 196.00], // Am7
-      [87.31, 130.81, 174.61, 220.00],  // Fmaj7
-      [98.00, 123.47, 146.83, 196.00],  // G
-      [110.00, 146.83, 174.61, 220.00], // Dm7
-      [130.81, 164.81, 196.00, 261.63]  // C
+    const TRACKS = [
+      {
+        id: 'calm-reef',
+        name: 'Calm Reef',
+        subtitle: 'Warm pads and soft bells',
+        bpm: 54,
+        stepBeats: 0.5,
+        cycleSteps: 32,
+        chordSteps: 8,
+        tone: 2400,
+        chords: [[48, 55, 59, 64], [45, 52, 55, 60], [41, 48, 52, 57], [43, 50, 55, 59]],
+        lead: [[2, 72, 2], [6, 76, 2], [10, 79, 2], [14, 76, 2], [18, 74, 2], [22, 72, 2], [26, 71, 2], [30, 67, 2]],
+        padLevel: 0.045,
+        leadLevel: 0.05,
+        bassLevel: 0.02
+      },
+      {
+        id: 'moonlit-tide',
+        name: 'Moonlit Tide',
+        subtitle: 'Slow arpeggios over night water',
+        bpm: 66,
+        stepBeats: 0.5,
+        cycleSteps: 32,
+        chordSteps: 8,
+        tone: 2700,
+        chords: [[45, 52, 55, 60], [41, 48, 52, 57], [48, 55, 59, 64], [43, 50, 55, 59]],
+        lead: [[0, 57, 4], [4, 64, 4], [8, 65, 4], [12, 72, 4], [16, 64, 4], [20, 71, 4], [24, 67, 4], [28, 74, 4]],
+        padLevel: 0.04,
+        leadLevel: 0.052,
+        bassLevel: 0.02
+      },
+      {
+        id: 'sunset-drift',
+        name: 'Sunset Drift',
+        subtitle: 'Gentle chords for the end of the day',
+        bpm: 60,
+        stepBeats: 0.5,
+        cycleSteps: 32,
+        chordSteps: 8,
+        tone: 2600,
+        chords: [[50, 57, 60, 65], [43, 47, 50, 53], [48, 55, 59, 64], [45, 52, 55, 60]],
+        lead: [[0, 74, 4], [4, 72, 4], [8, 71, 4], [12, 67, 4], [16, 72, 4], [20, 71, 4], [24, 69, 4], [28, 65, 4]],
+        padLevel: 0.045,
+        leadLevel: 0.045,
+        bassLevel: 0.02
+      },
+      {
+        id: 'morning-mood',
+        name: 'Morning Mood',
+        subtitle: 'Edvard Grieg · Grow a Garden',
+        bpm: 76,
+        stepBeats: 0.5,
+        cycleSteps: 32,
+        chordSteps: 16,
+        tone: 3800,
+        chords: [[40, 47, 52, 56], [45, 52, 57, 61]],
+        lead: [
+          [0, 64, 2], [2, 66, 1], [3, 68, 1], [4, 71, 3], [7, 68, 1], [8, 66, 1], [9, 64, 2],
+          [11, 66, 1], [12, 68, 1], [13, 71, 2], [15, 73, 3], [18, 71, 1], [19, 68, 1],
+          [20, 66, 1], [21, 64, 4]
+        ],
+        padLevel: 0.03,
+        leadLevel: 0.075,
+        bassLevel: 0.022
+      },
+      {
+        id: 'rondo-alla-turca',
+        name: 'Rondo Alla Turca',
+        subtitle: 'Mozart · Turkish March',
+        bpm: 108,
+        stepBeats: 0.5,
+        cycleSteps: 32,
+        chordSteps: 8,
+        tone: 4200,
+        chords: [[45, 52, 57, 60], [40, 47, 52, 56], [45, 52, 57, 60], [40, 47, 52, 56]],
+        lead: [
+          [0, 71, 1], [1, 69, 1], [2, 68, 1], [3, 69, 1], [4, 72, 1], [5, 74, 1], [6, 72, 1], [7, 71, 1], [8, 72, 2],
+          [10, 71, 1], [11, 69, 1], [12, 68, 1], [13, 69, 1], [14, 76, 1], [15, 74, 1], [16, 72, 1], [17, 71, 1], [18, 72, 2],
+          [20, 71, 1], [21, 69, 1], [22, 68, 1], [23, 69, 1], [24, 72, 1], [25, 74, 1], [26, 72, 1], [27, 71, 1], [28, 72, 1], [29, 69, 2]
+        ],
+        padLevel: 0.025,
+        leadLevel: 0.065,
+        bassLevel: 0.022
+      }
     ];
-    const MELODY = [392.00, 440.00, 493.88, 523.25, 587.33, 659.25, 783.99];
+
+    TRACKS.forEach(track => {
+      track.leadMap = {};
+      track.lead.forEach(([step, midi, steps]) => {
+        track.leadMap[step] = { midi, steps: steps || 1 };
+      });
+    });
+
+    let ctx = null, master = null, filterNode = null, delayNode = null, timer = null;
+    let playing = false, currentId = null, session = 0, step = 0, nextTime = 0;
+    const active = new Set();
+    const midiToFreq = midi => 440 * Math.pow(2, (midi - 69) / 12);
+    const trackById = id => TRACKS.find(track => track.id === id) || TRACKS[0];
+    const stepDuration = track => 60 / track.bpm * (track.stepBeats || 0.5);
 
     function ensure() {
       if (ctx) return true;
@@ -8307,18 +8390,18 @@
         ctx = new AC();
         master = ctx.createGain();
         master.gain.value = 0;
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 3000;
-        filter.Q.value = 0.7;
+        filterNode = ctx.createBiquadFilter();
+        filterNode.type = 'lowpass';
+        filterNode.frequency.value = 3000;
+        filterNode.Q.value = 0.7;
         const compressor = ctx.createDynamicsCompressor();
         compressor.threshold.value = -18;
         compressor.knee.value = 18;
         compressor.ratio.value = 3.5;
         compressor.attack.value = 0.22;
         compressor.release.value = 1.0;
-        master.connect(filter);
-        filter.connect(compressor);
+        master.connect(filterNode);
+        filterNode.connect(compressor);
         compressor.connect(ctx.destination);
 
         delayNode = ctx.createDelay(1.0);
@@ -8326,7 +8409,7 @@
         const feedback = ctx.createGain();
         feedback.gain.value = 0.27;
         const wet = ctx.createGain();
-        wet.gain.value = 0.32;
+        wet.gain.value = 0.28;
         delayNode.connect(feedback);
         feedback.connect(delayNode);
         delayNode.connect(wet);
@@ -8357,124 +8440,249 @@
       };
     }
 
-    function pad() {
-      if (!playing || !ctx) return;
-      const chord = CHORDS[Math.floor(Math.random() * CHORDS.length)];
-      const t = ctx.currentTime + 0.06;
-      chord.forEach((freq, index) => {
-        voice(freq, t, 10.5, 0.062, 'sine');
-        voice(freq * 2.004, t + 0.12, 9.2, 0.017, 'triangle');
-        if (index === 0) voice(freq / 2, t + 0.05, 11.4, 0.038, 'sine');
+    function pluck(freq, start, dur, level, type, destination) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type || 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, level), start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + Math.max(0.15, dur));
+      osc.connect(gain);
+      gain.connect(destination || delayNode || master);
+      osc.start(start);
+      osc.stop(start + Math.max(0.15, dur) + 0.1);
+      active.add(osc);
+      osc.onended = () => {
+        active.delete(osc);
+        try { osc.disconnect(); gain.disconnect(); } catch (err) { /* ignore */ }
+      };
+    }
+
+    function playPad(chord, start, dur, level) {
+      chord.forEach((midi, index) => {
+        voice(midiToFreq(midi), start + index * 0.03, dur, level, 'sine');
       });
     }
 
-    function pluck(offset) {
-      if (!playing || !ctx) return;
-      const note = MELODY[Math.floor(Math.random() * MELODY.length)];
-      const t = ctx.currentTime + (offset == null ? 0.03 : offset);
-      voice(note, t, 2.4, 0.085, 'triangle', delayNode);
-      voice(note / 2, t, 2.8, 0.028, 'sine', delayNode);
+    function playStep(track, at, index) {
+      const stepDur = stepDuration(track);
+      const event = track.leadMap[index];
+      if (event) {
+        const freq = midiToFreq(event.midi);
+        const dur = Math.max(0.2, event.steps * stepDur * 0.92);
+        pluck(freq, at, dur, track.leadLevel || 0.06, track.leadType || 'triangle');
+        pluck(freq * 2.004, at + 0.01, dur * 0.7, (track.leadLevel || 0.06) * 0.18, 'sine');
+      }
+      if (index % track.chordSteps === 0) {
+        const chord = track.chords[Math.floor(index / track.chordSteps) % track.chords.length];
+        playPad(chord, at, stepDur * track.chordSteps * 0.96, track.padLevel || 0.04);
+        pluck(midiToFreq(chord[0]), at, stepDur * track.chordSteps * 0.9, track.bassLevel || 0.025, 'sine', master);
+      }
     }
 
-    function start() {
+    function tick() {
+      if (!playing || !ctx) return;
+      const track = trackById(currentId);
+      const stepDur = stepDuration(track);
+      if (nextTime < ctx.currentTime) nextTime = ctx.currentTime + 0.05;
+      const horizon = ctx.currentTime + 0.8;
+      while (nextTime < horizon) {
+        playStep(track, nextTime, step);
+        nextTime += stepDur;
+        step = (step + 1) % (track.cycleSteps || 32);
+      }
+    }
+
+    function stopVoices() {
+      active.forEach(osc => { try { osc.stop(); } catch (err) { /* ignore */ } });
+      active.clear();
+    }
+
+    function begin(track) {
+      stopVoices();
+      if (filterNode) filterNode.frequency.setTargetAtTime(track.tone || 3000, ctx.currentTime, 0.15);
+      step = 0;
+      nextTime = ctx.currentTime + 0.12;
+      tick();
+      clearInterval(timer);
+      timer = setInterval(tick, 120);
+      const t = ctx.currentTime;
+      master.gain.cancelScheduledValues(t);
+      master.gain.setValueAtTime(0.0001, t);
+      master.gain.linearRampToValueAtTime(0.6, t + 1.1);
+    }
+
+    function start(trackId) {
       if (!ensure()) return false;
       if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const track = trackById(trackId);
       playing = true;
+      currentId = track.id;
+      session += 1;
+      const my = session;
+      clearInterval(timer);
+      timer = null;
       const t = ctx.currentTime;
       master.gain.cancelScheduledValues(t);
       master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), t);
-      master.gain.linearRampToValueAtTime(0.6, t + 1.8);
-      clearInterval(timer);
-      timer = setInterval(() => {
-        if (!playing) return;
-        pad();
-        pluck(0.05);
-        if (Math.random() < 0.7) pluck(2.35);
-      }, 5000);
-      pad();
-      setTimeout(() => { if (playing) pluck(0); }, 1400);
-      setTimeout(() => { if (playing) pluck(0); }, 3300);
+      master.gain.linearRampToValueAtTime(0.0001, t + 0.25);
+      setTimeout(() => {
+        if (my !== session || !playing || !ctx) return;
+        begin(track);
+      }, 300);
       return true;
     }
 
     function stop() {
       playing = false;
+      currentId = null;
+      session += 1;
       clearInterval(timer);
       timer = null;
       if (ctx && master) {
         const t = ctx.currentTime;
         master.gain.cancelScheduledValues(t);
         master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), t);
-        master.gain.linearRampToValueAtTime(0.0001, t + 0.9);
+        master.gain.linearRampToValueAtTime(0.0001, t + 0.6);
       }
       setTimeout(() => {
         if (playing) return;
-        active.forEach(osc => { try { osc.stop(); } catch (err) { /* ignore */ } });
-        active.clear();
+        stopVoices();
         if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {});
-      }, 1200);
+      }, 750);
     }
 
-    return { start, stop, isPlaying: () => playing };
+    return { start, stop, isPlaying: () => playing, current: () => currentId, tracks: () => TRACKS };
   })();
 
   function initMusic() {
     if ($('tf-music-toggle')) return;
     let pref = '1';
+    let savedTrack = '';
     try {
       const saved = localStorage.getItem('tfMusicEnabled');
       if (saved === '0' || saved === '1') pref = saved;
+      savedTrack = localStorage.getItem('tfMusicTrack') || '';
     } catch (err) { /* ignore */ }
 
     const button = document.createElement('button');
     button.id = 'tf-music-toggle';
     button.type = 'button';
-    button.innerHTML = '<span class="tf-music-note">♪</span><span class="tf-music-label">Music</span>';
+    button.textContent = 'Music';
     document.body.appendChild(button);
-    const label = button.querySelector('.tf-music-label');
+
+    const panel = document.createElement('div');
+    panel.id = 'tf-music-panel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Relaxing music');
+    panel.innerHTML = `
+      <div class="tf-music-head">
+        <div>
+          <strong>Relaxing Music</strong>
+          <p>Pick a track. It loops automatically.</p>
+        </div>
+        <button type="button" id="tf-music-close">Close</button>
+      </div>
+      <div id="tf-music-tracks"></div>
+      <button type="button" id="tf-music-off">Turn Music Off</button>
+    `;
+    document.body.appendChild(panel);
+
+    const list = panel.querySelector('#tf-music-tracks');
+    const offButton = panel.querySelector('#tf-music-off');
+
+    TFMusic.tracks().forEach(track => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'tf-music-track';
+      row.dataset.track = track.id;
+      row.innerHTML = `
+        <span class="tf-music-track-copy">
+          <span class="tf-music-track-name">${esc(track.name)}</span>
+          <span class="tf-music-track-desc">${esc(track.subtitle)}</span>
+        </span>
+        <span class="tf-music-track-state">Play</span>
+      `;
+      row.addEventListener('click', () => {
+        if (TFMusic.current() === track.id) stopMusic();
+        else startTrack(track.id);
+      });
+      list.appendChild(row);
+    });
 
     const refresh = () => {
       const on = TFMusic.isPlaying();
+      const current = TFMusic.current();
       button.classList.toggle('is-playing', on);
       button.classList.toggle('is-off', !on);
-      button.setAttribute('aria-pressed', on ? 'true' : 'false');
-      button.setAttribute('aria-label', on ? 'Turn background music off' : 'Turn background music on');
-      label.textContent = on ? 'Music On' : (pref === '0' ? 'Music Off' : 'Tap for music');
+      button.setAttribute('aria-expanded', panel.classList.contains('is-open') ? 'true' : 'false');
+      list.querySelectorAll('.tf-music-track').forEach(row => {
+        const active = row.dataset.track === current;
+        row.classList.toggle('is-active', active);
+        row.querySelector('.tf-music-track-state').textContent = active ? 'Playing' : 'Play';
+      });
+      offButton.disabled = !on;
     };
-    const start = () => {
-      if (TFMusic.start()) {
+
+    const openPanel = () => { panel.classList.add('is-open'); refresh(); };
+    const closePanel = () => { panel.classList.remove('is-open'); refresh(); };
+    const togglePanel = () => {
+      if (panel.classList.contains('is-open')) closePanel();
+      else openPanel();
+    };
+
+    const startTrack = id => {
+      if (TFMusic.start(id)) {
         pref = '1';
-        try { localStorage.setItem('tfMusicEnabled', '1'); } catch (err) { /* ignore */ }
+        savedTrack = id;
+        try {
+          localStorage.setItem('tfMusicEnabled', '1');
+          localStorage.setItem('tfMusicTrack', id);
+        } catch (err) { /* ignore */ }
       }
       refresh();
     };
-    const stop = () => {
+
+    const stopMusic = () => {
       TFMusic.stop();
       pref = '0';
       try { localStorage.setItem('tfMusicEnabled', '0'); } catch (err) { /* ignore */ }
       refresh();
     };
 
-    button.addEventListener('click', () => {
-      if (TFMusic.isPlaying()) stop(); else start();
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      togglePanel();
+    });
+    panel.querySelector('#tf-music-close').addEventListener('click', closePanel);
+    offButton.addEventListener('click', stopMusic);
+    document.addEventListener('click', event => {
+      if (!panel.classList.contains('is-open')) return;
+      if (panel.contains(event.target) || button.contains(event.target)) return;
+      closePanel();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closePanel();
     });
 
     const gestureStart = event => {
-      if (TFMusic.isPlaying() || pref === '0') {
+      if (TFMusic.isPlaying() || pref === '0' || !savedTrack) {
         document.removeEventListener('pointerdown', gestureStart, true);
         return;
       }
-      if (event.target && event.target.closest && event.target.closest('#tf-music-toggle')) return;
-      start();
+      if (event.target && event.target.closest && event.target.closest('#tf-music-toggle, #tf-music-panel')) return;
+      if (!TFMusic.tracks().some(track => track.id === savedTrack)) {
+        document.removeEventListener('pointerdown', gestureStart, true);
+        return;
+      }
+      startTrack(savedTrack);
       document.removeEventListener('pointerdown', gestureStart, true);
     };
     document.addEventListener('pointerdown', gestureStart, true);
     refresh();
   }
 
-  /* -------------------------------------------------------------------
-     3. Clippy dialog typewriter
-     ------------------------------------------------------------------- */
   function initClippyTypewriter() {
     const overlay = $('clippy-dialog-overlay');
     const text = $('clippy-dialog-text');
@@ -8548,9 +8756,6 @@
     startTyping(lastValue);
   }
 
-  /* -------------------------------------------------------------------
-     4. Interactive pearl chests
-     ------------------------------------------------------------------- */
   function openChestOverlay(kind, amount) {
     return new Promise(resolve => {
       const basic = kind === 'basic';
@@ -8639,9 +8844,6 @@
     await openChestOverlay(kind, amount);
   };
 
-  /* -------------------------------------------------------------------
-     5. Fish food shop + ownership display
-     ------------------------------------------------------------------- */
   function totalFood(counts) {
     return Object.values(counts || {}).reduce((sum, value) => sum + num(value), 0);
   }
@@ -8661,9 +8863,6 @@
     return counts;
   }
 
-  /* -------------------------------------------------------------------
-     6. Aquarium: names, happiness, coins and feeding
-     ------------------------------------------------------------------- */
   const AQ = {
     open: false,
     owner: false,
@@ -8685,6 +8884,38 @@
     paying: false,
     hapTimer: null
   };
+
+  let tinyHungryUnlocked = false;
+  let tinyHungryUnlockPending = false;
+
+  async function unlockTinyButHungry() {
+    if (!AQ.owner || !AQ.uid || tinyHungryUnlocked || tinyHungryUnlockPending) return;
+    if (AQ.doc && AQ.doc.achievements && AQ.doc.achievements.tinyButHungry) {
+      tinyHungryUnlocked = true;
+      return;
+    }
+    tinyHungryUnlockPending = true;
+    try {
+      await db.collection('jugadores').doc(AQ.uid).update({
+        'achievements.tinyButHungry': true
+      });
+      tinyHungryUnlocked = true;
+      if (AQ.doc) {
+        AQ.doc.achievements = { ...(AQ.doc.achievements || {}), tinyButHungry: true };
+      }
+      if (window.showAchievementUnlocked) {
+        window.showAchievementUnlocked(
+          'Tiny but hungry',
+          'Do i have to do this every day??',
+          'Feed a fish.'
+        );
+      }
+    } catch (err) {
+      console.error('Could not unlock Tiny but hungry', err);
+    } finally {
+      tinyHungryUnlockPending = false;
+    }
+  }
 
   function slotElement(index) {
     return $(index < 4 ? `shelf-top-${index}` : `shelf-bot-${index - 4}`);
@@ -8958,22 +9189,66 @@
     persistFoodDelta(canonical, amount);
   }
 
-  // Fish swim down to 70% of the tank (66% for jellyfish, ground for sand
-  // creatures). Food may fall 10 px past that line, but never out of the tank.
-  function foodFloorFor(viewport, image) {
-    const h = viewport.clientHeight || 100;
-    const ih = (image && image.offsetHeight) || 32;
-    const name = (image && image.alt) || '';
-    const isSand = name === 'Clam' || name === 'Sea Urchin' || name === 'Sponge';
-    const isJelly = name === 'Jellyfish';
-    let maxTop;
-    if (isSand) {
-      maxTop = h * 0.72 + 6.5 - ih;
-    } else {
-      maxTop = h * (isJelly ? 0.66 : 0.70);
+  // Tank PNGs are square drawings with transparent margins and a thick frame,
+  // so percentages of the slot do not match the visible glass. This normalized
+  // region is the water area inside the drawn glass (both tank types share it).
+  const TANK_WATER_INSET = { left: 0.205, right: 0.795, top: 0.265, bottom: 0.72 };
+
+  // Layout units (offset*) because the aquarium modal may be CSS-scaled and
+  // food dots are positioned in unscaled layout pixels.
+  function paintedImageBox(viewport, tank) {
+    const nw = tank.naturalWidth || tank.offsetWidth;
+    const nh = tank.naturalHeight || tank.offsetHeight;
+    const fit = getComputedStyle(tank).objectFit || 'fill';
+    let x = tank.offsetLeft || 0, y = tank.offsetTop || 0;
+    let width = tank.offsetWidth || viewport.clientWidth || 100;
+    let height = tank.offsetHeight || viewport.clientHeight || 100;
+    if (nw && nh && (fit === 'contain' || fit === 'cover')) {
+      const scale = (fit === 'contain' ? Math.min : Math.max)(width / nw, height / nh);
+      const drawnW = nw * scale, drawnH = nh * scale;
+      x += (width - drawnW) / 2;
+      y += (height - drawnH) / 2;
+      width = drawnW;
+      height = drawnH;
     }
-    maxTop = Math.max(3, Math.min(maxTop, h - ih - 3));
-    return Math.max(8, Math.min(h - 4, maxTop + 10));
+    return { x, y, width, height };
+  }
+
+  function tankWaterArea(viewport) {
+    const w = viewport.clientWidth || 100;
+    const h = viewport.clientHeight || 100;
+    const tank = viewport.querySelector('img');
+    let area = { left: w * 0.205, right: w * 0.795, top: h * 0.265, bottom: h * 0.72 };
+    if (tank && tank.naturalWidth && tank.complete) {
+      const box = paintedImageBox(viewport, tank);
+      area = {
+        left: box.x + box.width * TANK_WATER_INSET.left,
+        right: box.x + box.width * TANK_WATER_INSET.right,
+        top: box.y + box.height * TANK_WATER_INSET.top,
+        bottom: box.y + box.height * TANK_WATER_INSET.bottom
+      };
+    }
+    return area;
+  }
+
+  // Food is confined to the drawn glass: horizontally to the overlap of the
+  // water and the fish's reachable swim range, vertically above the sand line.
+  function feedingBounds(viewport, image) {
+    const w = viewport.clientWidth || 100;
+    const h = viewport.clientHeight || 100;
+    const iw = (image && image.offsetWidth) || 32;
+    const pad = 3;
+    const water = tankWaterArea(viewport);
+    let minX = Math.max(water.left + pad, w * 0.10);
+    let maxX = Math.min(water.right - pad, w * 0.65, w - iw - pad);
+    if (maxX < minX) {
+      minX = water.left + pad;
+      maxX = Math.max(minX, water.right - pad);
+    }
+    const floor = Math.max(8, Math.min(h - 4, water.bottom - 3));
+    const minY = Math.max(4, water.top + 4);
+    const maxY = Math.max(minY, Math.min(floor - 6, minY + (floor - minY) * 0.55));
+    return { minX: minX + iw / 2, maxX: maxX + iw / 2, minY, maxY, floor };
   }
 
   function sinkDotsToFloor(container, floor) {
@@ -8989,14 +9264,12 @@
   function spawnSinkingFood(viewport, image) {
     const portion = document.createElement('div');
     portion.className = 'fish-food-portion';
-    const width = viewport.clientWidth || 100;
-    const height = viewport.clientHeight || 100;
-    const floor = foodFloorFor(viewport, image);
+    const bounds = feedingBounds(viewport, image);
     for (let i = 0; i < DOTS_PER_FEED; i++) {
       const dot = document.createElement('span');
       dot.className = 'fish-food-dot';
-      const x = clamp(width * (0.18 + Math.random() * 0.4), 4, Math.max(4, width - 8));
-      const y = clamp(height * (0.55 + Math.random() * 0.14), 4, floor);
+      const x = bounds.minX + Math.random() * Math.max(0, bounds.maxX - bounds.minX);
+      const y = clamp(bounds.minY + Math.random() * Math.max(0, bounds.maxY - bounds.minY), bounds.minY, bounds.floor);
       dot.__x = x;
       dot.__y = y;
       dot.style.left = x + 'px';
@@ -9004,7 +9277,7 @@
       portion.appendChild(dot);
     }
     viewport.appendChild(portion);
-    sinkDotsToFloor(portion, floor);
+    sinkDotsToFloor(portion, bounds.floor);
     setTimeout(() => { try { portion.remove(); } catch (err) { /* ignore */ } }, 2400);
   }
 
@@ -9021,18 +9294,16 @@
     portion.container.className = 'fish-food-portion';
     viewport.appendChild(portion.container);
 
-    const width = viewport.clientWidth || 100;
-    const height = viewport.clientHeight || 100;
-    const floor = foodFloorFor(viewport, image);
-    portion.floor = floor;
-    const centerX = width * (0.16 + Math.random() * 0.4);
-    const centerY = Math.min(height * (0.52 + Math.random() * 0.16), floor - 10);
+    const bounds = feedingBounds(viewport, image);
+    portion.floor = bounds.floor;
+    const centerX = bounds.minX + Math.random() * Math.max(0, bounds.maxX - bounds.minX);
+    const centerY = bounds.minY + Math.random() * Math.max(0, bounds.maxY - bounds.minY);
 
     for (let i = 0; i < DOTS_PER_FEED; i++) {
       const dot = document.createElement('span');
       dot.className = 'fish-food-dot';
-      const x = clamp(centerX + (Math.random() - 0.5) * 40, 4, Math.max(4, width - 8));
-      const y = clamp(centerY + (Math.random() - 0.5) * 24, 4, floor);
+      const x = clamp(centerX + (Math.random() - 0.5) * 30, bounds.minX, bounds.maxX);
+      const y = clamp(centerY + (Math.random() - 0.5) * 20, bounds.minY, bounds.floor);
       dot.__x = x;
       dot.__y = y;
       dot.style.left = x + 'px';
@@ -9081,6 +9352,7 @@
     }
 
     spawnFoodDots(image, viewport, key, species);
+    unlockTinyButHungry();
     if (window.playGameSound) playGameSound('place');
     showToast(`Feeding ${name}...`);
     if (num(AQ.foodCounts[foodName]) <= 0) endFeedMode();
@@ -9126,7 +9398,7 @@
 
       if (AQ.happiness[portion.key].v >= 99.5 && portion.remaining > 0) {
         portion.remaining = 0;
-        sinkDotsToFloor(portion.container, portion.floor || foodFloorFor(portion.vp, portion.img));
+        sinkDotsToFloor(portion.container, portion.floor || feedingBounds(portion.vp, portion.img).floor);
         setTimeout(() => { try { portion.container.remove(); } catch (err) { /* ignore */ } }, 2300);
         showToast(`${AQ.names[portion.key] || portion.species} is full and happy!`);
       } else if (portion.remaining <= 0) {
@@ -9165,7 +9437,6 @@
     persistHappiness();
   }
 
-  /* ----- Fish details menu ----- */
   function ensureFishMenu() {
     if ($('tf-fish-menu')) return;
     const overlay = document.createElement('div');
@@ -9275,7 +9546,9 @@
         : 'Happiness decays over time. The owner can feed this fish with Fish Food.');
 
     menu.querySelector('#tf-fish-rarity-stat').textContent = def.rarity;
-    menu.querySelector('#tf-fish-price').textContent = def.value ? `${def.value} 💰` : '—';
+    menu.querySelector('#tf-fish-price').textContent = isLimitedFish(def)
+      ? 'Not defined'
+      : (def.value ? `${def.value} 💰` : 'Not defined');
     menu.querySelector('#tf-fish-earn').textContent = `${perTick} 💰 / 5 min`;
     menu.querySelector('#tf-fish-status').textContent = happiness >= 99.5 ? 'Full' : happiness >= 60 ? 'Content' : happiness >= 25 ? 'Hungry' : 'Very hungry';
 
@@ -9315,7 +9588,6 @@
     menu.style.display = 'flex';
   }
 
-  /* ----- Food picker ----- */
   function ensureFoodPicker() {
     if ($('tf-food-overlay')) return;
     const overlay = document.createElement('div');
@@ -9376,7 +9648,6 @@
     $('tf-food-overlay').style.display = 'flex';
   }
 
-  /* ----- Aquarium hooks ----- */
   const originalRenderAquarium = window.renderAquarium;
   const originalHandleShelfClick = window.handleShelfClick;
   const originalCloseAquariumModal = window.closeAquariumModal;
@@ -9466,15 +9737,67 @@
     });
   }
 
-  /* -------------------------------------------------------------------
-     7. Admin panel: give fish food by exact name
-     ------------------------------------------------------------------- */
   function initAdminFood() {
     const datalist = $('adminFoodTypes');
     if (datalist) {
       datalist.innerHTML = FISH_FOOD_TYPES.map(def => `<option value="${esc(def.name)}"></option>`).join('');
     }
   }
+
+  function renderAdminFishFoodList(data) {
+    const list = $('admin-target-foods-list');
+    if (!list) return;
+    const counts = foodCountsFromDoc(data || {});
+    const entries = Object.entries(counts).filter(([, count]) => num(count) > 0);
+    list.innerHTML = entries.length
+      ? entries.map(([name, count]) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#ffffff;padding:6px 10px;border-radius:6px;margin-bottom:5px;border:1px solid #cbd5e1;">
+          <span style="font-size:0.85rem;"><strong>${esc(name)}</strong> (x${count} use${count === 1 ? '' : 's'})</span>
+          <button type="button" class="modal-action-btn" style="background:#e74c3c;padding:3px 8px;font-size:0.75rem;width:auto;" onclick="adminRemoveFishFood('${esc(name)}',${count})">Delete</button>
+        </div>`).join('')
+      : '<p style="font-size:0.8rem;color:#64748b;text-align:center;margin:10px 0;">User has no fish food.</p>';
+  }
+  window.renderAdminFishFoodList = renderAdminFishFoodList;
+
+  window.adminRemoveFishFood = async function (name, maxCount) {
+    if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+      showToast('Admin only.');
+      return;
+    }
+    const username = ($('adminTargetUsername') && $('adminTargetUsername').value.trim()) || '';
+    if (!username) {
+      showToast('Select a target username first.');
+      return;
+    }
+    const raw = await showToastPrompt(`How many "${name}" should be removed from ${username}? (Max: ${maxCount})`, '1');
+    if (raw === null) return;
+    const qty = Number(raw);
+    if (!Number.isSafeInteger(qty) || qty <= 0 || qty > maxCount) {
+      showToast(`Enter a whole number between 1 and ${maxCount}.`);
+      return;
+    }
+    try {
+      const uid = await getUidByUsername(username);
+      if (!uid) throw new Error('Player not found.');
+      const canonical = (findFood(name) || {}).name || name;
+      const ref = db.collection('jugadores').doc(uid);
+      await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw new Error('Player not found.');
+        const data = snap.data() || {};
+        const counts = foodCountsFromDoc(data);
+        const tools = { ...(data.fishTools || {}) };
+        if (tools[canonical] == null) tools[canonical] = num(counts[canonical]);
+        tools[canonical] = Math.max(0, num(tools[canonical]) - qty);
+        if (!tools[canonical]) delete tools[canonical];
+        tx.update(ref, { fishTools: tools, fishFoodCount: totalFood(tools) });
+      });
+      showToast(`Removed ${qty} ${canonical} from ${username}.`);
+      if (typeof loadTargetUserInventoryForAdmin === 'function') loadTargetUserInventoryForAdmin();
+    } catch (err) {
+      showToast('Error removing fish food: ' + err.message);
+    }
+  };
 
   const originalAdminGiveNamedItem = window.adminGiveNamedItem;
   window.adminGiveNamedItem = async function (kind) {
