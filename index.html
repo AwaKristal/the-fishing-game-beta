@@ -776,7 +776,7 @@
 
   <header>
     <div class="header-left">
-      <div class="version-tag">v.1.0.0. BETA</div>
+      <div class="version-tag">v.1.0.0.5 BETA</div>
       <button class="rules-header-btn" onclick="openRulesModal()" title="Game Rules">
         <img src="https://i.postimg.cc/CMsgQZbC/rules.png" alt="Rules">
       </button>
@@ -8080,6 +8080,17 @@
   #tf-music-off:disabled { background: #e2e8f0; color: #94a3b8; cursor: default; }
   #tf-music-status { display: none; margin: 9px 2px 0; font-size: .72rem; line-height: 1.35; color: #b91c1c; }
   #tf-music-status.is-visible { display: block; }
+  .tf-music-volume {
+    margin: 2px 0 10px; padding: 9px 11px 10px; border: 1px solid #e2e8f0;
+    border-radius: 11px; background: #f8fafc;
+  }
+  .tf-music-volume-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
+  .tf-music-volume-head label { font-size: .72rem; font-weight: 800; color: #1e293b; letter-spacing: .02em; }
+  #tf-music-volume-value { font-size: .68rem; font-weight: 800; color: #1e3a8a; font-variant-numeric: tabular-nums; }
+  #tf-music-volume {
+    display: block; width: 100%; margin: 0; height: 18px;
+    accent-color: #1e3a8a; cursor: pointer;
+  }
 
   #clippy-dialog-text.typewriter-active::after {
     content: '▍'; color: #6d4acb; margin-left: 2px; animation: tfBlink .8s step-end infinite;
@@ -8317,7 +8328,7 @@
       }
     ];
 
-    const VOLUME = 0.9;
+    let volume = 0.9;
     let audio = null;
     let playing = false;
     let loading = false;
@@ -8354,7 +8365,7 @@
           return;
         }
         const k = Math.min(1, (Date.now() - started) / 900);
-        el.volume = VOLUME * k;
+        el.volume = volume * k;
         if (k >= 1) {
           clearInterval(fadeTimer);
           fadeTimer = null;
@@ -8364,7 +8375,7 @@
 
     function retire(el) {
       if (!el) return;
-      const from = el.volume || VOLUME;
+      const from = el.volume || volume;
       const started = Date.now();
       const timer = setInterval(() => {
         const k = Math.min(1, (Date.now() - started) / 450);
@@ -8420,9 +8431,23 @@
       notify();
     }
 
+    function setVolume(value) {
+      const next = Number(value);
+      if (!Number.isFinite(next)) return volume;
+      volume = Math.max(0, Math.min(1, next));
+      if (audio) {
+        clearInterval(fadeTimer);
+        fadeTimer = null;
+        audio.volume = volume;
+      }
+      return volume;
+    }
+
     return {
       start,
       stop,
+      setVolume,
+      getVolume: () => volume,
       isPlaying: () => playing,
       isLoading: () => loading,
       current: () => currentId,
@@ -8461,6 +8486,13 @@
         <button type="button" id="tf-music-close">Close</button>
       </div>
       <div id="tf-music-tracks"></div>
+      <div class="tf-music-volume">
+        <div class="tf-music-volume-head">
+          <label for="tf-music-volume">Volume</label>
+          <span id="tf-music-volume-value">90%</span>
+        </div>
+        <input type="range" id="tf-music-volume" min="0" max="100" step="1" value="90" aria-label="Music volume">
+      </div>
       <p id="tf-music-status" role="status"></p>
       <button type="button" id="tf-music-off">Turn Music Off</button>
     `;
@@ -8469,6 +8501,26 @@
     const list = panel.querySelector('#tf-music-tracks');
     const offButton = panel.querySelector('#tf-music-off');
     const status = panel.querySelector('#tf-music-status');
+    const volumeInput = panel.querySelector('#tf-music-volume');
+    const volumeValue = panel.querySelector('#tf-music-volume-value');
+
+    const savedVolume = (() => {
+      try { return parseFloat(localStorage.getItem('tfMusicVolume')); } catch (err) { return NaN; }
+    })();
+    if (Number.isFinite(savedVolume)) TFMusic.setVolume(savedVolume);
+
+    const renderVolume = () => {
+      const pct = Math.round(TFMusic.getVolume() * 100);
+      volumeInput.value = String(pct);
+      volumeValue.textContent = `${pct}%`;
+    };
+
+    volumeInput.addEventListener('input', () => {
+      TFMusic.setVolume(volumeInput.value / 100);
+      renderVolume();
+      try { localStorage.setItem('tfMusicVolume', String(TFMusic.getVolume())); } catch (err) { /* ignore */ }
+    });
+    renderVolume();
 
     TFMusic.tracks().forEach(track => {
       const row = document.createElement('button');
