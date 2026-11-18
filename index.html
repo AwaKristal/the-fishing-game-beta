@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game</title>
+  <title>The Fishing Game BETA</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -70,6 +70,7 @@
     }
 
     .mouse-overlay { display:none; position:fixed; inset:0; z-index:12000; align-items:center; justify-content:center; padding:14px; background:rgba(15,23,42,.72); backdrop-filter:blur(4px); }
+    #mouse-dialog-overlay { cursor:pointer; }
     .mouse-panel { width:min(600px,96vw); max-height:90vh; overflow:auto; position:relative; padding:20px; border:2px solid #cbd5e1; border-radius:16px; background:#fff; box-shadow:0 10px 30px #0003; color:#1f2937; text-align:center; }
     .mouse-close { position:absolute; top:12px; right:12px; border:0; border-radius:9px; padding:7px 12px; background:#e74c3c; color:white; font-weight:800; cursor:pointer; }
     .mouse-dialog { display:flex; align-items:center; justify-content:center; gap:13px; min-height:152px; margin:12px 0; padding:12px; border:1px solid #c4b5fd; border-radius:13px; background:#f3f0ff; }
@@ -787,7 +788,7 @@
   <header>
     <div class="header-left">
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <div class="version-tag">v.1.0.0.5</div>
+        <div class="version-tag">v.1.0.1.5 BETA</div>
         <button type="button" class="img-btn" onclick="openMouseHole()" title="Mouse Hole" aria-label="Open the mouse hole" style="width:42px;height:42px;">
           <img src="https://i.postimg.cc/DzmLzdzR/hole.png" alt="Mouse Hole" style="width:42px;height:42px;object-fit:contain;">
         </button>
@@ -799,7 +800,7 @@
         <img src="https://i.postimg.cc/NjwRPPmr/tutorial.png" alt="Tutorial">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -813,14 +814,13 @@
       <button type="button" class="mouse-action" onclick="talkToSqueaksalot()">Talk</button>
     </div>
   </div>
-  <div id="mouse-dialog-overlay" class="mouse-overlay" role="dialog" aria-modal="true" aria-labelledby="mouse-dialog-name" style="z-index:12001;" onclick="advanceMouseDialog()">
+  <div id="mouse-dialog-overlay" class="mouse-overlay" role="dialog" aria-modal="true" aria-labelledby="mouse-dialog-name" tabindex="-1" style="z-index:12001;" onclick="advanceMouseDialog()" onkeydown="if(event.key === 'Enter' || event.key === ' '){event.preventDefault();advanceMouseDialog();}">
     <div class="mouse-panel">
-      <button type="button" class="mouse-close" onclick="event.stopPropagation();closeMouseDialog()" aria-label="Close dialogue">✕</button>
       <div class="mouse-dialog">
         <img src="https://i.postimg.cc/0NtnWyzt/sir-squeaksalot.png" alt="Sir. Squeaksalot">
         <div><h2 id="mouse-dialog-name" style="margin:0 0 8px;color:#5b3aa8;">???</h2><div id="mouse-dialog-text"></div></div>
       </div>
-      <button type="button" class="mouse-action">Continue</button>
+      <div class="dialog-continue-hint">Click anywhere to continue</div>
     </div>
   </div>
 
@@ -7610,6 +7610,12 @@
         name: 'Tiny but hungry',
         description: 'Do i have to do this every day??',
         objective: 'Feed a fish.'
+      },
+      {
+        id: 'bounty-hunter',
+        name: 'Bounty Hunter',
+        description: 'Welcome to the WILD WEST.',
+        objective: 'Help Sir. Squeaksalot by bringing a fish to him.'
       }
     ];
 
@@ -7649,7 +7655,8 @@
             ['bob-master', 'bobMaster'],
             ['ding-ready', 'dingReady'],
             ['you-look-fancy', 'youLookFancy'],
-            ['tiny-but-hungry', 'tinyButHungry']
+            ['tiny-but-hungry', 'tinyButHungry'],
+            ['bounty-hunter', 'bountyHunter']
           ];
 
           achievementStatus.forEach(([id, key]) => {
@@ -8186,7 +8193,7 @@
     accent-color: #1e3a8a; cursor: pointer;
   }
 
-  #clippy-dialog-text.typewriter-active::after {
+  #clippy-dialog-text.typewriter-active::after, #mouse-dialog-text.typewriter-active::after {
     content: '▍'; color: #6d4acb; margin-left: 2px; animation: tfBlink .8s step-end infinite;
   }
   .dialog-continue-hint {
@@ -8360,8 +8367,8 @@
       name: 'Tiny Cheese',
       img: 'https://i.postimg.cc/Xv2LHYrP/cheese.png',
       usesPerPack: 1,
-      happiness: 20,
-      desc: 'A tiny cheesy treat from Sir. Squeaksalot.'
+      happiness: 50,
+      desc: 'A cheesy treat from Sir. Squeaksalot that makes fish extra happy.'
     }
   ];
   window.FISH_FOOD_TYPES = FISH_FOOD_TYPES;
@@ -8376,7 +8383,6 @@
   const PAY_INTERVAL_MS = 5 * 60 * 1000;
   const HAPPINESS_START = 55;
   const DOTS_PER_FEED = 10;
-  const HAPPINESS_PER_DOT = 2;
 
   const speciesDef = name => (ALLOWED_FISH_TYPES || []).find(f => f.name === name) || { name: name, rarity: 'Common', value: 0, img: '' };
   const isLimitedFish = def => !!(def && (def.isLimited || ['Legacy', 'Secret'].includes(def.rarity)));
@@ -9319,6 +9325,7 @@
       vp: viewport,
       key: opts.key || null,
       species: opts.species || null,
+      happinessPerDot: (findFood(opts.foodName) || FISH_FOOD_TYPES[0]).happiness / DOTS_PER_FEED,
       dots: [],
       remaining: DOTS_PER_FEED,
       container: document.createElement('div'),
@@ -9451,7 +9458,7 @@
       const current = currentHappiness(portion.key, portion.species);
       const entry = AQ.happiness[portion.key] || { v: current, t: nowMs(), p: nowMs() };
       AQ.happiness[portion.key] = {
-        v: clamp(current + HAPPINESS_PER_DOT, 0, 100),
+        v: clamp(current + portion.happinessPerDot, 0, 100),
         t: nowMs(),
         p: num(entry.p) || nowMs()
       };
@@ -9483,11 +9490,11 @@
       }
       const alive = portion.dots.filter(dot => dot && dot.isConnected && !dot.__expired);
       const happiness = currentHappiness(portion.key, portion.species);
-      const canEat = Math.max(0, Math.min(alive.length, Math.floor((100 - happiness) / HAPPINESS_PER_DOT)));
+      const canEat = Math.max(0, Math.min(alive.length, Math.ceil((100 - happiness) / portion.happinessPerDot)));
       if (canEat > 0) {
         const entry = AQ.happiness[portion.key] || { v: happiness, t: nowMs(), p: nowMs() };
         AQ.happiness[portion.key] = {
-          v: clamp(happiness + canEat * HAPPINESS_PER_DOT, 0, 100),
+          v: clamp(happiness + canEat * portion.happinessPerDot, 0, 100),
           t: nowMs(),
           p: num(entry.p) || nowMs()
         };
@@ -9687,6 +9694,7 @@
         <img src="${esc(foodImg(name))}" alt="${esc(name)}">
         <strong>${esc(name)}</strong>
         <span>${count} use${count === 1 ? '' : 's'} left</span>
+        <span>Up to +${(findFood(name) || FISH_FOOD_TYPES[0]).happiness}% happiness</span>
       </button>`;
     }).join('');
     if (empty) empty.style.display = entries.length ? 'none' : 'block';
@@ -9915,8 +9923,8 @@
 (function () {
   const QUEST_DURATION = 30 * 60 * 1000;
   const $ = id => document.getElementById(id);
-  let lines = [], lineIndex = 0, onDialogEnd = null, dialogSession = 0;
-  let dialogBusy = false, talkBusy = false, currentQuest = null, questTimer = null;
+  let lines = [], lineIndex = 0, onDialogEnd = null, dialogSession = 0, dialogFocus = null;
+  let dialogBusy = false, talkBusy = false, currentQuest = null, questTimer = null, dialogTimer = null;
 
   function playerRef() {
     if (!auth.currentUser) throw new Error('You must be logged in.');
@@ -9950,18 +9958,38 @@
     lineIndex = 0;
     onDialogEnd = done || null;
     dialogSession++;
-    $('mouse-dialog-overlay').style.display = 'flex';
+    const overlay = $('mouse-dialog-overlay');
+    if (overlay.style.display !== 'flex') dialogFocus = document.activeElement;
+    overlay.style.display = 'flex';
     renderDialog();
+    overlay.focus();
   }
   function renderDialog() {
+    clearInterval(dialogTimer);
     const line = lines[lineIndex];
+    const text = $('mouse-dialog-text');
     $('mouse-dialog-name').textContent = line.name || 'Sir. Squeaksalot';
-    $('mouse-dialog-text').textContent = line.text;
+    text.textContent = '';
+    text.classList.add('typewriter-active');
+    let index = 0;
+    dialogTimer = setInterval(() => {
+      text.textContent = line.text.slice(0, ++index);
+      if (index >= line.text.length) {
+        clearInterval(dialogTimer);
+        dialogTimer = null;
+        text.classList.remove('typewriter-active');
+      }
+    }, 22);
   }
   window.closeMouseDialog = function () {
     dialogSession++;
+    clearInterval(dialogTimer);
+    dialogTimer = null;
+    $('mouse-dialog-text').classList.remove('typewriter-active');
     $('mouse-dialog-overlay').style.display = 'none';
     onDialogEnd = null;
+    if (dialogFocus && dialogFocus.isConnected) dialogFocus.focus();
+    dialogFocus = null;
   };
   window.closeMouseHole = function () {
     closeMouseDialog();
@@ -10000,9 +10028,9 @@
       if (data.mouseHoleUnlocked) { openHouse(data.mouseQuest); return; }
       showDialog([
         { name:'???', text:'Mmm... What do we have here?' },
-        { name:'???', text:"That doesn't matter" },
-        { text:'My name is... Sir. Squeaksalot' },
-        { text:'I need you help, come inside.' }
+        { name:'???', text:"That doesn't matter." },
+        { text:'My name is... Sir. Squeaksalot.' },
+        { text:'I need your help. Come inside.' }
       ], async session => {
         if (!auth.currentUser || auth.currentUser.uid !== uid) throw new Error('Please log in again.');
         await db.collection('jugadores').doc(uid).update({ mouseHoleUnlocked:true });
@@ -10018,7 +10046,7 @@
     showDialog([
       { text:'You took so long.' },
       { text:'You know what?' },
-      { text:`Come get me a "${quest.fishName}"` }
+      { text:`Come get me ${/^[aeiou]/i.test(quest.fishName) ? 'an' : 'a'} "${quest.fishName}".` }
     ]);
   }
   async function checkQuest(uid, expectedQuest, session) {
@@ -10041,18 +10069,24 @@
       fishes.splice(fishes.indexOf(fish), 1);
       const foods = window.getFishFoodCounts(data);
       foods['Tiny Cheese'] = (Number(foods['Tiny Cheese']) || 0) + 1;
-      tx.update(ref, { fishes, fishTools:foods, fishFoodCount:Object.values(foods).reduce((sum,n)=>sum+(Number(n)||0),0), mouseQuest:null });
-      return { status:'complete' };
+      const achievements = { ...(data.achievements || {}) };
+      const unlocked = !achievements.bountyHunter;
+      achievements.bountyHunter = true;
+      tx.update(ref, { fishes, fishTools:foods, fishFoodCount:Object.values(foods).reduce((sum,n)=>sum+(Number(n)||0),0), mouseQuest:null, mouseTalkIntroduced:true, achievements });
+      return { status:'complete', unlocked };
     });
     currentQuest = result.quest || null;
     renderQuestStatus();
-    if (result.status === 'complete') loadBackpackData();
+    if (result.status === 'complete') {
+      loadBackpackData();
+      if (result.unlocked) window.showAchievementUnlocked('Bounty Hunter', 'Welcome to the WILD WEST.', 'Help Sir. Squeaksalot by bringing a fish to him.');
+    }
     if (session !== dialogSession) return;
     if (result.status === 'expired' || result.status === 'changed') { showExpiredQuest(result.quest); return; }
     if (result.status === 'complete') {
-      showDialog([{ text:'Gotcha! Thanks for your help, as a reward...' }, { text:'A Tiny Cheese!' }]);
+      showDialog([{ text:'Gotcha! Thanks for your help. As a reward...' }, { text:'A Tiny Cheese!' }]);
     } else if (result.status === 'missing') {
-      showDialog([{ text:"You don't have the fish i told you.. Come back when you find it." }]);
+      showDialog([{ text:"You don't have the fish I asked for. Come back when you find it." }]);
     } else {
       showDialog([{ text:'That request is already complete. Talk to me for another one.' }]);
     }
@@ -10067,21 +10101,25 @@
         const snap = await tx.get(ref);
         if (!snap.exists) throw new Error('Player profile not found.');
         const data = snap.data() || {}, oldQuest = data.mouseQuest;
+        const introduced = !!(data.mouseTalkIntroduced || oldQuest || (data.achievements || {}).bountyHunter);
         if (!oldQuest || Date.now() - Number(oldQuest.startedAt) >= QUEST_DURATION) {
           const quest = nextQuest(oldQuest && oldQuest.fishName);
-          tx.update(ref, { mouseQuest:quest });
-          return { status:oldQuest?'expired':'new', quest };
+          tx.update(ref, { mouseQuest:quest, mouseTalkIntroduced:true });
+          return { status:oldQuest?'expired':'new', quest, firstTalk:!introduced };
         }
+        if (!data.mouseTalkIntroduced) tx.update(ref, { mouseTalkIntroduced:true });
         return { status:'active', quest:oldQuest };
       });
       currentQuest = result.quest;
       renderQuestStatus();
       if (result.status === 'expired') { showExpiredQuest(result.quest); return; }
       if (result.status === 'new') {
+        const opening = result.firstTalk
+          ? [{ text:'So... I need your help.' }, { text:'Could you help me bring some fish over here?' }]
+          : [{ text:'I have another job for you.' }, { text:'Can you help me out again?' }];
         showDialog([
-          { text:'So... i need your help' },
-          { text:'Could you help me bring some fishes over here?' },
-          { text:`Bring me a "${result.quest.fishName}"` }
+          ...opening,
+          { text:`Bring me ${/^[aeiou]/i.test(result.quest.fishName) ? 'an' : 'a'} "${result.quest.fishName}".` }
         ]);
       } else {
         showDialog([{ text:'Did you find it?' }, { text:'Let me see...' }], session => checkQuest(uid, result.quest, session));
