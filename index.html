@@ -2611,18 +2611,14 @@
       try{
         const snap=await db.collection('jugadores').doc(auth.currentUser.uid).get(),d=snap.data()||{};
         const opts=[{value:'',label:'Choose an item...'}];
-        const placedFish=getAquariumPlacedFishCounts(d),fishGroups={};
-        (d.fishes||[]).forEach(f=>{
+        const fishGroups={};
+        getUnplacedFishes(d).forEach(f=>{
           const cooking=f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw';
           const key=`${f.name}::${cooking}`;
           (fishGroups[key]||(fishGroups[key]={name:f.name,cooking,total:0})).total++;
         });
-        const protectedRemaining={...placedFish};
         Object.values(fishGroups).forEach(g=>{
-          const protectedHere=Math.min(g.total,protectedRemaining[g.name]||0);
-          protectedRemaining[g.name]=Math.max(0,(protectedRemaining[g.name]||0)-protectedHere);
-          const available=Math.max(0,g.total-protectedHere);
-          if(available>0)opts.push({value:JSON.stringify({kind:'fish',name:g.name,cooking:g.cooking}),label:`Fish: ${g.name} (${g.cooking}) — Available: ${available}`});
+          opts.push({value:JSON.stringify({kind:'fish',name:g.name,cooking:g.cooking}),label:`Fish: ${g.name} (${g.cooking}) — Available: ${g.total}`});
         });
         const placedCosmetics=getAquariumPlacedCosmeticCounts(d);
         Object.entries(d.cosmeticsInventory||{}).forEach(([name,n])=>{
@@ -2654,10 +2650,7 @@
         if(!Number.isSafeInteger(quantity)||quantity<1) throw Error('Enter a valid quantity.');
         const inv=(await db.collection('jugadores').doc(auth.currentUser.uid).get()).data()||{};
         if(item.kind==='fish'){
-          const placed=getAquariumPlacedFishCounts(inv)[item.name]||0;
-          const sameName=(inv.fishes||[]).filter(f=>f.name===item.name);
-          const unplaced=sameName.slice(placed);
-          const available=unplaced.filter(f=>(f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===item.cooking).length;
+          const available=getUnplacedFishes(inv).filter(f=>f.name===item.name&&(f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===item.cooking).length;
           if(available<quantity) throw Error('Not enough unplaced fish. Fish displayed in your Aquarium cannot be traded.');
         }
         if(item.kind==='cosmetic'){
@@ -2729,13 +2722,10 @@
               const q=Number(it.quantity);
               if(!Number.isSafeInteger(q)||q<1)throw Error('Invalid item quantity.');
               if(it.kind==='fish'){
-                const protectedCount=getAquariumPlacedFishCounts(src)[it.name]||0;
                 for(let n=0;n<q;n++){
-                  const sameName=[];out.fishes.forEach((f,index)=>{if(f.name===it.name)sameName.push(index);});
-                  const unplaced=sameName.slice(protectedCount);
-                  const eligible=unplaced.filter(index=>{const f=out.fishes[index];return (f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===(it.cooking||'raw');});
+                  const eligible=getUnplacedFishes(src,out.fishes).filter(f=>f.name===it.name&&(f.cooking?`${f.cooking.side1}/${f.cooking.side2}`:'raw')===(it.cooking||'raw'));
                   if(!eligible.length)throw Error('Fish inventory changed or the fish is placed in your Aquarium.');
-                  incoming.push(out.fishes.splice(eligible[eligible.length-1],1)[0]);
+                  incoming.push(out.fishes.splice(out.fishes.indexOf(eligible[eligible.length-1]),1)[0]);
                 }
               }else if(it.kind==='cosmetic'){
                 const protectedCount=getAquariumPlacedCosmeticCounts(src)[it.name]||0;
@@ -3760,28 +3750,12 @@
           const doc = await transaction.get(playerRef);
           if (!doc.exists) throw new Error("Player not found");
           
-          let fishes = doc.data().fishes || [];
-          let tanksMap = doc.data().aquariumTanksMap || {};
-
-          let totalDisplayed = 0;
-          Object.values(tanksMap).forEach(roomTanks => {
-            if (Array.isArray(roomTanks)) {
-              totalDisplayed += roomTanks.filter(t => t === fishName).length;
-            }
-          });
-
-          // Market-listed fish are removed from the inventory atomically when the offer is created.
-          // Do not issue a Firestore query from inside this transaction.
-          let totalOwned = fishes.filter(f => f.name === fishName).length;
-          if (totalOwned - qtyInput < totalDisplayed) {
-            throw new Error(`You cannot sell ${qtyInput} ${fishName}(s) because fishes displayed in your Aquarium are protected!`);
-          }
-
-          let removedFish = [];
-          for (let i = fishes.length - 1; i >= 0 && removedFish.length < qtyInput; i--) {
-            if (fishes[i].name === fishName) removedFish.push(fishes.splice(i, 1)[0]);
-          }
-          if (removedFish.length !== qtyInput) throw new Error('Fish inventory changed. Please try again.');
+          const data = doc.data();
+          const fishes = [...(data.fishes || [])];
+          const available = getUnplacedFishes(data, fishes).filter(f => f.name === fishName && !f.cooking);
+          if (available.length < qtyInput) throw new Error('Fish inventory changed. Please try again.');
+          const removedFish = available.slice(-qtyInput);
+          removedFish.forEach(f => fishes.splice(fishes.indexOf(f), 1));
           totalCoinsEarned = removedFish.reduce((sum, f) =>
             sum + window.getFishCookedValue(fishValue, f.cooking), 0);
 
@@ -3821,38 +3795,15 @@
           if (!doc.exists) throw new Error("Player not found");
 
           const data = doc.data();
-          let fishes = data.fishes || [];
-          let tanksMap = data.aquariumTanksMap || {};
-
-          let displayedMap = {};
-          Object.values(tanksMap).forEach(roomTanks => {
-            if (Array.isArray(roomTanks)) {
-              roomTanks.forEach(tName => {
-                if (tName) displayedMap[tName] = (displayedMap[tName] || 0) + 1;
-              });
-            }
-          });
-
-          // Market-listed fish are reserved out of the inventory in the same transaction as offer creation.
-
+          const fishes = data.fishes || [];
+          const sellable = new Set(getUnplacedFishes(data, fishes));
           let keptFishes = [];
-          let protectedOrSoldCounts = {};
 
           for (let f of fishes) {
             const fishObj = ALLOWED_FISH_TYPES.find(item => item.name === f.name);
             const isLimited = fishObj && fishObj.isLimited === true;
 
-            if (isLimited) {
-              keptFishes.push(f);
-              continue;
-            }
-
-            let name = f.name;
-            let currentProtected = (displayedMap[name] || 0);
-            let alreadyAccounted = protectedOrSoldCounts[name] || 0;
-
-            if (alreadyAccounted < currentProtected) {
-              protectedOrSoldCounts[name] = alreadyAccounted + 1;
+            if (isLimited || !sellable.has(f)) {
               keptFishes.push(f);
             } else {
               const baseValue = fishObj ? fishObj.value : 5;
@@ -4177,114 +4128,156 @@
       document.getElementById('modal-select-fish').style.display = 'flex';
     }
 
-    async function assignFishToShelf(fishName) {
+    // Displayed copies follow room and slot order among raw fish of the same species.
+    function aquariumSlotRank(tanksMap, roomKey, slotIndex, fishName) {
+      let rank = 0;
+      for (const room of Object.keys(tanksMap).sort()) {
+        const slots = tanksMap[room] || [];
+        for (let index = 0; index < slots.length; index++) {
+          if (room === roomKey && index === slotIndex) return rank;
+          if (slots[index] === fishName) rank++;
+        }
+      }
+      return rank;
+    }
+
+    function releaseAquariumFish(fishes, tanksMap, happiness, speciesMap, occupancy, roomKey, slotIndex, at) {
+      const species = tanksMap[roomKey][slotIndex];
+      const rank = aquariumSlotRank(tanksMap, roomKey, slotIndex, species);
+      let seen = 0;
+      const index = fishes.findIndex(f => !f.cooking && f.name === species && seen++ === rank);
+      if (index < 0) throw new Error('The fish in this tank is no longer in your inventory.');
+      const key = `${roomKey}:${slotIndex}`;
+      const entry = speciesMap[key] && speciesMap[key] !== species ? null : happiness[key];
+      const settled = window.settleAquariumFish(species, entry, at);
+      const fish = { ...fishes.splice(index, 1)[0], aquariumHappiness: settled.v };
+      fishes.push(fish);
+      delete happiness[key];
+      delete speciesMap[key];
+      delete occupancy[key];
+      tanksMap[roomKey][slotIndex] = null;
+      return settled.coins;
+    }
+
+    async function assignFishToShelf(fishName, tankType = 'mini') {
       const user = auth.currentUser;
       if (!user) return;
-
       try {
+        await window.flushAquariumHappiness();
         const marketSnap = await db.collection('marketListings').where('sellerUid', '==', user.uid).where('fishName', '==', fishName).get();
-        if (!marketSnap.empty) {
-          showToast(`You cannot put ${fishName} in a tank because it is currently listed on the Market!`);
-          return;
-        }
-
+        if (!marketSnap.empty) throw new Error(`You cannot put ${fishName} in a tank because it is currently listed on the Market!`);
         const docRef = db.collection('jugadores').doc(user.uid);
-        const doc = await docRef.get();
-        if (doc.exists) {
+        const roomKey = `room_${currentAquariumRoomIndex}`;
+        const slotIndex = selectedShelfIndex;
+        let view;
+        await db.runTransaction(async tx => {
+          const doc = await tx.get(docRef);
+          if (!doc.exists) throw new Error('Player profile not found.');
           const data = doc.data();
-          let tanksMap = data.aquariumTanksMap || {};
-          let tankTypesMap = data.aquariumTankTypesMap || {};
-          const roomKey = `room_${currentAquariumRoomIndex}`;
-          let tanks = tanksMap[roomKey] || new Array(8).fill(null);
-          let roomTankTypes = Array.isArray(tankTypesMap[roomKey]) ? tankTypesMap[roomKey].slice(0, 8) : new Array(8).fill(null);
-          let fishes = data.fishes || [];
-          let tanksCount = data.miniTanksCount || 0;
-
-          let totalInInventory = fishes.filter(f => f.name === fishName && !f.cooking).length;
-          
-          let totalDisplayedAcrossAllRooms = 0;
-          Object.entries(tanksMap).forEach(([rKey, rTanks]) => {
-            if (Array.isArray(rTanks)) {
-              totalDisplayedAcrossAllRooms += rTanks.filter((t, idx) => t === fishName && !(rKey === roomKey && idx === selectedShelfIndex)).length;
-            }
-          });
-
-          if (totalDisplayedAcrossAllRooms + 1 > totalInInventory) {
-            showToast(`You only have ${totalInInventory} ${fishName}(s) in your backpack and ${totalDisplayedAcrossAllRooms} already displayed elsewhere!`);
-            return;
-          }
-
-          if (!tanks[selectedShelfIndex]) {
-            if (tanksCount <= 0) {
-              showToast("Not enough Mini Tanks in inventory!");
-              return;
-            }
-            tanksCount -= 1;
-            roomTankTypes[selectedShelfIndex] = 'mini';
-          } else if (!roomTankTypes[selectedShelfIndex]) {
-            roomTankTypes[selectedShelfIndex] = 'mini';
-          }
-
-          tanks[selectedShelfIndex] = fishName;
+          const fishes = [...(data.fishes || [])];
+          const tanksMap = { ...(data.aquariumTanksMap || {}) };
+          const tanks = [...(tanksMap[roomKey] || new Array(8).fill(null))];
           tanksMap[roomKey] = tanks;
+          const tankTypesMap = { ...(data.aquariumTankTypesMap || {}) };
+          const roomTankTypes = [...(tankTypesMap[roomKey] || new Array(8).fill(null))];
+          const happiness = { ...(data.aquariumHappinessMap || {}) };
+          const speciesMap = { ...(data.aquariumFishSpeciesMap || {}) };
+          const occupancy = { ...(data.aquariumOccupancyMap || {}) };
+          const names = { ...(data.aquariumFishNamesMap || {}) };
+          const key = `${roomKey}:${slotIndex}`;
+          const at = Date.now();
+          const previous = tanks[slotIndex];
+          let earned = 0;
+          const update = {};
+          if (previous !== fishName) {
+            if (previous) earned = releaseAquariumFish(fishes, tanksMap, happiness, speciesMap, occupancy, roomKey, slotIndex, at);
+            const available = getUnplacedFishes({ ...data, fishes, aquariumTanksMap: tanksMap }).filter(f => f.name === fishName && !f.cooking);
+            const selected = available.find(f => f.aquariumHappiness != null) || available[0];
+            if (!selected) throw new Error(`No unplaced ${fishName} is available.`);
+            const selectedIndex = fishes.indexOf(selected);
+            const fish = { ...fishes.splice(selectedIndex, 1)[0] };
+            const restored = fish.aquariumHappiness;
+            delete fish.aquariumHappiness;
+            const rank = aquariumSlotRank(tanksMap, roomKey, slotIndex, fishName);
+            let seen = 0;
+            const insertIndex = fishes.findIndex(f => !f.cooking && f.name === fishName && seen++ === rank);
+            fishes.splice(insertIndex < 0 ? fishes.length : insertIndex, 0, fish);
+            happiness[key] = window.newAquariumHappiness(restored, at);
+            speciesMap[key] = fishName;
+            occupancy[key] = `${at}-${Math.random().toString(36).slice(2)}`;
+            delete names[key];
+            tanks[slotIndex] = fishName;
+          }
+          if (!previous) {
+            const tank = getTankType(tankType);
+            const count = Number(data[tank.field]) || 0;
+            if (count <= 0) throw new Error(`Not enough ${tank.name}s in inventory!`);
+            update[tank.field] = count - 1;
+            roomTankTypes[slotIndex] = tank.id;
+          } else if (!roomTankTypes[slotIndex]) {
+            roomTankTypes[slotIndex] = 'mini';
+          }
           tankTypesMap[roomKey] = roomTankTypes;
-          
-          await docRef.update({ 
-            aquariumTanksMap: tanksMap,
-            aquariumTankTypesMap: tankTypesMap,
-            miniTanksCount: tanksCount
-          });
-          
-          showToast(`${fishName} placed in tank!`);
-          playGameSound('place');
-          loadBackpackData();
-          document.getElementById('modal-select-fish').style.display = 'none';
-          renderAquarium(data.username || "My", fishes, tanksMap, data.aquariumCosmeticsMap || {}, tankTypesMap);
-        }
+          Object.assign(update, { fishes, aquariumTanksMap:tanksMap, aquariumTankTypesMap:tankTypesMap, aquariumHappinessMap:happiness, aquariumFishSpeciesMap:speciesMap, aquariumOccupancyMap:occupancy, aquariumFishNamesMap:names });
+          if (earned > 0) update.coins = (Number(data.coins) || 0) + earned;
+          tx.update(docRef, update);
+          view = { ...data, ...update };
+        });
+        showToast(`${fishName} placed in tank!`);
+        playGameSound('place');
+        loadBackpackData();
+        document.getElementById('modal-select-fish').style.display = 'none';
+        renderAquarium(view.username || 'My', view.fishes, view.aquariumTanksMap, view.aquariumCosmeticsMap || {}, view.aquariumTankTypesMap);
       } catch (err) {
-        showToast("Error: " + err.message);
+        showToast('Error: ' + err.message);
       }
     }
 
     async function removeFishFromShelf() {
       const user = auth.currentUser;
       if (!user) return;
-
       try {
+        await window.flushAquariumHappiness();
         const docRef = db.collection('jugadores').doc(user.uid);
-        const doc = await docRef.get();
-        if (doc.exists) {
+        const roomKey = `room_${currentAquariumRoomIndex}`;
+        const slotIndex = selectedShelfIndex;
+        let view, removedTank;
+        await db.runTransaction(async tx => {
+          const doc = await tx.get(docRef);
+          if (!doc.exists) throw new Error('Player profile not found.');
           const data = doc.data();
-          let tanksMap = data.aquariumTanksMap || {};
-          let tankTypesMap = data.aquariumTankTypesMap || {};
-          const roomKey = `room_${currentAquariumRoomIndex}`;
-          let tanks = tanksMap[roomKey] || new Array(8).fill(null);
-          let roomTankTypes = Array.isArray(tankTypesMap[roomKey]) ? tankTypesMap[roomKey].slice(0, 8) : new Array(8).fill(null);
-
-          if (tanks[selectedShelfIndex]) {
-            const tank = getTankType(roomTankTypes[selectedShelfIndex]);
-            tanks[selectedShelfIndex] = null;
-            roomTankTypes[selectedShelfIndex] = null;
-            tanksMap[roomKey] = tanks;
+          const fishes = [...(data.fishes || [])];
+          const tanksMap = { ...(data.aquariumTanksMap || {}) };
+          const tanks = [...(tanksMap[roomKey] || new Array(8).fill(null))];
+          tanksMap[roomKey] = tanks;
+          const tankTypesMap = { ...(data.aquariumTankTypesMap || {}) };
+          const roomTankTypes = [...(tankTypesMap[roomKey] || new Array(8).fill(null))];
+          const happiness = { ...(data.aquariumHappinessMap || {}) };
+          const speciesMap = { ...(data.aquariumFishSpeciesMap || {}) };
+          const occupancy = { ...(data.aquariumOccupancyMap || {}) };
+          const names = { ...(data.aquariumFishNamesMap || {}) };
+          const update = {};
+          if (tanks[slotIndex]) {
+            removedTank = getTankType(roomTankTypes[slotIndex]);
+            const earned = releaseAquariumFish(fishes, tanksMap, happiness, speciesMap, occupancy, roomKey, slotIndex, Date.now());
+            delete names[`${roomKey}:${slotIndex}`];
+            roomTankTypes[slotIndex] = null;
             tankTypesMap[roomKey] = roomTankTypes;
-
-            await docRef.update({ 
-              aquariumTanksMap: tanksMap,
-              aquariumTankTypesMap: tankTypesMap,
-              [tank.field]: (Number(data[tank.field]) || 0) + 1,
-              aquariumSandcastle: false
-            });
-
-            showToast(`${tank.name} removed and returned to your inventory.`);
-            playGameSound('place');
-            loadBackpackData();
+            Object.assign(update, { fishes, aquariumTanksMap:tanksMap, aquariumTankTypesMap:tankTypesMap, aquariumHappinessMap:happiness, aquariumFishSpeciesMap:speciesMap, aquariumOccupancyMap:occupancy, aquariumFishNamesMap:names, [removedTank.field]:(Number(data[removedTank.field]) || 0) + 1, aquariumSandcastle:false });
+            if (earned > 0) update.coins = (Number(data.coins) || 0) + earned;
+            tx.update(docRef, update);
           }
-
-          document.getElementById('modal-select-fish').style.display = 'none';
-          renderAquarium(data.username || "My", data.fishes || [], tanksMap, data.aquariumCosmeticsMap || {}, tankTypesMap);
+          view = { ...data, ...update };
+        });
+        if (removedTank) {
+          showToast(`${removedTank.name} removed and returned to your inventory.`);
+          playGameSound('place');
+          loadBackpackData();
         }
+        document.getElementById('modal-select-fish').style.display = 'none';
+        renderAquarium(view.username || 'My', view.fishes || [], view.aquariumTanksMap || {}, view.aquariumCosmeticsMap || {}, view.aquariumTankTypesMap || {});
       } catch (err) {
-        showToast("Error: " + err.message);
+        showToast('Error: ' + err.message);
       }
     }
 
@@ -6566,20 +6559,14 @@
   }
   async function openGrillFishPicker(){
     const d=(await playerRef().get()).data()||{};const fishes=d.fishes||[];
-    const displayedCounts={};
-    Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean).forEach(n=>{displayedCounts[n]=(displayedCounts[n]||0)+1;});
+    const available=new Set(getUnplacedFishes(d,fishes));
     const market=await db.collection('marketListings').where('sellerUid','==',auth.currentUser.uid).get();
     const listed=new Set();
     market.docs.forEach(doc=>{const x=doc.data();if(x.fishId)listed.add(x.fishId);(x.fishData||[]).forEach(f=>{if(f.id)listed.add(f.id);});(x.bundleItems||[]).forEach(b=>{(b.fishData||[]).forEach(f=>{if(f.id)listed.add(f.id);});});});
-    const skippedDisplayed={};
     const eligible=[];
     fishes.forEach((f,i)=>{
       const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);
-      if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity)||(f.id&&listed.has(f.id)))return;
-      if(!f.cooking&&(skippedDisplayed[f.name]||0)<(displayedCounts[f.name]||0)){
-        skippedDisplayed[f.name]=(skippedDisplayed[f.name]||0)+1;
-        return;
-      }
+      if(!available.has(f)||!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity)||(f.id&&listed.has(f.id)))return;
       eligible.push({fish:f,index:i});
     });
     const c=document.getElementById('grill-fish-options');
@@ -6595,7 +6582,7 @@
   }
   async function addFishToGrill(fishId,fishName,fishTimestamp,fallbackIndex){
     if(grillState){showToast('Finish or remove the current fish first.');return;}
-    try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};const fs=[...(d.fishes||[])];let idx=-1;if(fishId)idx=fs.findIndex(f=>f.id===fishId);if(idx<0&&fishTimestamp)idx=fs.findIndex(f=>f.name===fishName&&f.timestamp===fishTimestamp);if(idx<0&&typeof fallbackIndex==='number'&&fs[fallbackIndex]&&fs[fallbackIndex].name===fishName)idx=fallbackIndex;if(idx<0)idx=fs.findIndex(f=>f.name===fishName);if(idx<0)throw Error('Fish is no longer available.');const f=fs[idx];const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity))throw Error('This fish is protected from cooking.');const prevCk=f.cooking||{side1:0,side2:0};fs.splice(idx,1);tx.update(ref,{fishes:fs,grillState:{fish:{...f,id:f.id||'fish-'+Date.now()},side1:Number(prevCk.side1)||0,side2:Number(prevCk.side2)||0,activeSide:1,zone:'hot',posX:35,posY:38,updatedAt:Date.now()}});});
+    try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};const fs=[...(d.fishes||[])];let idx=-1;if(fishId)idx=fs.findIndex(f=>f.id===fishId);if(idx<0&&fishTimestamp)idx=fs.findIndex(f=>f.name===fishName&&f.timestamp===fishTimestamp);if(idx<0&&typeof fallbackIndex==='number'&&fs[fallbackIndex]&&fs[fallbackIndex].name===fishName)idx=fallbackIndex;if(idx<0)idx=fs.findIndex(f=>f.name===fishName);if(idx<0)throw Error('Fish is no longer available.');const f=fs[idx];if(!getUnplacedFishes(d,fs).includes(f))throw Error('Fish is displayed in your Aquarium.');const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity))throw Error('This fish is protected from cooking.');const prevCk=f.cooking||{side1:0,side2:0};fs.splice(idx,1);tx.update(ref,{fishes:fs,grillState:{fish:{...f,id:f.id||'fish-'+Date.now()},side1:Number(prevCk.side1)||0,side2:Number(prevCk.side2)||0,activeSide:1,zone:'hot',posX:35,posY:38,updatedAt:Date.now()}});});
       grillState=(await ref.get()).data().grillState;document.getElementById('grill-fish-picker').style.display='none';renderGrillState();playGameSound('cook');loadBackpackData();
     }catch(e){showToast('Could not add fish: '+e.message);}
   }
@@ -8064,10 +8051,8 @@
   window.chooseAquariumTank=function(type){chosenTankType=type;$('tank-choice-modal').style.display='none';if(originalOpenSelect)originalOpenSelect.call(window,window.__pendingAquariumFishes||[]);};
   const originalAssign=window.assignFishToShelf;
   window.assignFishToShelf=async function(fishName){
-    const tank=getTankType(chosenTankType);
-    if(tank.id==='mini')return originalAssign.call(this,fishName);
-    const user=auth.currentUser;if(!user)return;
-    try{const ref=playerDoc();let savedTypes=null;await db.runTransaction(async tx=>{const snap=await tx.get(ref);const d=snap.data()||{};const fish=[...(d.fishes||[])];const idx=fish.findIndex(f=>f.name===fishName&&!f.cooking);if(idx<0)throw Error('Fish is no longer available.');const market=await db.collection('marketListings').where('sellerUid','==',user.uid).where('fishName','==',fishName).get();if(!market.empty)throw Error('This fish is listed on the Market.');const map={...(d.aquariumTanksMap||{})},room=`room_${currentAquariumRoomIndex}`,slots=[...(map[room]||new Array(8).fill(null))];const typesMap={...(d.aquariumTankTypesMap||{})},roomTypes=[...(Array.isArray(typesMap[room])?typesMap[room]:new Array(8).fill(null))];if(!slots[selectedShelfIndex]){const owned=Number(d[tank.field])||0;if(owned<=0)throw Error(`No ${tank.name}s available.`);tx.update(ref,{[tank.field]:owned-1});roomTypes[selectedShelfIndex]=tank.id;}else if(!roomTypes[selectedShelfIndex]){roomTypes[selectedShelfIndex]='mini';}slots[selectedShelfIndex]=fishName;map[room]=slots;typesMap[room]=roomTypes;savedTypes=typesMap;tx.update(ref,{aquariumTanksMap:map,aquariumTankTypesMap:typesMap});});showToast(`${fishName} placed in a ${tank.name}!`);playGameSound('place');$('modal-select-fish').style.display='none';const fresh=await getData();renderAquarium(fresh.username||'My',fresh.fishes||[],fresh.aquariumTanksMap||{},fresh.aquariumCosmeticsMap||{},fresh.aquariumTankTypesMap||savedTypes||{});loadBackpackData();chosenTankType='mini';}catch(e){showToast('Could not place fish: '+e.message);}
+    await originalAssign.call(this,fishName,chosenTankType);
+    chosenTankType='mini';
   };
   // Achievements for room purchase and Clippy exchange, plus cards in the existing list.
   function addAchievementCards(){const list=$('achievements-list');if(!list)return;const defs=[['expanding-lands','Expanding lands','These territories are now MINE!','Purchase a new Aquarium Room.'],['clippy-exchange','I give, I get',"Ok, but don't scam me.",'Successfully made an exchange with Clippy.']];defs.forEach(([id,name,desc,obj])=>{if($('ach-'+id))return;const card=document.createElement('div');card.id='ach-'+id;card.style.cssText='background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:.5';card.innerHTML=`<div><h4 style="margin:0 0 3px;color:#1e3a8a">${name}</h4><p style="margin:0 0 3px;font-weight:bold;font-size:.85rem">${desc}</p><span style="font-size:.75rem;color:#64748b">${obj}</span></div><div id="status-${id}" style="margin-left:auto;font-weight:bold;color:#e74c3c">Locked</div>`;list.appendChild(card);});}
@@ -8381,7 +8366,7 @@
   const DECAY_INTERVAL_MS = 90 * 1000;
   const DECAY_PER_HOUR = DECAY_PER_INTERVAL * (3600000 / DECAY_INTERVAL_MS);
   const PAY_INTERVAL_MS = 5 * 60 * 1000;
-  const HAPPINESS_START = 55;
+  const HAPPINESS_START = 50;
   const DOTS_PER_FEED = 10;
 
   const speciesDef = name => (ALLOWED_FISH_TYPES || []).find(f => f.name === name) || { name: name, rarity: 'Common', value: 0, img: '' };
@@ -8397,6 +8382,8 @@
     const perInterval = Math.min(25, Math.round(25 * value / 100));
     return { v: value, p: lastP + intervals * PAY_INTERVAL_MS, coins: intervals * perInterval };
   }
+  window.settleAquariumFish = settleHappiness;
+  window.newAquariumHappiness = (value, at) => ({ v: value == null ? HAPPINESS_START : clamp(value, 0, 100), t: at, p: at });
 
   const TFMusic = (function () {
     const TRACKS = [
@@ -8429,6 +8416,18 @@
         name: 'Rondo Alla Turca',
         subtitle: 'Wolfgang Amadeus Mozart',
         url: 'https://upload.wikimedia.org/wikipedia/commons/b/bd/Rondo_Alla_Turka.ogg'
+      },
+      {
+        id: 'open-oceans',
+        name: 'Open Oceans',
+        subtitle: 'John Bartmann · CC0',
+        url: 'https://files.freemusicarchive.org/storage-freemusicarchive-org/tracks/5qPmyV9Yvk2haOSNlrcw38IHx4txDci3tUAJxJZD.mp3'
+      },
+      {
+        id: 'endless-seascape',
+        name: 'Endless Seascape',
+        subtitle: 'John Bartmann · CC0',
+        url: 'https://files.freemusicarchive.org/storage-freemusicarchive-org/tracks/KnBfOg0q4qdrlovrdZ6joJRF8nM5SvqvuC2dMin8.mp3'
       }
     ];
 
@@ -8919,6 +8918,7 @@
     names: {},
     happiness: {},
     speciesMap: {},
+    occupancy: {},
     foodCounts: {},
     feedMode: false,
     feedPending: false,
@@ -8933,6 +8933,7 @@
 
   let tinyHungryUnlocked = false;
   let tinyHungryUnlockPending = false;
+  let happinessWrites = Promise.resolve(), happinessRevision = 0;
 
   async function unlockTinyButHungry() {
     if (!AQ.owner || !AQ.uid || tinyHungryUnlocked || tinyHungryUnlockPending) return;
@@ -9054,6 +9055,7 @@
     AQ.names = nextNames;
     AQ.happiness = nextHappiness;
     AQ.speciesMap = speciesMap;
+    AQ.occupancy = { ...(data.aquariumOccupancyMap || {}) };
     AQ.foodCounts = foodCountsFromDoc(data);
     updateSlotLabels();
     refreshFeedBarUI();
@@ -9083,6 +9085,10 @@
     const roomKey = AQ.roomKey;
     AQ.paying = true;
     try {
+      const revision = happinessRevision;
+      const initialHappiness = { ...AQ.happiness };
+      await persistHappiness();
+      if (token !== AQ.token) return;
       let outcome = null;
       await db.runTransaction(async tx => {
         const ref = db.collection('jugadores').doc(uid);
@@ -9133,7 +9139,18 @@
 
       if (!outcome || token !== AQ.token) return;
       AQ.doc = outcome.doc;
-      applyAquariumDoc(outcome.doc, token);
+      if (revision !== happinessRevision) {
+        // Preserve feeding that occurred while settlement advanced the saved timestamp.
+        Object.keys(AQ.happiness).forEach(key => {
+          if (AQ.happiness[key] === initialHappiness[key]) return;
+          const entry = AQ.happiness[key], species = AQ.speciesMap[key];
+          AQ.happiness[key] = { ...entry, v: currentHappiness(key, species), t: nowMs() };
+        });
+        await persistHappiness();
+        await loadViewDoc(token);
+      } else {
+        applyAquariumDoc(outcome.doc, token);
+      }
       if (outcome.paid > 0) {
         updateGameHUD();
         showToast(`Your fish earned ${outcome.paid} coins while you were away!`);
@@ -9148,36 +9165,53 @@
 
   function queueHappinessPersist() {
     clearTimeout(AQ.hapTimer);
-    AQ.hapTimer = setTimeout(() => { persistHappiness(); }, 700);
+    AQ.hapTimer = setTimeout(() => { persistHappiness().catch(() => {}); }, 700);
   }
 
   async function persistHappiness() {
-    if (!AQ.owner || !AQ.uid) return;
+    if (!AQ.owner || !AQ.uid || !AQ.doc) return;
     const uid = AQ.uid;
     const at = nowMs();
     const snapshot = {};
     Object.keys(AQ.happiness).forEach(key => {
       const entry = AQ.happiness[key] || {};
       snapshot[key] = {
-        v: clamp(entry.v == null ? HAPPINESS_START : entry.v, 0, 100),
-        t: num(entry.t) || at,
-        p: num(entry.p) || num(entry.t) || at
+        value: { v: clamp(entry.v == null ? HAPPINESS_START : entry.v, 0, 100), t: num(entry.t) || at, p: num(entry.p) || num(entry.t) || at },
+        species: AQ.speciesMap[key],
+        occupancy: AQ.occupancy[key] || null
       };
     });
-    try {
-      await db.runTransaction(async tx => {
-        const ref = db.collection('jugadores').doc(uid);
-        const snap = await tx.get(ref);
-        if (!snap.exists) return;
-        const data = snap.data() || {};
-        const map = { ...(data.aquariumHappinessMap || {}) };
-        Object.keys(snapshot).forEach(key => { map[key] = snapshot[key]; });
-        tx.update(ref, { aquariumHappinessMap: map });
+    const write = happinessWrites.catch(() => {}).then(() => db.runTransaction(async tx => {
+      const ref = db.collection('jugadores').doc(uid);
+      const snap = await tx.get(ref);
+      if (!snap.exists) throw new Error('Player profile not found.');
+      const data = snap.data() || {};
+      const map = { ...(data.aquariumHappinessMap || {}) };
+      Object.keys(snapshot).forEach(key => {
+        const split = key.lastIndexOf(':');
+        const room = key.slice(0, split), index = Number(key.slice(split + 1));
+        const current = snapshot[key], previous = map[key];
+        if (((data.aquariumTanksMap || {})[room] || [])[index] !== current.species) return;
+        if (((data.aquariumOccupancyMap || {})[key] || null) !== current.occupancy) return;
+        if (previous && num(previous.t) > current.value.t) return;
+        map[key] = { ...current.value, p: Math.max(current.value.p, num(previous && previous.p)) };
       });
+      tx.update(ref, { aquariumHappinessMap: map });
+    }));
+    happinessWrites = write;
+    try {
+      await write;
     } catch (err) {
       console.error('Could not save fish happiness', err);
+      throw err;
     }
   }
+  window.flushAquariumHappiness = async () => {
+    if (AQ.portions.length) finalizeFeeding();
+    clearTimeout(AQ.hapTimer);
+    if (AQ.owner && AQ.uid && AQ.doc) await persistHappiness();
+    else await happinessWrites;
+  };
 
   async function consumeFood(name, amount) {
     const uid = AQ.uid;
@@ -9457,6 +9491,7 @@
 
       const current = currentHappiness(portion.key, portion.species);
       const entry = AQ.happiness[portion.key] || { v: current, t: nowMs(), p: nowMs() };
+      happinessRevision++;
       AQ.happiness[portion.key] = {
         v: clamp(current + portion.happinessPerDot, 0, 100),
         t: nowMs(),
@@ -9492,6 +9527,7 @@
       const happiness = currentHappiness(portion.key, portion.species);
       const canEat = Math.max(0, Math.min(alive.length, Math.ceil((100 - happiness) / portion.happinessPerDot)));
       if (canEat > 0) {
+        happinessRevision++;
         const entry = AQ.happiness[portion.key] || { v: happiness, t: nowMs(), p: nowMs() };
         AQ.happiness[portion.key] = {
           v: clamp(happiness + canEat * portion.happinessPerDot, 0, 100),
@@ -9504,7 +9540,7 @@
     AQ.portions = [];
     endFeedMode();
     updateSlotLabels();
-    persistHappiness();
+    persistHappiness().catch(() => {});
   }
 
   function ensureFishMenu() {
@@ -9694,7 +9730,6 @@
         <img src="${esc(foodImg(name))}" alt="${esc(name)}">
         <strong>${esc(name)}</strong>
         <span>${count} use${count === 1 ? '' : 's'} left</span>
-        <span>Up to +${(findFood(name) || FISH_FOOD_TYPES[0]).happiness}% happiness</span>
       </button>`;
     }).join('');
     if (empty) empty.style.display = entries.length ? 'none' : 'block';
@@ -9742,6 +9777,7 @@
       AQ.names = {};
       AQ.happiness = {};
       AQ.speciesMap = {};
+      AQ.occupancy = {};
       AQ.foodCounts = {};
       AQ.feedMode = false;
       AQ.portions = [];
