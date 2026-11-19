@@ -954,7 +954,7 @@
     </div>
   </div>
 
-  <button id="adminBtn" class="admin-trigger-btn" onclick="openModal('modal-admin')">
+  <button id="adminBtn" class="admin-trigger-btn" onclick="openAdminPasscode()">
     <img src="https://i.postimg.cc/L6SrYVZf/admin.png" alt="Admin Panel">
   </button>
 
@@ -1650,6 +1650,23 @@
     </div>
   </div>
 
+  <div id="modal-admin-passcode" class="modal-overlay" style="z-index:1050;">
+    <div class="modal-card" style="max-width:380px;" role="dialog" aria-modal="true" aria-labelledby="admin-passcode-title">
+      <h2 id="admin-passcode-title">Admin Access</h2>
+      <form onsubmit="submitAdminPasscode(event)">
+        <div class="form-group">
+          <label for="admin-passcode-input">Pass code</label>
+          <input id="admin-passcode-input" type="password" autocomplete="off" required>
+        </div>
+        <p id="admin-passcode-error" role="alert" style="display:none;color:#c0392b;">Incorrect pass code.</p>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="modal-action-btn" style="background:#64748b;" onclick="closeAdminPasscode()">Cancel</button>
+          <button type="submit" class="modal-action-btn">Unlock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="modal-admin" class="modal-overlay">
     <div class="modal-card">
       <button class="modal-close" onclick="closeAllModals()">✖</button>
@@ -2153,8 +2170,48 @@
       return null;
     }
 
+    function openAdminPasscode() {
+      if (isMandatoryRulesView) return;
+      if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
+        showToast('Admin only.');
+        return;
+      }
+      const input = document.getElementById('admin-passcode-input');
+      input.value = '';
+      document.getElementById('admin-passcode-error').style.display = 'none';
+      document.getElementById('modal-admin-passcode').style.display = 'flex';
+      input.focus();
+    }
+
+    function closeAdminPasscode() {
+      document.getElementById('admin-passcode-input').value = '';
+      document.getElementById('modal-admin-passcode').style.display = 'none';
+      document.getElementById('adminBtn').focus();
+    }
+
+    function submitAdminPasscode(event) {
+      event.preventDefault();
+      if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID || isMandatoryRulesView) {
+        closeAdminPasscode();
+        return;
+      }
+      const input = document.getElementById('admin-passcode-input');
+      if (input.value !== 'PericosBarbinaranja') {
+        input.value = '';
+        document.getElementById('admin-passcode-error').style.display = 'block';
+        input.focus();
+        return;
+      }
+      closeAdminPasscode();
+      openModal('modal-admin');
+    }
+
     function openModal(modalId) {
       if (isMandatoryRulesView && modalId !== 'modal-rules') {
+        return;
+      }
+      if (modalId === 'modal-admin' && (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID)) {
+        showToast('Admin only.');
         return;
       }
       document.querySelectorAll('.modal-overlay').forEach(el => {
@@ -4076,7 +4133,7 @@
         slotEl.innerHTML = `
           <div class="tank-viewport${decoration === 'Orange-chinned parakeet' ? ' has-parakeet' : ''}" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
             <img src="${tank.img}" alt="${tank.name}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; pointer-events: none;">
-            ${['Sandcastle','Verity','Palm','Orange-chinned parakeet'].includes(decoration) ? `<img class="aquarium-${decoration === 'Orange-chinned parakeet' ? 'parakeet' : decoration.toLowerCase()}" src="${decoration === 'Sandcastle' ? IMG.sandcastle : decoration === 'Verity' ? IMG.verity : decoration === 'Palm' ? 'https://i.postimg.cc/wjJ0TV58/palm.png' : 'https://i.postimg.cc/rF7fkb42/parakeet.png'}" alt="${decoration}" style="position:absolute; ${decoration === 'Palm' ? 'left:17%;bottom:28%;width:44px;height:54px;' : decoration === 'Orange-chinned parakeet' ? 'right:10%;top:calc(25% - 25px);width:32px;height:32px;' : 'left:50%;transform:translateX(-50%);bottom:28%;width:34px;height:34px;'} object-fit:contain;object-position:center bottom;z-index:${decoration === 'Orange-chinned parakeet' ? '4' : '2'};pointer-events:none;">` : ''}
+            ${['Sandcastle','Verity','Palm','Orange-chinned parakeet'].includes(decoration) ? `<img class="aquarium-${decoration === 'Orange-chinned parakeet' ? 'parakeet' : decoration.toLowerCase()}" src="${decoration === 'Sandcastle' ? IMG.sandcastle : decoration === 'Verity' ? IMG.verity : decoration === 'Palm' ? 'https://i.postimg.cc/wjJ0TV58/palm.png' : 'https://i.postimg.cc/rF7fkb42/parakeet.png'}" alt="${decoration}" style="position:absolute; ${decoration === 'Palm' ? 'left:17%;bottom:28%;width:min(58px, 72%);height:auto;' : decoration === 'Orange-chinned parakeet' ? 'right:10%;top:calc(25% - min(28px, 38%));width:min(36px, 60%);height:auto;' : 'left:50%;transform:translateX(-50%);bottom:28%;width:34px;height:34px;'} object-fit:contain;object-position:center bottom;z-index:${decoration === 'Orange-chinned parakeet' ? '4' : '2'};pointer-events:none;">` : ''}
             <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; z-index: 3; pointer-events: none;">
           </div>
         `;
@@ -8363,7 +8420,7 @@
     position: absolute; top: 2px; left: 3px; right: 3px; z-index: 6;
     display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: none;
   }
-  .has-parakeet .fish-slot-label { right: max(28%, calc(10% + 24px)); }
+  .has-parakeet .fish-slot-label { right: max(28%, calc(10% + 27px)); }
   .fish-slot-name {
     max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     font-size: .55rem; font-weight: 900; color: #1e293b; background: rgba(255, 255, 255, .84);
