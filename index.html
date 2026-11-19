@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game</title>
+  <title>The Fishing Game BETA</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -1563,15 +1563,13 @@
       <h2>Player Backpack</h2>
       <p style="font-size: 0.9rem; color: #64748b;">Your items and caught fish:</p>
       
-      <div style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
-        <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #1e3a8a;">Items Owned</h3>
-        <button type="button" class="modal-action-btn" style="width:auto;padding:6px 12px;margin:4px 0 8px;" onclick="openTanksInventory()">Tanks</button>
-        <div id="backpack-tanks-summary" style="font-size:.85rem;color:#475569;">View your tanks in your backpack and aquarium.</div>
-        <p id="backpack-rooms-count" style="margin: 3px 0; font-size: 0.85rem;">Aquarium Rooms Owned: 1</p>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; border-top: 1px solid #cbd5e1; padding-top: 8px;">
-          <span id="backpack-baits-count" style="font-size: 0.85rem; font-weight: bold; color: #27ae60;">Baits</span>
-          <button type="button" class="modal-action-btn" style="width: auto; padding: 5px 12px; background: #2ecc71; font-size: 0.8rem;" onclick="toggleUseWormBait()" id="backpack-bait-toggle-btn">Equip Bait</button>
-        </div>
+      <div id="backpack-stats" style="background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
+        <h3 style="margin: 0 0 5px 0; font-size: 1rem; color: #1e3a8a;">Stats</h3>
+        <p id="backpack-coins-count" style="margin:3px 0;font-size:.85rem;">Coins: 0</p>
+        <p id="backpack-pearls-count" style="margin:3px 0;font-size:.85rem;">Pearls: 0</p>
+        <p id="backpack-catches-count" style="margin:3px 0;font-size:.85rem;">Total Fish Caught: 0 (since this update)</p>
+        <p id="backpack-rooms-count" style="margin:3px 0;font-size:.85rem;">Aquarium Rooms: 1</p>
+        <p id="backpack-tanks-summary" style="margin:3px 0;font-size:.85rem;">Placed Tanks: 0</p>
       </div>
 
       <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
@@ -4663,7 +4661,8 @@
           const currentFishes = data.fishes || [];
 
           await playerRef.update({
-            fishes: firebase.firestore.FieldValue.arrayUnion({ id: 'fish-' + Date.now() + '-' + Math.random().toString(36).slice(2,8), name: caughtFish.name, timestamp: new Date().toISOString() })
+            fishes: firebase.firestore.FieldValue.arrayUnion({ id: 'fish-' + Date.now() + '-' + Math.random().toString(36).slice(2,8), name: caughtFish.name, timestamp: new Date().toISOString() }),
+            totalFishCaught: firebase.firestore.FieldValue.increment(1)
           });
 
           if (session === castSession) {
@@ -4800,31 +4799,13 @@
       }
     }
 
-    async function toggleUseWormBait() {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      try {
-        const playerRef = db.collection('jugadores').doc(user.uid);
-        const doc = await playerRef.get();
-        if (doc.exists) {
-          const data = doc.data();
-          const baits = data.wormBaitsCount || 0;
-          const currentActive = data.isBaitActive || false;
-
-          if (baits <= 0 && !currentActive) {
-            showToast("You don't have any Worm Baits! Buy some in Bob's Shop.");
-            return;
-          }
-
-          const newActive = !currentActive;
-          await playerRef.update({ isBaitActive: newActive });
-          showToast(newActive ? "Worm Bait equipped! Next cast will have better luck." : "Worm Bait unequipped.");
-          loadBackpackData();
-        }
-      } catch (err) {
-        showToast("Error toggling bait: " + err.message);
-      }
+    function renderBackpackStats(data) {
+      const placedTanks = Object.values(data.aquariumTanksMap || {}).flat().filter(Boolean).length;
+      document.getElementById('backpack-coins-count').textContent = `Coins: ${Number(data.coins) || 0}`;
+      document.getElementById('backpack-pearls-count').textContent = `Pearls: ${Number(data.pearls) || 0}`;
+      document.getElementById('backpack-catches-count').textContent = `Total Fish Caught: ${Number(data.totalFishCaught) || 0} (since this update)`;
+      document.getElementById('backpack-rooms-count').textContent = `Aquarium Rooms: ${Number(data.aquariumRoomsOwned) || 1}`;
+      document.getElementById('backpack-tanks-summary').textContent = `Placed Tanks: ${placedTanks}`;
     }
 
     async function loadBackpackData() {
@@ -4837,24 +4818,7 @@
         const doc = await db.collection('jugadores').doc(user.uid).get();
         if (doc.exists) {
           const data = doc.data();
-          const tanksCount = data.miniTanksCount || 0;
-          const roomsCount = data.aquariumRoomsOwned || 1;
-          const baitsCount = data.wormBaitsCount || 0;
-          const isBaitActive = data.isBaitActive || false;
-
-          const placedTanks=Object.values(data.aquariumTanksMap||{}).flat().filter(Boolean).length;
-          document.getElementById('backpack-tanks-summary').innerText = `${placedTanks} tank(s) placed in your Aquarium`;
-          document.getElementById('backpack-rooms-count').innerText = `Aquarium Rooms Owned: ${roomsCount}`;
-          document.getElementById('backpack-baits-count').innerText = `Baits: ${baitsCount}`;
-          
-          const toggleBtn = document.getElementById('backpack-bait-toggle-btn');
-          if (isBaitActive) {
-            toggleBtn.innerText = "Unequip Bait";
-            toggleBtn.style.background = "#e74c3c";
-          } else {
-            toggleBtn.innerText = "Equip Bait";
-            toggleBtn.style.background = "#2ecc71";
-          }
+          renderBackpackStats(data);
 
           const fishes = data.fishes || [];
           if (fishes.length === 0) {
@@ -5011,6 +4975,7 @@
           photoURL: photoURL,
           coins: 0,
           fishes: [],
+          totalFishCaught: 0,
           friends: [],
           miniTanksCount: 0,
           wormBaitsCount: 0,
@@ -6208,6 +6173,7 @@
               photoURL: "",
               coins: 0,
               fishes: [],
+              totalFishCaught: 0,
               friends: [],
               miniTanksCount: 0,
               wormBaitsCount: 0,
@@ -6367,6 +6333,9 @@
       .rebuild-item img{width:58px;height:58px;object-fit:contain}
       .rebuild-btn{border:0;border-radius:8px;padding:9px 13px;background:#258b58;color:#fff;font-weight:700;cursor:pointer;margin:3px}
       .rebuild-btn.alt{background:#2563a6}.rebuild-btn.red{background:#c0392b}
+      .backpack-actions-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+      .backpack-actions-grid .rebuild-btn{min-height:44px;margin:0;padding:8px 6px}
+      @media(max-width:480px){.backpack-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
       .rebuild-field{width:100%;box-sizing:border-box;padding:9px;border:1px solid #cbd5e1;border-radius:7px;margin:4px 0 10px}
       .creature-sand{animation:creatureSand 5s ease-in-out infinite alternate}
       .creature-jelly{animation:creatureJelly 2.5s ease-in-out infinite}
@@ -6399,7 +6368,7 @@
         </div>
         <div id="grill-fish-picker" style="display:none;margin-top:10px"><h3>Select a fish</h3><div id="grill-fish-options" class="rebuild-grid"></div></div>
       </div></div>
-      <div id="modal-equip-bait" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-equip-bait')">Close</button><h2>Equip Bait</h2><div id="bait-options" class="rebuild-grid"></div></div></div>
+      <div id="modal-equip-bait" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-equip-bait')">Close</button><h2>Baits</h2><div id="bait-options" class="rebuild-grid"></div></div></div>
       <div id="modal-make-offer" class="rebuild-modal"><div class="rebuild-card" style="max-width:560px">
   <button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-make-offer')">Close</button>
   <h2 style="margin-top:0">Make Custom Offer</h2>
@@ -6518,9 +6487,8 @@
     const backpack = document.querySelector('#modal-backpack .modal-card');
     if (backpack && !document.getElementById('rebuild-backpack-actions')) {
       const box = document.createElement('div'); box.id='rebuild-backpack-actions'; box.style.cssText='margin:10px 0;padding:10px;background:#eef6ff;border-radius:9px';
-      box.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:5px"><button class="rebuild-btn alt" onclick="openCosmeticsInventory()">Cosmetics</button><button class="rebuild-btn alt" onclick="openFishFoodsInventory()">Fish Foods</button></div><p id="rebuild-bait-summary" style="margin:7px 0 0;font-size:.85rem"></p><p id="rebuild-cube-summary" style="margin:4px 0 0;font-size:.85rem"></p>`;
-      backpack.insertBefore(box, backpack.children[2] || null);
-      const existingBaitButton=document.getElementById('backpack-bait-toggle-btn');if(existingBaitButton){existingBaitButton.textContent='Equip Bait';existingBaitButton.onclick=openBaitSelector;}
+      box.innerHTML = `<div class="backpack-actions-grid"><button type="button" class="rebuild-btn alt" onclick="openCosmeticsInventory()">Cosmetics</button><button type="button" class="rebuild-btn alt" onclick="openTanksInventory()">Tanks</button><button type="button" class="rebuild-btn alt" onclick="openFishFoodsInventory()">Fish Foods</button><button type="button" class="rebuild-btn alt" onclick="openBaitSelector()">Baits</button></div>`;
+      document.getElementById('backpack-stats').after(box);
     }
     const cosmeticSuggestions=document.getElementById('adminCosmeticTypes');
     if(cosmeticSuggestions)cosmeticSuggestions.innerHTML=Object.keys(TANK_PLACEABLE_COSMETICS).map(name=>`<option value="${esc(name)}"></option>`).join('');
@@ -7620,21 +7588,7 @@
       const doc=await db.collection('jugadores').doc(user.uid).get();
       if(!doc.exists)return;
       const d=doc.data()||{};
-      const tanksCount=d.miniTanksCount||0;
-      const roomsCount=d.aquariumRoomsOwned||1;
-      const baitsCount=d.wormBaitsCount||0;
-      const cubesCount=d.miniTunaCubesCount||0;
-      const bait=d.equippedBait||(d.isBaitActive?'worm':'');
-      const placedTanks=Object.values(d.aquariumTanksMap||{}).flat().filter(Boolean).length;
-       const tankSummary=document.getElementById('backpack-tanks-summary');if(tankSummary)tankSummary.innerText=`${placedTanks} tank(s) placed in your Aquarium`;
-      document.getElementById('backpack-rooms-count').innerText=`Aquarium Rooms Owned: ${roomsCount}`;
-      const baitLabel=document.getElementById('backpack-baits-count');if(baitLabel)baitLabel.remove();
-      const toggleBtn=document.getElementById('backpack-bait-toggle-btn');
-      if(toggleBtn){
-        toggleBtn.innerText=bait?'Change Bait':'Equip Bait';
-        toggleBtn.style.background=bait?'#2563a6':'#2ecc71';
-      }
-      ['rebuild-bait-summary','rebuild-cube-summary'].forEach(id=>{const e=document.getElementById(id);if(e)e.remove();});
+      renderBackpackStats(d);
       const fishes=d.fishes||[];
       if(!fishes.length){if(listContainer)listContainer.innerHTML='No fish caught yet. Go fishing!';return;}
       const rawCounts={};
@@ -9894,7 +9848,6 @@
       <div class="tf-card" role="dialog" aria-modal="true">
         <button type="button" class="tf-close" id="tf-food-close" aria-label="Close food picker">✕</button>
         <h3 style="margin:2px 0 6px;color:#1e3a8a;">Choose Fish Food</h3>
-        <p style="font-size:.82rem;color:#64748b;margin:0;">Only the food you own is listed. Each use feeds one fish.</p>
         <div id="tf-food-options"></div>
         <p id="tf-food-empty" style="display:none;font-size:.85rem;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;margin-top:10px;">You do not have any fish food yet. Buy Fish Food in Bob's Shop.</p>
       </div>`;
@@ -9920,8 +9873,7 @@
       return `<button type="button" class="tf-food-option" data-food="${esc(name)}">
         <img src="${esc(foodImg(name))}" alt="${esc(name)}">
         <strong>${esc(name)}</strong>
-        <span>${esc((findFood(name) || {}).desc || '')}</span>
-        <span>${count} use${count === 1 ? '' : 's'} left${findFood(name) ? ` · +${findFood(name).happiness} happiness` : ''}</span>
+        <span>${count} use${count === 1 ? '' : 's'} left</span>
       </button>`;
     }).join('');
     if (empty) empty.style.display = entries.length ? 'none' : 'block';
