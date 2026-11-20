@@ -603,6 +603,7 @@
       gap: 5px;
     }
 
+    .passcode-visibility-btn { border:1px solid #cbd5e1; border-radius:8px; padding:9px 12px; background:#eef2f7; color:#1e3a8a; font-weight:800; cursor:pointer; }
     .form-group input, .form-group textarea, .form-group select {
       padding: 10px;
       border-radius: 8px;
@@ -819,7 +820,7 @@
   <header>
     <div class="header-left">
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <div class="version-tag">v.1.0.2.5 BETA</div>
+        <div class="version-tag">v.1.0.2.6</div>
         <button type="button" class="img-btn" onclick="openMouseHole()" title="Mouse Hole" aria-label="Open the mouse hole" style="width:42px;height:42px;">
           <img src="https://i.postimg.cc/DzmLzdzR/hole.png" alt="Mouse Hole" style="width:42px;height:42px;object-fit:contain;">
         </button>
@@ -1333,7 +1334,13 @@
       </div>
 
       <div id="admin-passcode-profile-status" style="display:none;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin:10px 0;font-size:.9rem;">
-        <strong>Firebase Passcode:</strong> <span id="admin-passcode-profile-value">Not configured</span>
+        <strong>Firebase Admin Passcode:</strong>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+          <input id="admin-passcode-profile-value" type="password" readonly value="Not configured" style="flex:1;min-width:0;padding:9px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
+          <button type="button" class="passcode-visibility-btn" onclick="togglePasscodeVisibility('admin-passcode-profile-value',this)">Show</button>
+        </div>
+        <small id="admin-passcode-profile-note" style="display:block;color:#64748b;margin-top:6px;">Only visible in your admin account profile.</small>
+        <button type="button" class="modal-action-btn" style="margin-top:8px;" onclick="openAdminPasscodeSetup()">Set / Change Passcode</button>
       </div>
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>Search Player</h3>
@@ -1656,15 +1663,15 @@
   <div id="modal-admin-passcode-setup" class="modal-overlay" style="z-index:5000;">
     <div class="modal-card" style="max-width:390px;" role="dialog" aria-modal="true" aria-labelledby="admin-passcode-setup-title">
       <h2 id="admin-passcode-setup-title">Create your Admin Passcode</h2>
-      <p style="color:#64748b;font-size:.9rem;">Set a private passcode the first time you enter. It will be saved securely as a salted hash in your Firebase player profile, not as readable text.</p>
+      <p style="color:#64748b;font-size:.9rem;">Create or change your Admin Passcode. It will be saved in your Firebase player profile so you can view it later from your own profile. The salted hash is also retained for verification.</p>
       <form onsubmit="saveInitialAdminPasscode(event)">
         <div class="form-group">
           <label for="admin-passcode-new">New passcode</label>
-          <input id="admin-passcode-new" type="password" minlength="8" autocomplete="new-password" required>
+          <div style="display:flex;gap:8px;align-items:center;"><input id="admin-passcode-new" type="password" minlength="8" autocomplete="new-password" required style="flex:1;"><button type="button" class="passcode-visibility-btn" onclick="togglePasscodeVisibility('admin-passcode-new',this)">Show</button></div>
         </div>
         <div class="form-group">
           <label for="admin-passcode-confirm">Confirm passcode</label>
-          <input id="admin-passcode-confirm" type="password" minlength="8" autocomplete="new-password" required>
+          <div style="display:flex;gap:8px;align-items:center;"><input id="admin-passcode-confirm" type="password" minlength="8" autocomplete="new-password" required style="flex:1;"><button type="button" class="passcode-visibility-btn" onclick="togglePasscodeVisibility('admin-passcode-confirm',this)">Show</button></div>
         </div>
         <p id="admin-passcode-setup-error" role="alert" style="display:none;color:#c0392b;"></p>
         <button type="submit" class="modal-action-btn">Save Passcode</button>
@@ -1678,7 +1685,7 @@
       <form onsubmit="submitAdminPasscode(event)">
         <div class="form-group">
           <label for="admin-passcode-input">Pass code</label>
-          <input id="admin-passcode-input" type="password" autocomplete="off" required>
+          <div style="display:flex;gap:8px;align-items:center;"><input id="admin-passcode-input" type="password" autocomplete="off" required style="flex:1;"><button type="button" class="passcode-visibility-btn" onclick="togglePasscodeVisibility('admin-passcode-input',this)">Show</button></div>
         </div>
         <p id="admin-passcode-error" role="alert" style="display:none;color:#c0392b;">Incorrect pass code.</p>
         <div style="display:flex;gap:8px;">
@@ -1757,17 +1764,20 @@
 
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>User Baits (Give / Remove)</h3>
-      <div id="admin-target-baits-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
-        <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view baits...</p>
-      </div>
       <div class="form-group">
         <label>Give Bait (e.g. Worm Bait or Mini Tuna Cube)</label>
         <div style="display:flex; gap:8px;">
-          <input type="text" id="adminBaitName" placeholder="Worm Bait, Mini Tuna Cube, or Mini Tung Cube (admin only)" autocomplete="off" style="flex:2;">
+          <input type="text" id="adminBaitName" list="adminBaitTypes" placeholder="Choose or type a bait name..." autocomplete="off" style="flex:2;">
+          <datalist id="adminBaitTypes"><option value="Worm Bait"></option><option value="Mini Tuna Cube"></option><option value="Mini Tung Cube"></option></datalist>
           <input type="number" id="adminBaitQty" placeholder="Qty" value="1" min="1" autocomplete="off" style="flex:1;">
         </div>
       </div>
       <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('bait')">Give Baits</button>
+      <h4 style="margin:4px 0 6px;color:#1e3a8a;">Remove Baits</h4>
+      <div id="admin-target-baits-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
+        <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view baits...</p>
+      </div>
+
 
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>User Fish Food (Give / Remove)</h3>
@@ -1786,9 +1796,6 @@
 
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>User Cosmetics (Give / Remove)</h3>
-      <div id="admin-target-cosmetics-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
-        <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view cosmetics...</p>
-      </div>
       <div class="form-group">
         <label>Give Cosmetic (type the exact name)</label>
         <div style="display:flex; gap:8px;">
@@ -1798,12 +1805,20 @@
         </div>
       </div>
       <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('cosmetic')">Give Cosmetics</button>
+      <h4 style="margin:4px 0 6px;color:#1e3a8a;">Remove Cosmetics</h4>
+      <div id="admin-target-cosmetics-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
+        <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view cosmetics...</p>
+      </div>
+
 
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>Add Fish to User</h3>
       <div class="form-group">
         <label>Fish Name (e.g. Sardine, Betta Fish, Swordfish, Whale Shark, Goldfish Snack)</label>
-        <input type="text" id="adminAddFishName" list="adminFishTypes" placeholder="Fish name..." autocomplete="off">
+        <div style="display:flex;gap:8px;align-items:stretch;">
+          <input type="text" id="adminAddFishName" list="adminFishTypes" placeholder="Fish name..." autocomplete="off" style="flex:2;min-width:0;">
+          <input type="number" id="adminAddFishQty" placeholder="Qty" value="1" min="1" step="1" autocomplete="off" style="flex:1;min-width:75px;">
+        </div>
         <datalist id="adminFishTypes"></datalist>
       </div>
       <button type="button" class="modal-action-btn" style="background:#27ae60; margin-bottom: 15px;" onclick="adminAddFishToUser()">Add Fish</button>
@@ -2041,27 +2056,27 @@
       { name: "Shrimp", value:28, rarity: "Rare", desc: "A small crustacean that scuttles along the seabed in search of food.", img: "https://i.postimg.cc/4xHy4hn7/shrimp.png", creatureType: "sand" },
       { name: "Rainbow Trout", value:30, rarity: "Rare", desc: "A colorful freshwater fish with a shimmering rainbow stripe along its body.", img: "https://i.postimg.cc/TwWHtqCt/rainbow-trout.png" },
       { name: "Red Snapper", value:36, rarity: "Rare", desc: "A prized reef fish with a rosy body and a taste for small crustaceans.", img: "https://i.postimg.cc/Ssztg7DG/red-snapper.png" },
-      { name: "Betta Fish", value:95, rarity: "Epic", desc: "A vibrant and elegant freshwater fish with flowing fins.", img: "https://i.postimg.cc/T2J64ynq/betta-fish.png" },
-      { name: "Barreleye Fish", value:75, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
-      { name: "Electric Eel", value:110, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
-      { name: "Coelacanth", value:125, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
-      { name: "Bluefin Tuna", value:100, rarity: "Epic", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
-      { name: "Largemouth Bass", value:85, rarity: "Epic", desc: "A powerful freshwater predator that ambushes prey with explosive strikes.", img: "https://i.postimg.cc/tTVmBt2d/largemouth-bass.png" },
-      { name: "Mahi Mahi", value:115, rarity: "Epic", desc: "A brilliantly colored ocean hunter known for its speed and acrobatic leaps.", img: "https://i.postimg.cc/zBRPxS0S/mahi-mahi.png" },
-      { name: "Angelfish", value:100, rarity: "Epic", desc: "An elegant tropical fish with tall fins that glides among colorful reefs.", img: "https://i.postimg.cc/FKPpWHYD/angelfish.png" },
-      { name: "Slippery", value:120, rarity: "Epic", desc: "A slippery little swimmer that is surprisingly tricky to hold onto.", img: "https://i.postimg.cc/TPk073K4/slippery.png" },
-      { name: "Manta ray", value:280, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
-      { name: "Great White Shark", value:350, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
-      { name: "Turtle", value:350, rarity: "Legendary", desc: "A peaceful sea turtle that glides through the water with its powerful flippers.", img: "https://i.postimg.cc/g0wMdW8S/turtle2.png", creatureType: "turtle" },
-      { name: "Seahorse", value:300, rarity: "Legendary", desc: "A tiny upright swimmer that uses its curled tail to grip seagrass.", img: "https://i.postimg.cc/Hk0Kj0jY/seahorse.png", creatureType: "sand" },
-      { name: "Penguin", value:320, rarity: "Legendary", desc: "A flightless seabird that dives expertly through cold ocean waters.", img: "https://i.postimg.cc/T3512Wh5/penguin.png", creatureType: "fish" },
-      { name: "Dolphin", value:420, rarity: "Legendary", desc: "A clever, social swimmer known for its speed and playful leaps.", img: "https://i.postimg.cc/x1N8jbqL/dolphin.png", creatureType: "fish" },
-      { name: "Piranha", value:480, rarity: "Legendary", desc: "A sharp-toothed freshwater fish that lives in lively schools.", img: "https://i.postimg.cc/kGLfNV8m/piranha.png" },
-      { name: "Atlantic Wolffish", value:520, rarity: "Legendary", desc: "A cold-water fish with a broad head and powerful crushing jaws.", img: "https://i.postimg.cc/qBFbHFFM/atlantic-wolffish.png" },
-      { name: "Channel Catfish", value:300, rarity: "Legendary", desc: "A whiskered river giant that patrols muddy bottoms in search of food.", img: "https://i.postimg.cc/Px8FSz2y/channel-catfish.png" },
-      { name: "Flounder", value:400, rarity: "Legendary", desc: "A flat ocean fish that blends into the sandy seabed while watching for prey.", img: "https://i.postimg.cc/Xv2LHYrh/flounder.png", creatureType: "sand" },
-      { name: "Garpike", value:420, rarity: "Legendary", desc: "An ancient freshwater hunter with a long snout and armor-like scales.", img: "https://i.postimg.cc/8zWtPHRx/garpike.png" },
-      { name: "Rockfish", value:390, rarity: "Legendary", desc: "A sturdy fish that hides among rocky reefs and waits for passing prey.", img: "https://i.postimg.cc/Hk5Bs2wR/rockfish.png" },
+      { name: "Betta Fish", value:74, rarity: "Epic", desc: "A vibrant and elegant freshwater fish with flowing fins.", img: "https://i.postimg.cc/T2J64ynq/betta-fish.png" },
+      { name: "Barreleye Fish", value:58, rarity: "Epic", desc: "A deep-sea fish with a transparent fluid-filled head.", img: "https://i.postimg.cc/cLC5QKF2/barreleye-fish.png" },
+      { name: "Electric Eel", value:86, rarity: "Epic", desc: "A serpentine fish capable of generating high voltage.", img: "https://i.postimg.cc/kgHYwnZX/electric-eel.png" },
+      { name: "Coelacanth", value:98, rarity: "Epic", desc: "A rare prehistoric 'living fossil' fish.", img: "https://i.postimg.cc/SxRtWXZs/coelacanth.png" },
+      { name: "Bluefin Tuna", value:78, rarity: "Epic", desc: "A powerful and fast ocean predator.", img: "https://i.postimg.cc/6pPbz9SC/bluefin-tuna.png" },
+      { name: "Largemouth Bass", value:66, rarity: "Epic", desc: "A powerful freshwater predator that ambushes prey with explosive strikes.", img: "https://i.postimg.cc/tTVmBt2d/largemouth-bass.png" },
+      { name: "Mahi Mahi", value:90, rarity: "Epic", desc: "A brilliantly colored ocean hunter known for its speed and acrobatic leaps.", img: "https://i.postimg.cc/zBRPxS0S/mahi-mahi.png" },
+      { name: "Angelfish", value:78, rarity: "Epic", desc: "An elegant tropical fish with tall fins that glides among colorful reefs.", img: "https://i.postimg.cc/FKPpWHYD/angelfish.png" },
+      { name: "Slippery", value:94, rarity: "Epic", desc: "A slippery little swimmer that is surprisingly tricky to hold onto.", img: "https://i.postimg.cc/TPk073K4/slippery.png" },
+      { name: "Manta ray", value:202, rarity: "Legendary", desc: "A graceful giant gliding through tropical waters.", img: "https://i.postimg.cc/mgnpVbqk/mantaray.png" },
+      { name: "Great White Shark", value:252, rarity: "Legendary", desc: "The undisputed king of ocean predators.", img: "https://i.postimg.cc/4x02wJMf/great-white-shark.png" },
+      { name: "Turtle", value:252, rarity: "Legendary", desc: "A peaceful sea turtle that glides through the water with its powerful flippers.", img: "https://i.postimg.cc/g0wMdW8S/turtle2.png", creatureType: "turtle" },
+      { name: "Seahorse", value:216, rarity: "Legendary", desc: "A tiny upright swimmer that uses its curled tail to grip seagrass.", img: "https://i.postimg.cc/Hk0Kj0jY/seahorse.png", creatureType: "sand" },
+      { name: "Penguin", value:230, rarity: "Legendary", desc: "A flightless seabird that dives expertly through cold ocean waters.", img: "https://i.postimg.cc/T3512Wh5/penguin.png", creatureType: "fish" },
+      { name: "Dolphin", value:302, rarity: "Legendary", desc: "A clever, social swimmer known for its speed and playful leaps.", img: "https://i.postimg.cc/x1N8jbqL/dolphin.png", creatureType: "fish" },
+      { name: "Piranha", value:346, rarity: "Legendary", desc: "A sharp-toothed freshwater fish that lives in lively schools.", img: "https://i.postimg.cc/kGLfNV8m/piranha.png" },
+      { name: "Atlantic Wolffish", value:374, rarity: "Legendary", desc: "A cold-water fish with a broad head and powerful crushing jaws.", img: "https://i.postimg.cc/qBFbHFFM/atlantic-wolffish.png" },
+      { name: "Channel Catfish", value:216, rarity: "Legendary", desc: "A whiskered river giant that patrols muddy bottoms in search of food.", img: "https://i.postimg.cc/Px8FSz2y/channel-catfish.png" },
+      { name: "Flounder", value:288, rarity: "Legendary", desc: "A flat ocean fish that blends into the sandy seabed while watching for prey.", img: "https://i.postimg.cc/Xv2LHYrh/flounder.png", creatureType: "sand" },
+      { name: "Garpike", value:302, rarity: "Legendary", desc: "An ancient freshwater hunter with a long snout and armor-like scales.", img: "https://i.postimg.cc/8zWtPHRx/garpike.png" },
+      { name: "Rockfish", value:281, rarity: "Legendary", desc: "A sturdy fish that hides among rocky reefs and waits for passing prey.", img: "https://i.postimg.cc/Hk5Bs2wR/rockfish.png" },
       { name: "Swordfish", value:750, rarity: "Mythic", desc: "A formidable oceanic hunter featuring an elongated sword-like bill.", img: "https://i.postimg.cc/h41B5JVV/swordfish.png" },
       { name: "Whale Shark", value:900, rarity: "Mythic", desc: "The massive yet gentle giant filter-feeder of the deep sea.", img: "https://i.postimg.cc/HW9ghJbQ/whale-shark.png" },
       { name: "Leafy Seadragon", value:650, rarity: "Mythic", desc: "A master of camouflage adorned with leaf-like appendages.", img: "https://i.postimg.cc/rwsYSdfb/leafy-seadragon.png" },
@@ -2071,12 +2086,17 @@
       { name: "Ocean Sunfish", value:980, rarity: "Mythic", desc: "A huge, gentle ocean fish with a round body and unusual shape.", img: "https://i.postimg.cc/MHgd0cR8/ocean-sunfish.png" },
       { name: "Barracuda", value:820, rarity: "Mythic", desc: "A swift ocean predator with sharp teeth and a sleek, silvery body.", img: "https://i.postimg.cc/tC8Bjf6p/barracuda.png" },
       { name: "Sail Fish", value:900, rarity: "Mythic", desc: "A speedy ocean hunter with a tall sail-like fin and a pointed bill.", img: "https://i.postimg.cc/YCgbq365/sail-fish.png" },
-      { name: "Basking Shark", value:1100, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
-      { name: "Oarfish", value:1300, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
-      { name: "Octopus", value:1200, rarity: "Divine", desc: "An intelligent sea creature with eight flexible arms that curl as it explores.", img: "https://i.postimg.cc/Qx8QXmhH/octopus.png", creatureType: "octopus" },
-      { name: "Killer Whale", value:1150, rarity: "Divine", desc: "A powerful ocean predator that travels and hunts in close-knit pods.", img: "https://i.postimg.cc/P5vJf8Nw/killer-whale.png", creatureType: "fish" },
-      { name: "Blue Whale", value:1400, rarity: "Divine", desc: "A magnificent ocean giant that travels vast distances feeding on tiny krill.", img: "https://i.postimg.cc/zfd7tGyt/blue-whale.png", creatureType: "fish" },
-      { name: "Hammerhead Shark", value:1250, rarity: "Divine", desc: "A swift shark with a distinctive hammer-shaped head that helps it find prey.", img: "https://i.postimg.cc/tgrkS4sv/hammerhead-shark.png" },
+      { name: "Basking Shark", value:902, rarity: "Divine", desc: "A massive filter-feeding shark gliding peacefully.", img: "https://i.postimg.cc/nhrwvs3R/basking-shark.png" },
+      { name: "Oarfish", value:1066, rarity: "Divine", desc: "A magnificent serpent-like creature of ancient myth.", img: "https://i.postimg.cc/Z5nDr9fZ/oarfish.png" },
+      { name: "Octopus", value:984, rarity: "Divine", desc: "An intelligent sea creature with eight flexible arms that curl as it explores.", img: "https://i.postimg.cc/Qx8QXmhH/octopus.png", creatureType: "octopus" },
+      { name: "Killer Whale", value:943, rarity: "Divine", desc: "A powerful ocean predator that travels and hunts in close-knit pods.", img: "https://i.postimg.cc/P5vJf8Nw/killer-whale.png", creatureType: "fish" },
+      { name: "Blue Whale", value:1148, rarity: "Divine", desc: "A magnificent ocean giant that travels vast distances feeding on tiny krill.", img: "https://i.postimg.cc/zfd7tGyt/blue-whale.png", creatureType: "fish" },
+      { name: "Hammerhead Shark", value:1025, rarity: "Divine", desc: "A swift shark with a distinctive hammer-shaped head that helps it find prey.", img: "https://i.postimg.cc/tgrkS4sv/hammerhead-shark.png" },
+      { name: "Koi Fish", value:8, rarity: "Common", desc: "A graceful ornamental carp with flowing fins and colorful patterns, often kept in peaceful garden ponds.", img: "https://i.postimg.cc/DZmk9Fnw/koi-fish.png" },
+      { name: "Tadpole", value:30, rarity: "Rare", desc: "A tiny young amphibian with a rounded body and a long tail, still at the beginning of its transformation.", img: "https://i.postimg.cc/zB3Zs58X/tadpole.png", creatureType: "sand" },
+      { name: "Frog", value:58, rarity: "Epic", desc: "A lively amphibian with strong hind legs, made for hopping between water and land.", img: "https://i.postimg.cc/TwhMzGf2/frog.png", creatureType: "sand" },
+      { name: "Flying Fish", value:180, rarity: "Legendary", desc: "A remarkable ocean fish that launches itself above the waves and glides through the air with its wing-like fins.", img: "https://i.postimg.cc/4dnkDZsy/flying-fish.png", specialAbility: "glide" },
+      { name: "Devil Fish", value:861, rarity: "Divine", desc: "A mysterious deep-sea creature with an ominous presence, rarely seen beneath the darkest waters.", img: "https://i.postimg.cc/RFq5k940/devil-fish.png" },
       { name: "Legacy Fish", value:4500, rarity: "Legacy", isLimited: true, desc: "A mysterious fish from ancient and divine waters.", img: "https://i.postimg.cc/J79pfZXs/legacy-fish.png" },
       { name: "Goldfish Snack", value:6500, rarity: "Secret", isLimited: true, desc: "A mysterious secret snack fish, no one knows where it came from.", img: "https://i.postimg.cc/MGHNZD3K/goldfishsnack.png" }
     ];
@@ -2087,6 +2107,19 @@
       adminFishTypes.appendChild(option);
     });
     document.getElementById('adminPromoFish')?.setAttribute('list', 'adminFishTypes');
+    // Keep admin tank suggestions synchronized with all registered tank types.
+    const adminTankSuggestions = document.getElementById('adminTankTypeSuggestions');
+    if (adminTankSuggestions) {
+      adminTankSuggestions.innerHTML = '';
+      const tankNames = [...new Set(['Mini Tank', 'Rocky Tank', ...(window.TANK_TYPES || []).map(t => t.name)])];
+      tankNames.forEach(name => { const option = document.createElement('option'); option.value = name; adminTankSuggestions.appendChild(option); });
+    }
+    // Baits support both typing and picking from the same native suggestion list.
+    const adminBaitSuggestions = document.getElementById('adminBaitTypes');
+    if (adminBaitSuggestions) {
+      adminBaitSuggestions.innerHTML = '';
+      ['Worm Bait', 'Mini Tuna Cube', 'Mini Tung Cube'].forEach(name => { const option = document.createElement('option'); option.value = name; adminBaitSuggestions.appendChild(option); });
+    }
 
     window.getFishCookedValue = function(baseValue, cooking) {
       const base = Number(baseValue) || 0;
@@ -2192,6 +2225,15 @@
       return null;
     }
 
+    function togglePasscodeVisibility(inputId, button) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const visible = input.type === 'password';
+      input.type = visible ? 'text' : 'password';
+      button.textContent = visible ? 'Hide' : 'Show';
+      input.focus();
+    }
+
     // Admin passcodes are stored in the owner's Firebase player document as a
     // PBKDF2-SHA256 hash with a unique random salt. The passcode itself is never stored.
     async function deriveAdminPasscodeHash(passcode, saltBytes) {
@@ -2209,6 +2251,16 @@
 
     function base64ToBytes(value) {
       return Uint8Array.from(atob(value), c => c.charCodeAt(0));
+    }
+
+    function openAdminPasscodeSetup() {
+      if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) { showToast('Admin only.'); return; }
+      const form = document.querySelector('#modal-admin-passcode-setup form');
+      if (form) form.reset();
+      const error = document.getElementById('admin-passcode-setup-error');
+      if (error) error.style.display = 'none';
+      document.getElementById('modal-admin-passcode-setup').style.display = 'flex';
+      document.getElementById('admin-passcode-new').focus();
     }
 
     async function hasAdminPasscode() {
@@ -2256,6 +2308,7 @@
             hash,
             algorithm: 'PBKDF2-SHA256',
             iterations: 210000,
+            passcodeText: pass,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           }
         }, { merge: true });
@@ -4257,8 +4310,8 @@
         slotEl.innerHTML = `
           <div class="tank-viewport${decoration === 'Orange-chinned parakeet' ? ' has-parakeet' : ''}" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
             <img src="${tank.img}" alt="${tank.name}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; pointer-events: none;">
-            ${['Sandcastle','Verity','Palm','Orange-chinned parakeet'].includes(decoration) ? `<img class="aquarium-${decoration === 'Orange-chinned parakeet' ? 'parakeet' : decoration.toLowerCase()}" src="${decoration === 'Sandcastle' ? IMG.sandcastle : decoration === 'Verity' ? IMG.verity : decoration === 'Palm' ? 'https://i.postimg.cc/wjJ0TV58/palm.png' : 'https://i.postimg.cc/rF7fkb42/parakeet.png'}" alt="${decoration}" style="position:absolute; ${decoration === 'Palm' ? 'left:17%;bottom:28%;width:min(58px, 72%);height:auto;' : decoration === 'Orange-chinned parakeet' ? 'right:10%;top:calc(25% - min(28px, 38%));width:min(36px, 60%);height:auto;' : 'left:50%;transform:translateX(-50%);bottom:28%;width:34px;height:34px;'} object-fit:contain;object-position:center bottom;z-index:${decoration === 'Orange-chinned parakeet' ? '4' : '2'};pointer-events:none;">` : ''}
-            <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: 32px; height: auto; object-fit: contain; z-index: 3; pointer-events: none;">
+            ${['Sandcastle','Verity','Palm','Orange-chinned parakeet'].includes(decoration) ? `<img class="aquarium-${decoration === 'Orange-chinned parakeet' ? 'parakeet' : decoration.toLowerCase()}" src="${decoration === 'Sandcastle' ? IMG.sandcastle : decoration === 'Verity' ? IMG.verity : decoration === 'Palm' ? 'https://i.postimg.cc/wjJ0TV58/palm.png' : 'https://i.postimg.cc/rF7fkb42/parakeet.png'}" alt="${decoration}" style="position:absolute; ${decoration === 'Palm' ? 'left:calc(17% - 3px);bottom:calc(28% - 10px);width:min(58px, 72%);height:auto;' : decoration === 'Orange-chinned parakeet' ? 'right:10%;top:calc(25% - min(28px, 38%));width:min(36px, 60%);height:auto;' : 'left:50%;transform:translateX(-50%);bottom:28%;width:34px;height:34px;'} object-fit:contain;object-position:center bottom;z-index:${decoration === 'Orange-chinned parakeet' ? '4' : '2'};pointer-events:none;">` : ''}
+            <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: clamp(24px, 18%, 42px); max-height:38%; height:auto; object-fit: contain; z-index: 3; pointer-events: none;">
           </div>
         `;
         startFishAnimation(shelfIndex);
@@ -4534,6 +4587,20 @@
       const maxY = 70;
 
       let moveTimer = 0;
+      const fishMeta = ALLOWED_FISH_TYPES.find(f => f.name === (AQ.slots[shelfIndex] || ''));
+      let glideTimer = null;
+      if (fishMeta && fishMeta.specialAbility === 'glide') {
+        const scheduleGlide = () => {
+          glideTimer = setTimeout(() => {
+            if (!fishImg.isConnected) return;
+            fishImg.classList.add('flying-fish-glide');
+            setTimeout(() => fishImg.classList.remove('flying-fish-glide'), 1050);
+            scheduleGlide();
+          }, 4200 + Math.random() * 4200);
+        };
+        scheduleGlide();
+        activeFishAnimations.push({ __timeout: true, id: glideTimer });
+      }
 
       const interval = setInterval(() => {
         moveTimer++;
@@ -4572,7 +4639,10 @@
     }
 
     function stopFishAnimations() {
-      activeFishAnimations.forEach(interval => clearInterval(interval));
+      activeFishAnimations.forEach(interval => {
+        if (interval && interval.__timeout) clearTimeout(interval.id);
+        else clearInterval(interval);
+      });
       activeFishAnimations = [];
     }
 
@@ -5219,9 +5289,16 @@
         if (auth.currentUser && auth.currentUser.uid === ADMIN_UID) {
           try {
             const ownSnap = await db.collection('jugadores').doc(auth.currentUser.uid).get();
-            const configured = !!((ownSnap.data() || {}).adminPasscode || {}).hash;
+            const savedPasscode = (ownSnap.data() || {}).adminPasscode || {};
             const value = document.getElementById('admin-passcode-profile-value');
-            if (value) value.textContent = configured ? 'Configured (hidden)' : 'Not configured';
+            const note = document.getElementById('admin-passcode-profile-note');
+            if (value) {
+              value.value = savedPasscode.passcodeText || '';
+              value.type = 'password';
+            }
+            if (note) note.textContent = savedPasscode.passcodeText
+              ? 'Saved in Firebase. Use Show to view it. Only your admin account profile displays it.'
+              : (savedPasscode.hash ? 'Your old passcode has only a hash. Set a new passcode here to enable viewing it.' : 'No passcode configured yet.');
           } catch (e) {
             const value = document.getElementById('admin-passcode-profile-value');
             if (value) value.textContent = 'Could not load';
@@ -5917,8 +5994,9 @@
     async function adminAddFishToUser() {
       const username = document.getElementById('adminTargetUsername').value.trim();
       const fishNameInput = document.getElementById('adminAddFishName').value.trim();
-      if (!username || !fishNameInput) {
-        showToast("Enter a target username and fish name.");
+      const quantity = Number.parseInt(document.getElementById('adminAddFishQty')?.value || '1', 10);
+      if (!username || !fishNameInput || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 10000) {
+        showToast("Enter a target username, fish name, and a valid quantity (1–10000).");
         return;
       }
 
@@ -5936,12 +6014,19 @@
           return;
         }
 
-        await db.collection('jugadores').doc(targetUid).update({
-          fishes: firebase.firestore.FieldValue.arrayUnion({ name: exactFishName, timestamp: new Date().toISOString() })
+        const playerRef = db.collection('jugadores').doc(targetUid);
+        await db.runTransaction(async transaction => {
+          const snap = await transaction.get(playerRef);
+          if (!snap.exists) throw new Error('Player profile not found.');
+          const existing = Array.isArray(snap.data().fishes) ? snap.data().fishes : [];
+          const stamp = new Date().toISOString();
+          const additions = Array.from({length: quantity}, () => ({name: exactFishName, timestamp: stamp}));
+          transaction.update(playerRef, {fishes: existing.concat(additions)});
         });
 
-        showToast(`Added ${exactFishName} to ${username}!`);
+        showToast(`Added ${quantity} ${exactFishName}${quantity === 1 ? '' : 's'} to ${username}!`);
         document.getElementById('adminAddFishName').value = "";
+        document.getElementById('adminAddFishQty').value = "1";
         loadTargetUserInventoryForAdmin();
       } catch (err) {
         showToast("Error adding fish: " + err.message);
@@ -7455,10 +7540,13 @@
         const x=doc.data();
         const items=normalizeListingItems(x);
         const first=items[0]||{kind:'fish',name:'Fish',quantity:1};
+        const cookedFish=(first.fishData||[]).find(f=>f.cooking);
+        const cookedPct=cookedFish?Math.round(((Number(cookedFish.cooking.side1)||0)+(Number(cookedFish.cooking.side2)||0))/2):0;
+        const cookedFilter=cookedFish&&typeof getCookedFilter==='function'?getCookedFilter(cookedPct):'none';
         const label=x.offerTitle?`${x.offerTitle} (${items.map(i=>`${i.quantity}x ${i.name}`).join(', ')})`:items.map(i=>`${i.quantity||1}x ${i.name}`).join(', ');
         return `
           <div class="rebuild-item" style="display:flex;align-items:center;gap:8px;text-align:left">
-            <img src="${getItemIcon(first.kind,first.name)}" style="width:35px;height:35px;object-fit:contain">
+            <img src="${getItemIcon(first.kind,first.name)}" style="width:35px;height:35px;object-fit:contain;filter:${cookedFilter};">
             <span style="flex:1;font-size:.82rem"><strong>${esc(label)}</strong> · ${x.price} 💰</span>
             <button type="button" class="rebuild-btn red" style="padding:4px 8px;font-size:.75rem" onclick="cancelMarketListing('${doc.id}')">Cancel & Retrieve</button>
           </div>`;
@@ -8436,6 +8524,9 @@
     color: #1e3a8a; background: #dbeafe; border-radius: 999px; padding: 3px 7px;
   }
   .tf-music-track.is-active .tf-music-track-state { background: #1e3a8a; color: #ffffff; }
+  .tf-music-pagination { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 0 12px; color:#64748b; font-size:.72rem; font-weight:800; }
+  .tf-music-pagination button { border:1px solid #cbd5e1; border-radius:8px; padding:7px 10px; background:#eef2f7; color:#1e3a8a; font:inherit; cursor:pointer; }
+  .tf-music-pagination button:disabled { opacity:.4; cursor:not-allowed; }
   #tf-music-off {
     width: 100%; border: 0; border-radius: 10px; padding: 10px; margin-top: 4px;
     background: #e74c3c; color: #ffffff; font: inherit; font-weight: 800; cursor: pointer;
@@ -8599,6 +8690,36 @@
     .minigame-container { width:min(280px, 90vw); max-height:calc(100dvh - 16px); padding:12px; overflow-y:auto; }
     .track-bar { height:min(260px, 35dvh); flex-shrink:0; }
   }
+  .flying-fish-glide { animation: flyingFishHop 1.05s ease-in-out; }
+  @keyframes flyingFishHop {
+    0% { translate:0 0; }
+    22% { translate:0 -24px; }
+    55% { translate:0 -29px; }
+    100% { translate:0 0; }
+  }
+  @media (max-width: 768px) {
+    /* Keep the PC menu's balanced composition instead of forcing a narrow 4-column grid. */
+    .main-container { min-height:100dvh; padding:88px 12px 112px; gap:clamp(8px,2.5dvh,18px); justify-content:center; }
+    .fish-logo-img { width:min(72vw,260px); max-width:260px; }
+    .center-menu { display:flex; width:auto; max-width:100%; flex-wrap:wrap; gap:clamp(5px,2vw,12px); justify-content:center; margin:0 0 8px; }
+    .center-menu .img-btn { min-height:0; }
+    .center-menu .img-btn img { width:clamp(54px,16vw,78px); }
+    .rules-header-btn img { width:clamp(48px,15vw,68px) !important; }
+    .corner-bottom-left, .corner-bottom-right { gap:5px; }
+    .user-profile-badge { max-width:120px; }
+    #btn-friends, #btn-logout { max-width:none; padding:6px 10px !important; font-size:.75rem !important; }
+    #modal-market .rebuild-item { width:100%; min-width:0; display:flex; flex-wrap:wrap; align-items:center; }
+    #modal-market .rebuild-item > * { min-width:0; }
+    #modal-market .rebuild-item > div:nth-child(2) { flex:1 1 170px; width:calc(100% - 60px); min-width:150px; }
+    #modal-market .rebuild-item strong, #modal-market .rebuild-item span, #modal-market .rebuild-item p { word-break:normal; overflow-wrap:break-word; }
+    #tf-music-toggle { top:10px; }
+    #tf-music-panel { top:52px; }
+    .tank-viewport img[class*="swimming-fish-"] { width:clamp(20px,17%,34px) !important; max-height:34% !important; }
+    .tank-viewport .aquarium-palm { width:clamp(34px,38%,48px) !important; left:calc(17% - 3px) !important; bottom:calc(28% - 10px) !important; }
+    .tank-viewport .aquarium-sandcastle, .tank-viewport .aquarium-verity { width:clamp(24px,30%,34px) !important; height:auto !important; }
+    .tank-viewport .aquarium-parakeet { width:clamp(24px,30%,32px) !important; }
+    .tf-food-option img { width:48px; height:48px; }
+  }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: .01ms !important;
@@ -8745,6 +8866,36 @@
         name: 'Endless Seascape',
         subtitle: 'John Bartmann · CC0',
         url: 'https://files.freemusicarchive.org/storage-freemusicarchive-org/tracks/KnBfOg0q4qdrlovrdZ6joJRF8nM5SvqvuC2dMin8.mp3'
+      },
+      {
+        id: 'moonlight-sonata',
+        name: 'Moonlight Sonata',
+        subtitle: 'Ludwig van Beethoven · Public Domain',
+        url: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Moonlight_Sonata.ogg'
+      },
+      {
+        id: 'chopin-nocturne-55-1',
+        name: 'Quiet Nocturne',
+        subtitle: 'Frédéric Chopin · CC0',
+        url: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Chopin_-_Nocturne-op-55-no-1.ogg'
+      },
+      {
+        id: 'chopin-nocturne-55-2',
+        name: 'Evening Nocturne',
+        subtitle: 'Frédéric Chopin · CC0',
+        url: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Chopin_-_Nocturne-op-55-no-2.ogg'
+      },
+      {
+        id: 'chopin-posth',
+        name: 'E Minor Nocturne',
+        subtitle: 'Frédéric Chopin · CC0',
+        url: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Chopin_-_Nocturne_Op._posth._72_no._1.ogg'
+      },
+      {
+        id: 'chopin-nocturne-37',
+        name: 'Nocturne in G Minor',
+        subtitle: 'Frédéric Chopin · Public Domain',
+        url: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Chopin-_Nocturne_op._37_no._1.ogg'
       }
     ];
 
@@ -8906,6 +9057,7 @@
         <button type="button" id="tf-music-close">Close</button>
       </div>
       <div id="tf-music-tracks"></div>
+      <div class="tf-music-pagination"><button type="button" id="tf-music-prev">Previous</button><span id="tf-music-page">Page 1 / 1</span><button type="button" id="tf-music-next">Next</button></div>
       <div class="tf-music-volume">
         <div class="tf-music-volume-head">
           <label for="tf-music-volume">Volume</label>
@@ -8942,24 +9094,38 @@
     });
     renderVolume();
 
-    TFMusic.tracks().forEach(track => {
-      const row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'tf-music-track';
-      row.dataset.track = track.id;
-      row.innerHTML = `
-        <span class="tf-music-track-copy">
-          <span class="tf-music-track-name">${esc(track.name)}</span>
-          <span class="tf-music-track-desc">${esc(track.subtitle)}</span>
-        </span>
-        <span class="tf-music-track-state">Play</span>
-      `;
-      row.addEventListener('click', () => {
-        if (TFMusic.current() === track.id) stopMusic();
-        else startTrack(track.id);
+    let musicPage = 0;
+    const tracksPerPage = 5;
+    const renderMusicPage = () => {
+      const tracks = TFMusic.tracks();
+      const pageCount = Math.max(1, Math.ceil(tracks.length / tracksPerPage));
+      musicPage = Math.max(0, Math.min(musicPage, pageCount - 1));
+      list.innerHTML = '';
+      tracks.slice(musicPage * tracksPerPage, (musicPage + 1) * tracksPerPage).forEach(track => {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'tf-music-track';
+        row.dataset.track = track.id;
+        row.innerHTML = `
+          <span class="tf-music-track-copy">
+            <span class="tf-music-track-name">${esc(track.name)}</span>
+            <span class="tf-music-track-desc">${esc(track.subtitle)}</span>
+          </span>
+          <span class="tf-music-track-state">Play</span>
+        `;
+        row.addEventListener('click', () => {
+          if (TFMusic.current() === track.id) stopMusic();
+          else startTrack(track.id);
+        });
+        list.appendChild(row);
       });
-      list.appendChild(row);
-    });
+      panel.querySelector('#tf-music-page').textContent = `Page ${musicPage + 1} / ${pageCount}`;
+      panel.querySelector('#tf-music-prev').disabled = musicPage === 0;
+      panel.querySelector('#tf-music-next').disabled = musicPage >= pageCount - 1;
+    };
+    panel.querySelector('#tf-music-prev').addEventListener('click', () => { musicPage--; renderMusicPage(); });
+    panel.querySelector('#tf-music-next').addEventListener('click', () => { musicPage++; renderMusicPage(); });
+    renderMusicPage();
 
     const refresh = () => {
       const on = TFMusic.isPlaying();
@@ -8975,6 +9141,7 @@
       offButton.disabled = !on;
     };
 
+    renderMusicPage();
     TFMusic.onChange(refresh);
     TFMusic.onError(() => {
       status.textContent = 'Could not load this track. Check your connection and try again.';
@@ -9698,9 +9865,9 @@
       vp: viewport,
       key: opts.key || null,
       species: opts.species || null,
-      happinessPerDot: (findFood(opts.foodName) || FISH_FOOD_TYPES[0]).happiness / DOTS_PER_FEED,
+      happinessPerDot: (findFood(opts.foodName) || FISH_FOOD_TYPES[0]).happiness / (opts.foodName === 'Tiny Cheese' ? 1 : DOTS_PER_FEED),
       dots: [],
-      remaining: DOTS_PER_FEED,
+      remaining: opts.foodName === 'Tiny Cheese' ? 1 : DOTS_PER_FEED,
       container: document.createElement('div'),
       floor: bounds.floor,
       minX: bounds.minX,
@@ -9715,13 +9882,14 @@
       : (bounds.minX + bounds.maxX) / 2;
     const halfSpread = Math.min(26, Math.max(0, bounds.maxX - bounds.minX) / 2);
 
-    for (let i = 0; i < DOTS_PER_FEED; i++) {
+    const portionCount = opts.foodName === 'Tiny Cheese' ? 1 : DOTS_PER_FEED;
+    for (let i = 0; i < portionCount; i++) {
       const dot = document.createElement(opts.foodName === 'Tiny Cheese' ? 'img' : 'span');
       dot.className = 'fish-food-dot';
       if (opts.foodName === 'Tiny Cheese') {
         dot.src = foodImg(opts.foodName);
         dot.alt = '';
-        dot.style.cssText = 'width:12px;height:12px;margin:-6px;background:transparent;box-shadow:none;object-fit:contain;';
+        dot.style.cssText = 'width:30px;height:30px;margin:-15px;background:transparent;box-shadow:none;object-fit:contain;';
       }
       const x = clamp(fishCenterX + (Math.random() - 0.5) * 2 * halfSpread, bounds.minX, bounds.maxX);
       const y = bounds.minY + Math.random() * 3;
