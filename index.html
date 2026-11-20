@@ -1332,6 +1332,9 @@
         <button type="button" class="modal-action-btn" onclick="updateProfileData()">Save Changes</button>
       </div>
 
+      <div id="admin-passcode-profile-status" style="display:none;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin:10px 0;font-size:.9rem;">
+        <strong>Firebase Passcode:</strong> <span id="admin-passcode-profile-value">Not configured</span>
+      </div>
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>Search Player</h3>
       <form autocomplete="off" onsubmit="event.preventDefault(); handleUserSearch();">
@@ -1647,6 +1650,25 @@
         <span id="achievements-page" aria-live="polite"></span>
         <button type="button" id="achievements-next" aria-label="Next achievement page">Next</button>
       </nav>
+    </div>
+  </div>
+
+  <div id="modal-admin-passcode-setup" class="modal-overlay" style="z-index:5000;">
+    <div class="modal-card" style="max-width:390px;" role="dialog" aria-modal="true" aria-labelledby="admin-passcode-setup-title">
+      <h2 id="admin-passcode-setup-title">Create your Admin Passcode</h2>
+      <p style="color:#64748b;font-size:.9rem;">Set a private passcode the first time you enter. It will be saved securely as a salted hash in your Firebase player profile, not as readable text.</p>
+      <form onsubmit="saveInitialAdminPasscode(event)">
+        <div class="form-group">
+          <label for="admin-passcode-new">New passcode</label>
+          <input id="admin-passcode-new" type="password" minlength="8" autocomplete="new-password" required>
+        </div>
+        <div class="form-group">
+          <label for="admin-passcode-confirm">Confirm passcode</label>
+          <input id="admin-passcode-confirm" type="password" minlength="8" autocomplete="new-password" required>
+        </div>
+        <p id="admin-passcode-setup-error" role="alert" style="display:none;color:#c0392b;"></p>
+        <button type="submit" class="modal-action-btn">Save Passcode</button>
+      </form>
     </div>
   </div>
 
@@ -2170,10 +2192,97 @@
       return null;
     }
 
-    function openAdminPasscode() {
+    // Admin passcodes are stored in the owner's Firebase player document as a
+    // PBKDF2-SHA256 hash with a unique random salt. The passcode itself is never stored.
+    async function deriveAdminPasscodeHash(passcode, saltBytes) {
+      const encoder = new TextEncoder();
+      const key = await crypto.subtle.importKey('raw', encoder.encode(passcode), 'PBKDF2', false, ['deriveBits']);
+      const bits = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: saltBytes, iterations: 210000, hash: 'SHA-256' }, key, 256
+      );
+      return btoa(String.fromCharCode(...new Uint8Array(bits)));
+    }
+
+    function bytesToBase64(bytes) {
+      return btoa(String.fromCharCode(...bytes));
+    }
+
+    function base64ToBytes(value) {
+      return Uint8Array.from(atob(value), c => c.charCodeAt(0));
+    }
+
+    async function hasAdminPasscode() {
+      if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return false;
+      const snap = await db.collection('jugadores').doc(auth.currentUser.uid).get();
+      const saved = (snap.data() || {}).adminPasscode;
+      return !!(saved && saved.salt && saved.hash);
+    }
+
+    async function ensureAdminPasscodeSetup() {
+      if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID || isMandatoryRulesView) return;
+      try {
+        if (!(await hasAdminPasscode())) {
+          document.getElementById('modal-admin-passcode-setup').style.display = 'flex';
+          document.getElementById('admin-passcode-new').focus();
+        }
+      } catch (err) {
+        console.error('Could not check admin passcode:', err);
+        showToast('Could not load your Admin Passcode from Firebase.');
+      }
+    }
+
+    async function saveInitialAdminPasscode(event) {
+      event.preventDefault();
+      if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) return;
+      const pass = document.getElementById('admin-passcode-new').value;
+      const confirm = document.getElementById('admin-passcode-confirm').value;
+      const error = document.getElementById('admin-passcode-setup-error');
+      if (pass.length < 8) {
+        error.textContent = 'Use at least 8 characters.';
+        error.style.display = 'block';
+        return;
+      }
+      if (pass !== confirm) {
+        error.textContent = 'The passcodes do not match.';
+        error.style.display = 'block';
+        return;
+      }
+      try {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const hash = await deriveAdminPasscodeHash(pass, salt);
+        await db.collection('jugadores').doc(auth.currentUser.uid).set({
+          adminPasscode: {
+            salt: bytesToBase64(salt),
+            hash,
+            algorithm: 'PBKDF2-SHA256',
+            iterations: 210000,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }
+        }, { merge: true });
+        document.getElementById('modal-admin-passcode-setup').style.display = 'none';
+        document.getElementById('admin-passcode-new').value = '';
+        document.getElementById('admin-passcode-confirm').value = '';
+        showToast('Admin Passcode saved to your Firebase profile.');
+      } catch (err) {
+        console.error('Could not save admin passcode:', err);
+        error.textContent = 'Could not save to Firebase. Check your connection and Firestore rules.';
+        error.style.display = 'block';
+      }
+    }
+
+    async function openAdminPasscode() {
       if (isMandatoryRulesView) return;
       if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) {
         showToast('Admin only.');
+        return;
+      }
+      try {
+        if (!(await hasAdminPasscode())) {
+          await ensureAdminPasscodeSetup();
+          return;
+        }
+      } catch (err) {
+        showToast('Could not load your Admin Passcode.');
         return;
       }
       const input = document.getElementById('admin-passcode-input');
@@ -2189,21 +2298,35 @@
       document.getElementById('adminBtn').focus();
     }
 
-    function submitAdminPasscode(event) {
+    async function submitAdminPasscode(event) {
       event.preventDefault();
       if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID || isMandatoryRulesView) {
         closeAdminPasscode();
         return;
       }
       const input = document.getElementById('admin-passcode-input');
-      if (input.value !== 'PericosBarbinaranja') {
-        input.value = '';
+      try {
+        const snap = await db.collection('jugadores').doc(auth.currentUser.uid).get();
+        const saved = (snap.data() || {}).adminPasscode;
+        if (!saved || !saved.salt || !saved.hash) {
+          closeAdminPasscode();
+          await ensureAdminPasscodeSetup();
+          return;
+        }
+        const attemptHash = await deriveAdminPasscodeHash(input.value, base64ToBytes(saved.salt));
+        if (attemptHash !== saved.hash) {
+          input.value = '';
+          document.getElementById('admin-passcode-error').style.display = 'block';
+          input.focus();
+          return;
+        }
+        closeAdminPasscode();
+        openModal('modal-admin');
+      } catch (err) {
+        console.error('Could not verify admin passcode:', err);
+        document.getElementById('admin-passcode-error').textContent = 'Could not verify with Firebase.';
         document.getElementById('admin-passcode-error').style.display = 'block';
-        input.focus();
-        return;
       }
-      closeAdminPasscode();
-      openModal('modal-admin');
     }
 
     function openModal(modalId) {
@@ -2314,6 +2437,7 @@
         isMandatoryRulesView = false;
         document.getElementById('modal-rules').style.display = 'none';
         showToast("Rules accepted! Welcome to The Fishing Game.");
+        if (user.uid === ADMIN_UID) setTimeout(() => ensureAdminPasscodeSetup(), 250);
       } catch (err) {
         showToast("Error accepting rules: " + err.message);
       }
@@ -5089,6 +5213,21 @@
     }
 
     async function loadProfileData() {
+      const passStatus = document.getElementById('admin-passcode-profile-status');
+      if (passStatus) {
+        passStatus.style.display = auth.currentUser && auth.currentUser.uid === ADMIN_UID ? 'block' : 'none';
+        if (auth.currentUser && auth.currentUser.uid === ADMIN_UID) {
+          try {
+            const ownSnap = await db.collection('jugadores').doc(auth.currentUser.uid).get();
+            const configured = !!((ownSnap.data() || {}).adminPasscode || {}).hash;
+            const value = document.getElementById('admin-passcode-profile-value');
+            if (value) value.textContent = configured ? 'Configured (hidden)' : 'Not configured';
+          } catch (e) {
+            const value = document.getElementById('admin-passcode-profile-value');
+            if (value) value.textContent = 'Could not load';
+          }
+        }
+      }
       const user = auth.currentUser;
       if (!user) return;
       
@@ -6311,6 +6450,9 @@
           }
           updateFriendRequestsCount();
           updateTradeRequestsCount();
+          if (user.uid === ADMIN_UID) {
+            setTimeout(() => ensureAdminPasscodeSetup(), 250);
+          }
 
         } catch(e) {
           console.error("Error loading user session:", e);
