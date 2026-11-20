@@ -813,6 +813,11 @@
       .backpack-on-map { bottom: 125px; right: 15px; width: 48px; }
       #game-screen { background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #ffffff; }
     }
+  
+    #leaderboard-list .leaderboard-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;color:#1e293b}
+    #leaderboard-list .leaderboard-rank{font-weight:900;color:#1e3a8a;min-width:30px}
+    #leaderboard-list .leaderboard-value{margin-left:auto;font-weight:800;color:#1e3a8a;text-align:right}
+    .level-progress{height:7px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-top:4px}.level-progress>i{display:block;height:100%;background:#2563eb}
   </style>
 </head>
 <body>
@@ -897,6 +902,9 @@
       </button>
       <button class="img-btn" onclick="openGrillStation()" title="Cook">
         <img src="https://i.postimg.cc/2y6St1Nb/cook-button.png" alt="Cook">
+      </button>
+      <button class="img-btn" onclick="openLeaderboard()" title="Leaderboard">
+        <img src="https://i.postimg.cc/FsGzcyDK/lb.png" alt="Leaderboard">
       </button>
     </div>
   </main>
@@ -1288,6 +1296,7 @@
         <div>
           <h3 id="profile-modal-name" style="margin:0; font-size:1.2rem;">Username</h3>
           <p id="profile-joined-date" style="margin:2px 0; font-size:0.75rem; color:#64748b; font-weight:bold;">Joined in: -</p>
+          <p id="profile-level-display" style="margin:4px 0;font-size:.85rem;color:#1e3a8a;font-weight:bold;">Level 1 · 0 / 100 XP</p>
           <p id="verification-status" style="margin:3px 0; font-size:0.8rem; color:#e74c3c; display:none;">Email not verified</p>
           <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="profile-coins">0</span> | ⚪ Pearls: <span id="profile-pearls">0</span> | 🐟 Fish: <span id="profile-fish-count">0</span></p>
         </div>
@@ -1363,6 +1372,7 @@
         <div>
           <h3 id="view-profile-name" style="margin:0; font-size:1.2rem;">Username</h3>
           <p id="view-profile-joined-date" style="margin:2px 0; font-size:0.75rem; color:#64748b; font-weight:bold;">Joined in: -</p>
+          <p id="view-profile-level-display" style="margin:4px 0;font-size:.85rem;color:#1e3a8a;font-weight:bold;">Level 1 · 0 / 100 XP</p>
           <p style="margin:5px 0 0 0; font-size:0.9rem; color:#64748b;">💰 Coins: <span id="view-profile-coins">0</span> | ⚪ Pearls: <span id="view-profile-pearls">0</span> | 🐟 Fish: <span id="view-profile-fish-count">0</span></p>
         </div>
       </div>
@@ -1600,6 +1610,22 @@
     </div>
   </div>
 
+  <div id="modal-leaderboard" class="modal-overlay">
+    <div class="modal-card" style="max-width:680px;">
+      <button class="modal-close" onclick="closeAllModals()">✖</button>
+      <h2>🏆 Leaderboards</h2>
+      <div id="leaderboard-tabs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:7px;margin:12px 0;">
+        <button class="modal-action-btn" onclick="loadLeaderboard('xp')">Levels</button>
+        <button class="modal-action-btn" onclick="loadLeaderboard('coins')">Most Money</button>
+        <button class="modal-action-btn" onclick="loadLeaderboard('fish')">Most Fish</button>
+        <button class="modal-action-btn" onclick="loadLeaderboard('pearls')">Most Pearls</button>
+        <button class="modal-action-btn" onclick="loadLeaderboard('divine')">Most Divines</button>
+      </div>
+      <p id="leaderboard-caption" style="color:#64748b;margin:6px 0 10px;">Players ranked by total XP.</p>
+      <div id="leaderboard-list" style="min-height:160px;max-height:55vh;overflow:auto;display:flex;flex-direction:column;gap:7px;"><p>Loading leaderboard...</p></div>
+    </div>
+  </div>
+
   <div id="modal-achievements" class="modal-overlay">
     <div class="modal-card">
       <button class="modal-close" onclick="closeAllModals()">✖</button>
@@ -1650,6 +1676,10 @@
             <span style="font-size: 0.75rem; color: #64748b;">Make a trade with someone.</span>
           </div>
           <div id="ach-making-business-status" style="margin-left: auto; font-weight: bold; color: #e74c3c; font-size: 0.85rem;">Locked</div>
+        </div>
+        <div id="ach-king-of-the-hill" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:.5;">
+          <div><h4 style="margin:0 0 3px;font-size:1rem;color:#1e3a8a;">King of the hill</h4><p style="margin:0 0 3px;font-size:.85rem;color:#1f2937;font-weight:bold;">I'm the best of the best.</p><span style="font-size:.75rem;color:#64748b;">Be the Top 1 on any leaderboard.</span></div>
+          <div id="ach-king-of-the-hill-status" style="margin-left:auto;font-weight:bold;color:#e74c3c;font-size:.85rem;">Locked</div>
         </div>
       </div>
       <nav class="achievement-pagination" aria-label="Achievement pages">
@@ -2022,6 +2052,37 @@
     let minigameLoop = null;
     let castTimer = null;
     let castSession = 0;
+    // Player progression: XP is awarded only for completed game actions; trades never grant XP.
+    const LEVEL_XP_BASE = 100;
+    function levelFromXP(total){let xp=Math.max(0,Number(total)||0),level=1,need=LEVEL_XP_BASE;while(xp>=need&&level<10000){xp-=need;level++;need=LEVEL_XP_BASE*level;}return {level,xpInto:xp,xpNeeded:need,total:Math.max(0,Number(total)||0)};}
+    async function awardPlayerXP(amount, reason, extra={}){
+      const user=auth.currentUser;if(!user||!amount)return;
+      const ref=db.collection('jugadores').doc(user.uid), inc=firebase.firestore.FieldValue.increment;
+      await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)return;const d=snap.data()||{};const updates={totalXP:inc(Math.max(0,Math.floor(amount)))};
+        if(extra.fish)updates.totalFishCaught=inc(extra.fish);
+        if(extra.divine)updates.totalDivineCaught=inc(extra.divine);
+        if(extra.pearls)updates.totalPearlsEarned=inc(extra.pearls);
+        tx.update(ref,updates);
+      });
+      try{const snap=await ref.get(),d=snap.data()||{},v=levelFromXP(d.totalXP||0);const el=document.getElementById('profile-level-display');if(el)el.textContent=`Level ${v.level} · ${v.xpInto} / ${v.xpNeeded} XP (${v.xpNeeded-v.xpInto} to next level)`;}
+      catch(e){console.warn('Could not refresh XP display',e);}
+      checkKingOfTheHill();
+    }
+    window.levelFromXP=levelFromXP;
+    window.awardPlayerXP=awardPlayerXP;
+    const LEADERBOARD_META={xp:{label:'Levels',field:'totalXP',desc:'Players ranked by total XP.'},coins:{label:'Most Money',field:'coins',desc:'Players ranked by their current Coins.'},fish:{label:'Most Fish',field:'totalFishCaught',desc:'Players ranked by total fish caught.'},pearls:{label:'Most Pearls',field:'totalPearlsEarned',desc:'Players ranked by lifetime Pearls earned.'},divine:{label:'Most Divines',field:'totalDivineCaught',desc:'Players ranked by Divine fish caught.'}};
+    window.openLeaderboard=async function(){openModal('modal-leaderboard');await loadLeaderboard('xp');};
+    window.loadLeaderboard=async function(category='xp'){
+      const list=document.getElementById('leaderboard-list'),caption=document.getElementById('leaderboard-caption'),meta=LEADERBOARD_META[category]||LEADERBOARD_META.xp;
+      caption.textContent=meta.desc;list.innerHTML='<p>Loading leaderboard...</p>';
+      try{const snap=await db.collection('jugadores').get();const rows=[];snap.forEach(doc=>{const d=doc.data()||{},value=Number(d[meta.field])||0;if(value>0||category==='xp')rows.push({uid:doc.id,name:d.username||'Player',value,xp:Number(d.totalXP)||0});});rows.sort((a,b)=>b.value-a.value);const top=rows.slice(0,50);list.innerHTML=top.length?top.map((r,i)=>{const lv=levelFromXP(r.xp);const val=category==='xp'?`Level ${lv.level} · ${r.value.toLocaleString()} XP`:r.value.toLocaleString();return `<div class="leaderboard-row"><span class="leaderboard-rank">#${i+1}</span><strong>${escapeHtml(r.name)}</strong><span class="leaderboard-value">${val}</span></div>`;}).join(''):'<p>No leaderboard entries yet.</p>';if(auth.currentUser&&top.some((r,i)=>r.uid===auth.currentUser.uid&&i===0)){await unlockKingAchievement();}}
+      catch(e){list.innerHTML=`<p>Could not load leaderboard: ${escapeHtml(e.message||String(e))}</p>`;}
+    };
+    function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    async function unlockKingAchievement(){const user=auth.currentUser;if(!user)return;const ref=db.collection('jugadores').doc(user.uid);await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)return;const a={...(snap.data().achievements||{})};if(a.kingOfTheHill)return;a.kingOfTheHill=true;tx.update(ref,{achievements:a});});const card=document.getElementById('ach-king-of-the-hill-status');if(card){card.textContent='Unlocked';card.style.color='#16a34a';document.getElementById('ach-king-of-the-hill').style.opacity='1';}if(window.showAchievementUnlocked)window.showAchievementUnlocked('King of the hill',"I'm the best of the best.",'Be the Top 1 on any leaderboard.');}
+    async function checkKingOfTheHill(){try{const user=auth.currentUser;if(!user)return;const snap=await db.collection('jugadores').get();const keys=['totalXP','coins','totalFishCaught','totalPearlsEarned','totalDivineCaught'];const mine=await db.collection('jugadores').doc(user.uid).get(),d=mine.data()||{};for(const key of keys){const my=Number(d[key])||0;let max=0;snap.forEach(doc=>max=Math.max(max,Number((doc.data()||{})[key])||0));if(my>0&&my>=max){await unlockKingAchievement();return;}}}catch(e){console.warn('Leaderboard achievement check failed',e);}}
+    function paintLevel(elId,data){const el=document.getElementById(elId);if(!el)return;const v=levelFromXP(data&&data.totalXP||0);el.textContent=`Level ${v.level} · ${v.xpInto} / ${v.xpNeeded} XP (${v.xpNeeded-v.xpInto} to next level)`;}
+
     let catchBarY = 0;
     let catchBarSpeed = 0;
     let greenZoneY = 80;
@@ -2772,6 +2833,7 @@
         const playerSnap = await playerRef.get();
         if (!playerSnap.exists) return;
         const achievements = playerSnap.data().achievements || {};
+        const kingStatus=document.getElementById('ach-king-of-the-hill-status'); if(kingStatus){kingStatus.textContent=achievements.kingOfTheHill?'Unlocked':'Locked';kingStatus.style.color=achievements.kingOfTheHill?'#16a34a':'#e74c3c';document.getElementById('ach-king-of-the-hill').style.opacity=achievements.kingOfTheHill?'1':'.5';}
         if (achievements.makingBusiness) return;
         await playerRef.update({ 'achievements.makingBusiness': true });
         window.showAchievementUnlocked('Making business', 'A handshake.', 'Make a trade with someone.');
@@ -3626,6 +3688,7 @@
           const data = doc.data();
           let achievements = data.achievements || {};
           let updated = false;
+          const kingStatus=document.getElementById('ach-king-of-the-hill-status'); if(kingStatus){kingStatus.textContent=achievements.kingOfTheHill?'Unlocked':'Locked';kingStatus.style.color=achievements.kingOfTheHill?'#16a34a':'#e74c3c';document.getElementById('ach-king-of-the-hill').style.opacity=achievements.kingOfTheHill?'1':'.5';}
 
           if (fishesCount > 0 && !achievements.catchFirst) {
             achievements.catchFirst = true;
@@ -4002,6 +4065,7 @@
             fishes
           });
         });
+        await awardPlayerXP(4,'sell-cooked');
         showToast(`Bot sold cooked ${soldName} for +${sellValue} 💰!`);
         playGameSound('sell');
         loadMyFishesForMarket();
@@ -4112,6 +4176,7 @@
           });
         });
 
+        await awardPlayerXP(Math.min(100, soldCount * 4), 'sell');
         showToast(`Successfully sold ${soldCount} fish for +${totalCoinsEarned} 💰 coins!`);
         playGameSound('sell');
         loadMyFishesForMarket();
@@ -4310,7 +4375,7 @@
         slotEl.innerHTML = `
           <div class="tank-viewport${decoration === 'Orange-chinned parakeet' ? ' has-parakeet' : ''}" style="position: relative; width: 100%; height: 100%; overflow: hidden;">
             <img src="${tank.img}" alt="${tank.name}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; pointer-events: none;">
-            ${['Sandcastle','Verity','Palm','Orange-chinned parakeet'].includes(decoration) ? `<img class="aquarium-${decoration === 'Orange-chinned parakeet' ? 'parakeet' : decoration.toLowerCase()}" src="${decoration === 'Sandcastle' ? IMG.sandcastle : decoration === 'Verity' ? IMG.verity : decoration === 'Palm' ? 'https://i.postimg.cc/wjJ0TV58/palm.png' : 'https://i.postimg.cc/rF7fkb42/parakeet.png'}" alt="${decoration}" style="position:absolute; ${decoration === 'Palm' ? 'left:calc(17% - 3px);bottom:calc(28% - 10px);width:min(58px, 72%);height:auto;' : decoration === 'Orange-chinned parakeet' ? 'right:10%;top:calc(25% - min(28px, 38%));width:min(36px, 60%);height:auto;' : 'left:50%;transform:translateX(-50%);bottom:28%;width:34px;height:34px;'} object-fit:contain;object-position:center bottom;z-index:${decoration === 'Orange-chinned parakeet' ? '4' : '2'};pointer-events:none;">` : ''}
+            ${['Sandcastle','Verity','Palm','Orange-chinned parakeet'].includes(decoration) ? `<img class="aquarium-${decoration === 'Orange-chinned parakeet' ? 'parakeet' : decoration.toLowerCase()}" src="${decoration === 'Sandcastle' ? IMG.sandcastle : decoration === 'Verity' ? IMG.verity : decoration === 'Palm' ? 'https://i.postimg.cc/wjJ0TV58/palm.png' : 'https://i.postimg.cc/rF7fkb42/parakeet.png'}" alt="${decoration}" style="position:absolute; ${decoration === 'Palm' ? 'left:calc(17% - 3px);bottom:calc(28% - 10px);width:min(58px, 72%);height:auto;' : decoration === 'Orange-chinned parakeet' ? 'right:10%;top:calc(25% - min(28px, 38%));width:min(44px, 68%);height:auto;' : 'left:50%;transform:translateX(-50%);bottom:28%;width:34px;height:34px;'} object-fit:contain;object-position:center bottom;z-index:${decoration === 'Orange-chinned parakeet' ? '4' : '2'};pointer-events:none;">` : ''}
             <img class="swimming-fish-${shelfIndex}" src="${fishObj.img}" alt="${fishObj.name}" style="position: absolute; width: clamp(24px, 18%, 42px); max-height:38%; height:auto; object-fit: contain; z-index: 3; pointer-events: none;">
           </div>
         `;
@@ -4914,6 +4979,7 @@
           await playerRef.update({
             fishes: firebase.firestore.FieldValue.arrayUnion({ id: 'fish-' + Date.now() + '-' + Math.random().toString(36).slice(2,8), name: caughtFish.name, timestamp: new Date().toISOString() })
           });
+          await awardPlayerXP(caughtFish.rarity === 'Divine' ? 30 : 10, 'catch', {fish:1, divine:caughtFish.rarity === 'Divine' ? 1 : 0});
 
           if (session === castSession) {
             triggerCaughtFishPopup(caughtFish);
@@ -5324,6 +5390,7 @@
           document.getElementById('profile-coins').innerText = Number(data.coins) || 0;
           document.getElementById('profile-pearls').innerText = Number(data.pearls) || 0;
           document.getElementById('profile-fish-count').innerText = (data.fishes || []).length;
+          paintLevel('profile-level-display',data);
           document.getElementById('profile-current-password').value = "";
           const newPassEl = document.getElementById('profile-new-password');
           if (newPassEl) newPassEl.value = "";
@@ -5644,6 +5711,7 @@
       document.getElementById('view-profile-bio').innerText = bio;
       document.getElementById('view-profile-coins').innerText = coins;
       document.getElementById('view-profile-fish-count').innerText = fishCount;
+      paintLevel('view-profile-level-display',data);
       document.getElementById('view-profile-avatar').src = avatar;
 
       const viewJoinedEl = document.getElementById('view-profile-joined-date');
@@ -6838,6 +6906,7 @@
         if(id==='sandcastle'||id==='verity'||id==='palm'){const inv={...(d.cosmeticsInventory||{})};const cosmeticName=item.name;inv[cosmeticName]=(Number(inv[cosmeticName])||0)+1;updates.cosmeticsInventory=inv;}
         tx.update(ref,updates);
       });
+      await awardPlayerXP(5, 'purchase');
       showToast(id==='food'||id==='algae'?`Bought ${SHOP_ITEMS.find(x=>x.id===id).name} (5 uses)!`:`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); playGameSound('buy'); updateGameHUD(); loadBackpackData();
     }catch(e){showToast('Purchase failed: '+e.message);}
   }
@@ -6941,7 +7010,7 @@
       if(earnsDing&&!achievements.dingReady){achievements.dingReady=true;dingWasNew=true;}
       tx.update(ref,{fishes:[...(d.fishes||[]),done],grillState:null,achievements});
     });
-    grillState=null;renderGrillState();showToast('Cooked fish returned to your Backpack.');playGameSound('ding');
+    grillState=null;renderGrillState();await awardPlayerXP(8,'cook');showToast('Cooked fish returned to your Backpack.');playGameSound('ding');
     if(cookWasNew)window.showAchievementUnlocked('Call me master master','One, two FLIP!','Cook a fish.');
     if(dingWasNew)window.showAchievementUnlocked('Ding, its ready!','Tastes better than before.','Burn a fish in the grill.');
     loadBackpackData();
@@ -8385,6 +8454,7 @@
         const startedAt=Date.now();
         tx.update(ref,{pearls:Number(d.pearls||0)-100,miniTanksCount:Number(d.miniTanksCount||0)-1,rockyTankCrafting:{item:'Rocky Tank',startedAt,readyAt:startedAt+600000}});
       });
+      await awardPlayerXP(12,'clippy-craft');
       showToast('Crafting started! Come back in 10 minutes to claim your Rocky Tank.');
       playGameSound('buy');
       renderClippyShop(await getData());loadBackpackData();
@@ -8408,7 +8478,7 @@
     }catch(e){showToast('Could not claim Rocky Tank: '+e.message);}
   };
   // Successful fishing may award a chest containing 50–100 Pearls.
-  window.awardPearlChest=async function(usedBait=false){const chestChance=usedBait?0.0005:0.003;if(Math.random()>=chestChance)return;const amount=50+Math.floor(Math.random()*51);try{await playerDoc().update({pearls:firebase.firestore.FieldValue.increment(amount)});playGameSound('chest');const n=document.createElement('div');n.style.cssText='position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;background:#0008;padding:15px';n.innerHTML=`<div style="background:white;border:3px solid #d6a84f;border-radius:18px;padding:22px;text-align:center;max-width:320px"><img src="${CHEST_IMG}" style="width:150px;height:130px;object-fit:contain"><h2 style="color:#8b5e16;margin:5px">Pearl Chest!</h2><p>You found <strong>⚪ ${amount} Pearls</strong>!</p><button style="background:#2563eb;color:white;border:0;border-radius:8px;padding:10px 24px" id="pearl-chest-close">Awesome!</button></div>`;document.body.appendChild(n);n.querySelector('#pearl-chest-close').onclick=()=>n.remove();}catch(e){console.error('Pearl chest award failed',e);}};
+  window.awardPearlChest=async function(usedBait=false){const chestChance=usedBait?0.0005:0.003;if(Math.random()>=chestChance)return;const amount=50+Math.floor(Math.random()*51);try{await playerDoc().update({pearls:firebase.firestore.FieldValue.increment(amount),totalPearlsEarned:firebase.firestore.FieldValue.increment(amount)});await awardPlayerXP(5,'pearl-chest');playGameSound('chest');const n=document.createElement('div');n.style.cssText='position:fixed;inset:0;z-index:13000;display:flex;align-items:center;justify-content:center;background:#0008;padding:15px';n.innerHTML=`<div style="background:white;border:3px solid #d6a84f;border-radius:18px;padding:22px;text-align:center;max-width:320px"><img src="${CHEST_IMG}" style="width:150px;height:130px;object-fit:contain"><h2 style="color:#8b5e16;margin:5px">Pearl Chest!</h2><p>You found <strong>⚪ ${amount} Pearls</strong>!</p><button style="background:#2563eb;color:white;border:0;border-radius:8px;padding:10px 24px" id="pearl-chest-close">Awesome!</button></div>`;document.body.appendChild(n);n.querySelector('#pearl-chest-close').onclick=()=>n.remove();}catch(e){console.error('Pearl chest award failed',e);}};
   // Add chest award to the existing successful catch handler without replacing fishing logic.
   // Aquarium tank choice: list every owned tank type from the shared TANK_TYPES catalog.
   const originalOpenSelect=window.openSelectFishModal;
@@ -8628,7 +8698,7 @@
   .fm-happiness-row strong { color: #1e3a8a; }
   .fm-happiness-pct { font-weight: 900; color: #b45309; }
   .fm-happiness-track { height: 14px; border-radius: 999px; background: #e2e8f0; border: 1px solid #cbd5e1; overflow: hidden; }
-  .fm-happiness-fill { height: 100%; width: 50%; border-radius: 999px; background: linear-gradient(90deg, #ef4444, #f59e0b 55%, #22c55e); transition: width .5s ease; }
+  .fm-happiness-fill { height: 100%; width: 50%; border-radius: 999px; background: linear-gradient(90deg, #22c55e 0%, #a3e635 35%, #facc15 58%, #f97316 80%, #ef4444 100%); transition: width .5s ease; }
   .fm-happiness-hint { margin: 7px 0 0; font-size: .75rem; color: #64748b; line-height: 1.35; }
   .fm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 12px; }
   .fm-stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; }
@@ -8664,7 +8734,7 @@
     color: #92400e; background: rgba(255, 255, 255, .78); border-radius: 999px; padding: 1px 5px;
   }
   .fish-slot-happiness .bar { width: 22px; height: 4px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
-  .fish-slot-happiness .bar i { display: block; height: 100%; background: #f59e0b; transition: width .4s ease; }
+  .fish-slot-happiness .bar i { display: block; height: 100%; background: linear-gradient(90deg,#22c55e 0%,#a3e635 35%,#facc15 58%,#f97316 80%,#ef4444 100%); transition: width .4s ease; }
   #modal-aquarium .modal-card.fish-feeding { box-shadow: 0 0 0 3px rgba(109, 74, 203, .24), 0 10px 30px rgba(0, 0, 0, .25); }
   #modal-aquarium .modal-card.fish-feeding [id^="shelf-"] { cursor: crosshair !important; }
   #modal-aquarium .modal-card.fish-feeding img[class*="swimming-fish"] { filter: drop-shadow(0 0 5px rgba(109, 74, 203, .9)); }
@@ -8717,7 +8787,7 @@
     .tank-viewport img[class*="swimming-fish-"] { width:clamp(20px,17%,34px) !important; max-height:34% !important; }
     .tank-viewport .aquarium-palm { width:clamp(34px,38%,48px) !important; left:calc(17% - 3px) !important; bottom:calc(28% - 10px) !important; }
     .tank-viewport .aquarium-sandcastle, .tank-viewport .aquarium-verity { width:clamp(24px,30%,34px) !important; height:auto !important; }
-    .tank-viewport .aquarium-parakeet { width:clamp(24px,30%,32px) !important; }
+    .tank-viewport .aquarium-parakeet { width:clamp(28px,36%,40px) !important; }
     .tf-food-option img { width:48px; height:48px; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -9951,6 +10021,7 @@
     const consumed = await consumeFood(foodName, 1);
     AQ.feedPending = false;
     if (!consumed || !AQ.open || token !== AQ.token) return;
+    await awardPlayerXP(2, 'feed');
 
     if (happiness >= 99.5) {
       spawnSinkingFood(viewport, image, foodName);
@@ -10645,6 +10716,7 @@
     currentQuest = result.quest || null;
     renderQuestStatus();
     if (result.status === 'complete') {
+      await awardPlayerXP(20,'help-sir-squeaksalot');
       loadBackpackData();
       if (result.unlocked) window.showAchievementUnlocked('Bounty Hunter', 'Welcome to the WILD WEST.', 'Help Sir. Squeaksalot by bringing a fish to him.');
     }
@@ -10762,7 +10834,7 @@
     target.className = 'bird-target';
     target.setAttribute('aria-label', 'Catch the flying bird');
     target.title = 'Catch the flying bird';
-    target.innerHTML = '<img src="https://i.postimg.cc/YqTdHVFp/parakeet-flying.png" alt="">';
+    target.innerHTML = '<img src="https://i.postimg.cc/YqTdHVFp/parakeet-flying.png" alt="" style="width:116%;height:116%;object-fit:contain;">';
     const width = screen.clientWidth, height = screen.clientHeight;
     const imageWidth = mapImage.naturalWidth || 1280, imageHeight = mapImage.naturalHeight || 720;
     const scale = Math.min(width / imageWidth, height / imageHeight);
