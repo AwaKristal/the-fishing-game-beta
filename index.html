@@ -2113,11 +2113,31 @@
     };
     function renderLeaderboardPage(){
       const list=document.getElementById('leaderboard-list'),start=leaderboardPage*5,pageRows=leaderboardRows.slice(start,start+5);
-      list.innerHTML=pageRows.length?pageRows.map((r,i)=>{const rank=start+i+1,lv=levelFromXP(r.xp),val=leaderboardCategory==='xp'?`Level ${lv.level} · ${r.value.toLocaleString()} XP`:r.value.toLocaleString();return `<div class="leaderboard-row"><span class="leaderboard-rank">#${rank}</span><strong>${escapeHtml(r.name)}</strong><span class="leaderboard-value">${val}</span></div>`;}).join(''):'<p>No leaderboard entries yet.</p>';
+      list.innerHTML=pageRows.length?pageRows.map((r,i)=>{const rank=start+i+1,lv=levelFromXP(r.xp),val=leaderboardCategory==='xp'?`Level ${lv.level} · ${r.value.toLocaleString()} XP`:r.value.toLocaleString();return `<div class="leaderboard-row" role="button" tabindex="0" title="View ${escapeHtml(r.name)}'s profile" style="cursor:pointer" onclick="openLeaderboardPlayer('${r.uid}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openLeaderboardPlayer('${r.uid}')}"><span class="leaderboard-rank">#${rank}</span><strong>${escapeHtml(r.name)}</strong><span class="leaderboard-value">${val}</span></div>`;}).join(''):'<p>No leaderboard entries yet.</p>';
       let nav=document.getElementById('leaderboard-pagination');if(!nav){nav=document.createElement('div');nav.id='leaderboard-pagination';nav.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;';list.insertAdjacentElement('afterend',nav);}
       const pages=Math.max(1,Math.ceil(leaderboardRows.length/5));nav.innerHTML=`<button class="modal-action-btn" style="width:auto" ${leaderboardPage===0?'disabled':''} onclick="changeLeaderboardPage(-1)">◀ Previous</button><span style="font-weight:700;color:#64748b">Page ${leaderboardPage+1} / ${pages}</span><button class="modal-action-btn" style="width:auto" ${leaderboardPage>=pages-1?'disabled':''} onclick="changeLeaderboardPage(1)">Next ▶</button>`;
     }
     window.changeLeaderboardPage=function(delta){const pages=Math.max(1,Math.ceil(leaderboardRows.length/5));leaderboardPage=Math.max(0,Math.min(pages-1,leaderboardPage+delta));renderLeaderboardPage();};
+    window.openLeaderboardPlayer = async function(uid){
+      if(!uid) return;
+      try{
+        const snap = await db.collection('jugadores').doc(uid).get();
+        if(!snap.exists){showToast('Player profile not found.');return;}
+        const d = snap.data() || {};
+        const createdAtIso = d.createdAt && d.createdAt.toDate ? d.createdAt.toDate().toISOString() : '';
+        const tanks = d.aquariumTanksMap || {room_0:new Array(8).fill(null)};
+        const modal = document.getElementById('modal-leaderboard');
+        if(modal) modal.style.display = 'none';
+        await viewOtherProfile(
+          d.username || 'Player', d.bio || 'No bio', Number(d.coins) || 0,
+          Array.isArray(d.fishes) ? d.fishes.length : 0,
+          d.photoURL || 'https://via.placeholder.com/40', uid,
+          Array.isArray(d.fishes) ? d.fishes : [], tanks, createdAtIso, d.email || ''
+        );
+      }catch(e){
+        showToast('Could not open profile: ' + (e.message || String(e)));
+      }
+    };
     function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
     async function unlockKingAchievement(){
       const user=auth.currentUser;if(!user)return false;
@@ -5745,14 +5765,15 @@
       viewingTargetUid = uid;
       viewingTargetFishes = fishes;
       viewingTargetTanksMap = tanksMap;
+      let targetProfileData = {};
       try {
         const targetAquariumDoc = await db.collection('jugadores').doc(uid).get();
-        const targetData = targetAquariumDoc.exists ? (targetAquariumDoc.data() || {}) : {};
-        viewingTargetRoomsOwned = Math.max(1, Number(targetData.aquariumRoomsOwned) || 1);
-        viewingTargetCosmeticsMap = targetData.aquariumCosmeticsMap || {};
-        viewingTargetTankTypesMap = targetData.aquariumTankTypesMap || {};
+        targetProfileData = targetAquariumDoc.exists ? (targetAquariumDoc.data() || {}) : {};
+        viewingTargetRoomsOwned = Math.max(1, Number(targetProfileData.aquariumRoomsOwned) || 1);
+        viewingTargetCosmeticsMap = targetProfileData.aquariumCosmeticsMap || {};
+        viewingTargetTankTypesMap = targetProfileData.aquariumTankTypesMap || {};
         const pearlsEl = document.getElementById('view-profile-pearls');
-        if (pearlsEl) pearlsEl.innerText = Number(targetData.pearls) || 0;
+        if (pearlsEl) pearlsEl.innerText = Number(targetProfileData.pearls) || 0;
       } catch (_) {
         viewingTargetRoomsOwned = 1;
         viewingTargetCosmeticsMap = {};
@@ -5766,7 +5787,7 @@
       document.getElementById('view-profile-bio').innerText = bio;
       document.getElementById('view-profile-coins').innerText = coins;
       document.getElementById('view-profile-fish-count').innerText = fishCount;
-      paintLevel('view-profile-level-display',data);
+      paintLevel('view-profile-level-display', targetProfileData);
       document.getElementById('view-profile-avatar').src = avatar;
 
       const viewJoinedEl = document.getElementById('view-profile-joined-date');
