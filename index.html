@@ -1605,7 +1605,7 @@
   <div id="modal-leaderboard" class="modal-overlay">
     <div class="modal-card" style="max-width:680px;">
       <button class="modal-close" onclick="closeAllModals()">✖</button>
-      <h2>🏆 Leaderboards</h2>
+      <h2>Leaderboards</h2>
       <div id="leaderboard-tabs" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:7px;margin:12px 0;">
         <button class="modal-action-btn" onclick="loadLeaderboard('xp')">Levels</button>
         <button class="modal-action-btn" onclick="loadLeaderboard('coins')">Most Money</button>
@@ -2050,9 +2050,26 @@
     async function awardPlayerXP(amount, reason, extra={}){
       const user=auth.currentUser;if(!user||!amount)return;
       const ref=db.collection('jugadores').doc(user.uid),inc=firebase.firestore.FieldValue.increment;
-      await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)return;const updates={totalXP:inc(Math.max(0,Math.floor(amount)))};
-        if(Number(extra.fish)>0)updates.totalFishCaught=inc(Math.floor(Number(extra.fish)));
-        if(Number(extra.divine)>0)updates.totalDivineCaught=inc(Math.floor(Number(extra.divine)));
+      await db.runTransaction(async tx=>{
+        const snap=await tx.get(ref);if(!snap.exists)return;
+        const d=snap.data()||{},updates={totalXP:inc(Math.max(0,Math.floor(amount)))};
+        // The caught counters are lifetime totals. Seed missing/old counters from
+        // the inventory already owned, then add only this newly recorded catch.
+        const fishNow=Array.isArray(d.fishes)?d.fishes:[];
+        const divineNow=fishNow.filter(f=>{
+          const meta=(typeof ALLOWED_FISH_TYPES!=='undefined'?ALLOWED_FISH_TYPES:[]).find(x=>x.name===f.name);
+          return meta&&meta.rarity==='Divine';
+        }).length;
+        const fishAdded=Math.max(0,Math.floor(Number(extra.fish)||0));
+        const divineAdded=Math.max(0,Math.floor(Number(extra.divine)||0));
+        if(fishAdded){
+          const previous=Math.max(0,Number(d.totalFishCaught)||0,fishNow.length-fishAdded);
+          updates.totalFishCaught=previous+fishAdded;
+        }
+        if(divineAdded){
+          const previous=Math.max(0,Number(d.totalDivineCaught)||0,divineNow-divineAdded);
+          updates.totalDivineCaught=previous+divineAdded;
+        }
         if(Number(extra.pearls)>0)updates.totalPearlsEarned=inc(Math.floor(Number(extra.pearls)));
         tx.update(ref,updates);
       });
@@ -2060,13 +2077,24 @@
       catch(e){console.warn('Could not refresh XP display',e);}
     }
     window.levelFromXP=levelFromXP;window.awardPlayerXP=awardPlayerXP;
-    const LEADERBOARD_META={xp:{label:'Levels',field:'totalXP',desc:'Players ranked by total XP.'},coins:{label:'Most Money',field:'coins',desc:'Players ranked by their current Coins.'},fish:{label:'Most Fish',field:'totalFishCaught',desc:'Players ranked by fish caught.'},pearls:{label:'Most Pearls',field:'totalPearlsEarned',desc:'Players ranked by Pearls earned.'},divine:{label:'Most Divines',field:'totalDivineCaught',desc:'Players ranked by Divine fish caught.'}};
+    const LEADERBOARD_META={xp:{label:'Levels',field:'totalXP',desc:'Players ranked by total XP.'},coins:{label:'Most Money',field:'coins',desc:'Players ranked by their current Coins.'},fish:{label:'Most Fish',field:'totalFishCaught',desc:'Players ranked by fish caught.'},pearls:{label:'Most Pearls',field:'pearls',desc:'Players ranked by their current Pearls.'},divine:{label:'Most Divines',field:'totalDivineCaught',desc:'Players ranked by Divine fish caught.'}};
     let leaderboardCategory='xp',leaderboardPage=0,leaderboardRows=[];
     function isCurrentlyBanned(d){if(d.isBanned===true)return true;const t=d.tempBanUntil;if(!t)return false;const until=t.toDate?t.toDate():new Date(t);return Number.isFinite(until.getTime())&&until.getTime()>Date.now();}
     function leaderboardValue(d,category){
-      if(category==='fish')return Math.max(0,Number(d.totalFishCaught)||0);
-      if(category==='pearls')return Math.max(0,Number(d.totalPearlsEarned)||0);
-      if(category==='divine')return Math.max(0,Number(d.totalDivineCaught)||0);
+      const inventory=Array.isArray(d.fishes)?d.fishes:[];
+      if(category==='fish'){
+        // Lifetime catches never fall when a fish is sold/cooked; include the
+        // current inventory as a baseline for older accounts lacking the counter.
+        return Math.max(0,Number(d.totalFishCaught)||0,inventory.length);
+      }
+      if(category==='pearls')return Math.max(0,Number(d.pearls)||0); // current pearl balance, not lifetime earned
+      if(category==='divine'){
+        const divineInInventory=inventory.filter(f=>{
+          const meta=(typeof ALLOWED_FISH_TYPES!=='undefined'?ALLOWED_FISH_TYPES:[]).find(x=>x.name===f.name);
+          return meta&&meta.rarity==='Divine';
+        }).length;
+        return Math.max(0,Number(d.totalDivineCaught)||0,divineInInventory);
+      }
       return Math.max(0,Number(d[LEADERBOARD_META[category].field])||0);
     }
     window.openLeaderboard=async function(){leaderboardPage=0;openModal('modal-leaderboard');await loadLeaderboard('xp');};
