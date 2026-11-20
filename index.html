@@ -825,7 +825,7 @@
   <header>
     <div class="header-left">
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <div class="version-tag">v.1.0.2.6</div>
+        <div class="version-tag">v.1.0.2.6 BETA</div>
         <button type="button" class="img-btn" onclick="openMouseHole()" title="Mouse Hole" aria-label="Open the mouse hole" style="width:42px;height:42px;">
           <img src="https://i.postimg.cc/DzmLzdzR/hole.png" alt="Mouse Hole" style="width:42px;height:42px;object-fit:contain;">
         </button>
@@ -1342,15 +1342,7 @@
         <button type="button" class="modal-action-btn" onclick="updateProfileData()">Save Changes</button>
       </div>
 
-      <div id="admin-passcode-profile-status" style="display:none;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:10px;margin:10px 0;font-size:.9rem;">
-        <strong>Firebase Admin Passcode:</strong>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
-          <input id="admin-passcode-profile-value" type="password" readonly value="Not configured" style="flex:1;min-width:0;padding:9px;border:1px solid #cbd5e1;border-radius:8px;background:white;">
-          <button type="button" class="passcode-visibility-btn" onclick="togglePasscodeVisibility('admin-passcode-profile-value',this)">Show</button>
-        </div>
-        <small id="admin-passcode-profile-note" style="display:block;color:#64748b;margin-top:6px;">Only visible in your admin account profile.</small>
-        <button type="button" class="modal-action-btn" style="margin-top:8px;" onclick="openAdminPasscodeSetup()">Set / Change Passcode</button>
-      </div>
+
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>Search Player</h3>
       <form autocomplete="off" onsubmit="event.preventDefault(); handleUserSearch();">
@@ -2057,8 +2049,8 @@
     function levelFromXP(total){let xp=Math.max(0,Number(total)||0),level=1,need=LEVEL_XP_BASE;while(xp>=need&&level<10000){xp-=need;level++;need=LEVEL_XP_BASE*level;}return {level,xpInto:xp,xpNeeded:need,total:Math.max(0,Number(total)||0)};}
     async function awardPlayerXP(amount, reason, extra={}){
       const user=auth.currentUser;if(!user||!amount)return;
-      const ref=db.collection('jugadores').doc(user.uid), inc=firebase.firestore.FieldValue.increment;
-      await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)return;const d=snap.data()||{};const updates={totalXP:inc(Math.max(0,Math.floor(amount)))};
+      const ref=db.collection('jugadores').doc(user.uid),inc=firebase.firestore.FieldValue.increment;
+      await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)return;const updates={totalXP:inc(Math.max(0,Math.floor(amount)))};
         if(extra.fish)updates.totalFishCaught=inc(extra.fish);
         if(extra.divine)updates.totalDivineCaught=inc(extra.divine);
         if(extra.pearls)updates.totalPearlsEarned=inc(extra.pearls);
@@ -2066,21 +2058,51 @@
       });
       try{const snap=await ref.get(),d=snap.data()||{},v=levelFromXP(d.totalXP||0);const el=document.getElementById('profile-level-display');if(el)el.textContent=`Level ${v.level} · ${v.xpInto} / ${v.xpNeeded} XP (${v.xpNeeded-v.xpInto} to next level)`;}
       catch(e){console.warn('Could not refresh XP display',e);}
-      checkKingOfTheHill();
     }
-    window.levelFromXP=levelFromXP;
-    window.awardPlayerXP=awardPlayerXP;
-    const LEADERBOARD_META={xp:{label:'Levels',field:'totalXP',desc:'Players ranked by total XP.'},coins:{label:'Most Money',field:'coins',desc:'Players ranked by their current Coins.'},fish:{label:'Most Fish',field:'totalFishCaught',desc:'Players ranked by total fish caught.'},pearls:{label:'Most Pearls',field:'totalPearlsEarned',desc:'Players ranked by lifetime Pearls earned.'},divine:{label:'Most Divines',field:'totalDivineCaught',desc:'Players ranked by Divine fish caught.'}};
-    window.openLeaderboard=async function(){openModal('modal-leaderboard');await loadLeaderboard('xp');};
+    window.levelFromXP=levelFromXP;window.awardPlayerXP=awardPlayerXP;
+    const LEADERBOARD_META={xp:{label:'Levels',field:'totalXP',desc:'Players ranked by total XP.'},coins:{label:'Most Money',field:'coins',desc:'Players ranked by their current Coins.'},fish:{label:'Most Fish',field:'totalFishCaught',desc:'Players ranked by fish caught.'},pearls:{label:'Most Pearls',field:'totalPearlsEarned',desc:'Players ranked by Pearls earned.'},divine:{label:'Most Divines',field:'totalDivineCaught',desc:'Players ranked by Divine fish caught.'}};
+    let leaderboardCategory='xp',leaderboardPage=0,leaderboardRows=[];
+    function isCurrentlyBanned(d){if(d.isBanned===true)return true;const t=d.tempBanUntil;if(!t)return false;const until=t.toDate?t.toDate():new Date(t);return Number.isFinite(until.getTime())&&until.getTime()>Date.now();}
+    function leaderboardValue(d,category){
+      if(category==='fish')return Math.max(0,Number(d.totalFishCaught)||0,Array.isArray(d.fishes)?d.fishes.length:0);
+      if(category==='pearls')return Math.max(0,Number(d.totalPearlsEarned)||0,Number(d.pearls)||0);
+      if(category==='divine'){
+        const recorded=Number(d.totalDivineCaught)||0;
+        const divineNames=new Set(ALLOWED_FISH_TYPES.filter(f=>f.rarity==='Divine').map(f=>f.name));
+        const held=Array.isArray(d.fishes)?d.fishes.filter(f=>divineNames.has(f.name)).length:0;
+        return Math.max(recorded,held);
+      }
+      return Math.max(0,Number(d[LEADERBOARD_META[category].field])||0);
+    }
+    window.openLeaderboard=async function(){leaderboardPage=0;openModal('modal-leaderboard');await loadLeaderboard('xp');};
     window.loadLeaderboard=async function(category='xp'){
-      const list=document.getElementById('leaderboard-list'),caption=document.getElementById('leaderboard-caption'),meta=LEADERBOARD_META[category]||LEADERBOARD_META.xp;
-      caption.textContent=meta.desc;list.innerHTML='<p>Loading leaderboard...</p>';
-      try{const snap=await db.collection('jugadores').get();const rows=[];snap.forEach(doc=>{const d=doc.data()||{},value=Number(d[meta.field])||0;if(value>0||category==='xp')rows.push({uid:doc.id,name:d.username||'Player',value,xp:Number(d.totalXP)||0});});rows.sort((a,b)=>b.value-a.value);const top=rows.slice(0,50);list.innerHTML=top.length?top.map((r,i)=>{const lv=levelFromXP(r.xp);const val=category==='xp'?`Level ${lv.level} · ${r.value.toLocaleString()} XP`:r.value.toLocaleString();return `<div class="leaderboard-row"><span class="leaderboard-rank">#${i+1}</span><strong>${escapeHtml(r.name)}</strong><span class="leaderboard-value">${val}</span></div>`;}).join(''):'<p>No leaderboard entries yet.</p>';if(auth.currentUser&&top.some((r,i)=>r.uid===auth.currentUser.uid&&i===0)){await unlockKingAchievement();}}
-      catch(e){list.innerHTML=`<p>Could not load leaderboard: ${escapeHtml(e.message||String(e))}</p>`;}
+      leaderboardCategory=category;leaderboardPage=0;
+      const caption=document.getElementById('leaderboard-caption'),meta=LEADERBOARD_META[category]||LEADERBOARD_META.xp;
+      caption.textContent=meta.desc;
+      const list=document.getElementById('leaderboard-list');list.innerHTML='<p>Loading leaderboard...</p>';
+      try{
+        const snap=await db.collection('jugadores').get();leaderboardRows=[];
+        snap.forEach(doc=>{const d=doc.data()||{};if(isCurrentlyBanned(d))return;const value=leaderboardValue(d,category);if(value>0||category==='xp')leaderboardRows.push({uid:doc.id,name:d.username||'Player',value,xp:Number(d.totalXP)||0});});
+        leaderboardRows.sort((a,b)=>b.value-a.value||a.name.localeCompare(b.name));
+        renderLeaderboardPage();
+        if(auth.currentUser&&leaderboardRows.length&&leaderboardRows[0].uid===auth.currentUser.uid)await unlockKingAchievement();
+      }catch(e){list.innerHTML=`<p>Could not load leaderboard: ${escapeHtml(e.message||String(e))}</p>`;}
     };
+    function renderLeaderboardPage(){
+      const list=document.getElementById('leaderboard-list'),start=leaderboardPage*5,pageRows=leaderboardRows.slice(start,start+5);
+      list.innerHTML=pageRows.length?pageRows.map((r,i)=>{const rank=start+i+1,lv=levelFromXP(r.xp),val=leaderboardCategory==='xp'?`Level ${lv.level} · ${r.value.toLocaleString()} XP`:r.value.toLocaleString();return `<div class="leaderboard-row"><span class="leaderboard-rank">#${rank}</span><strong>${escapeHtml(r.name)}</strong><span class="leaderboard-value">${val}</span></div>`;}).join(''):'<p>No leaderboard entries yet.</p>';
+      let nav=document.getElementById('leaderboard-pagination');if(!nav){nav=document.createElement('div');nav.id='leaderboard-pagination';nav.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;';list.insertAdjacentElement('afterend',nav);}
+      const pages=Math.max(1,Math.ceil(leaderboardRows.length/5));nav.innerHTML=`<button class="modal-action-btn" style="width:auto" ${leaderboardPage===0?'disabled':''} onclick="changeLeaderboardPage(-1)">◀ Previous</button><span style="font-weight:700;color:#64748b">Page ${leaderboardPage+1} / ${pages}</span><button class="modal-action-btn" style="width:auto" ${leaderboardPage>=pages-1?'disabled':''} onclick="changeLeaderboardPage(1)">Next ▶</button>`;
+    }
+    window.changeLeaderboardPage=function(delta){const pages=Math.max(1,Math.ceil(leaderboardRows.length/5));leaderboardPage=Math.max(0,Math.min(pages-1,leaderboardPage+delta));renderLeaderboardPage();};
     function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-    async function unlockKingAchievement(){const user=auth.currentUser;if(!user)return;const ref=db.collection('jugadores').doc(user.uid);await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)return;const a={...(snap.data().achievements||{})};if(a.kingOfTheHill)return;a.kingOfTheHill=true;tx.update(ref,{achievements:a});});const card=document.getElementById('ach-king-of-the-hill-status');if(card){card.textContent='Unlocked';card.style.color='#16a34a';document.getElementById('ach-king-of-the-hill').style.opacity='1';}if(window.showAchievementUnlocked)window.showAchievementUnlocked('King of the hill',"I'm the best of the best.",'Be the Top 1 on any leaderboard.');}
-    async function checkKingOfTheHill(){try{const user=auth.currentUser;if(!user)return;const snap=await db.collection('jugadores').get();const keys=['totalXP','coins','totalFishCaught','totalPearlsEarned','totalDivineCaught'];const mine=await db.collection('jugadores').doc(user.uid).get(),d=mine.data()||{};for(const key of keys){const my=Number(d[key])||0;let max=0;snap.forEach(doc=>max=Math.max(max,Number((doc.data()||{})[key])||0));if(my>0&&my>=max){await unlockKingAchievement();return;}}}catch(e){console.warn('Leaderboard achievement check failed',e);}}
+    async function unlockKingAchievement(){
+      const user=auth.currentUser;if(!user)return false;const ref=db.collection('jugadores').doc(user.uid);let newlyUnlocked=false;
+      await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)return;const a={...(snap.data().achievements||{})};if(a.kingOfTheHill===true)return;a.kingOfTheHill=true;tx.update(ref,{achievements:a});newlyUnlocked=true;});
+      const card=document.getElementById('ach-king-of-the-hill-status');if(card){card.textContent='Unlocked';card.style.color='#16a34a';document.getElementById('ach-king-of-the-hill').style.opacity='1';}
+      if(newlyUnlocked&&window.showAchievementUnlocked)window.showAchievementUnlocked('King of the hill',"I'm the best of the best.",'Be the Top 1 on any leaderboard.');
+      return newlyUnlocked;
+    }
     function paintLevel(elId,data){const el=document.getElementById(elId);if(!el)return;const v=levelFromXP(data&&data.totalXP||0);el.textContent=`Level ${v.level} · ${v.xpInto} / ${v.xpNeeded} XP (${v.xpNeeded-v.xpInto} to next level)`;}
 
     let catchBarY = 0;
@@ -8698,7 +8720,7 @@
   .fm-happiness-row strong { color: #1e3a8a; }
   .fm-happiness-pct { font-weight: 900; color: #b45309; }
   .fm-happiness-track { height: 14px; border-radius: 999px; background: #e2e8f0; border: 1px solid #cbd5e1; overflow: hidden; }
-  .fm-happiness-fill { height: 100%; width: 50%; border-radius: 999px; background: linear-gradient(90deg, #22c55e 0%, #a3e635 35%, #facc15 58%, #f97316 80%, #ef4444 100%); transition: width .5s ease; }
+  .fm-happiness-fill { height: 100%; width: 50%; border-radius: 999px; background-color: #eab308; transition: width .5s ease, background-color .5s ease; }
   .fm-happiness-hint { margin: 7px 0 0; font-size: .75rem; color: #64748b; line-height: 1.35; }
   .fm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 12px; }
   .fm-stat { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; }
@@ -10225,6 +10247,8 @@
 
     menu.querySelector('#tf-fish-happiness-pct').textContent = `${happiness}%`;
     menu.querySelector('#tf-fish-happiness-fill').style.width = `${happiness}%`;
+    const happinessColor = happiness >= 75 ? '#22c55e' : happiness >= 50 ? '#eab308' : happiness >= 25 ? '#f97316' : '#ef4444';
+    menu.querySelector('#tf-fish-happiness-fill').style.backgroundColor = happinessColor;
     menu.querySelector('#tf-fish-happiness-hint').textContent = happiness >= 99.5
       ? 'This fish is completely full. Extra food will sink and be wasted.'
       : (AQ.owner
