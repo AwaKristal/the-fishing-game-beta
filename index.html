@@ -2051,9 +2051,9 @@
       const user=auth.currentUser;if(!user||!amount)return;
       const ref=db.collection('jugadores').doc(user.uid),inc=firebase.firestore.FieldValue.increment;
       await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)return;const updates={totalXP:inc(Math.max(0,Math.floor(amount)))};
-        if(extra.fish)updates.totalFishCaught=inc(extra.fish);
-        if(extra.divine)updates.totalDivineCaught=inc(extra.divine);
-        if(extra.pearls)updates.totalPearlsEarned=inc(extra.pearls);
+        if(Number(extra.fish)>0)updates.totalFishCaught=inc(Math.floor(Number(extra.fish)));
+        if(Number(extra.divine)>0)updates.totalDivineCaught=inc(Math.floor(Number(extra.divine)));
+        if(Number(extra.pearls)>0)updates.totalPearlsEarned=inc(Math.floor(Number(extra.pearls)));
         tx.update(ref,updates);
       });
       try{const snap=await ref.get(),d=snap.data()||{},v=levelFromXP(d.totalXP||0);const el=document.getElementById('profile-level-display');if(el)el.textContent=`Level ${v.level} · ${v.xpInto} / ${v.xpNeeded} XP (${v.xpNeeded-v.xpInto} to next level)`;}
@@ -2064,14 +2064,9 @@
     let leaderboardCategory='xp',leaderboardPage=0,leaderboardRows=[];
     function isCurrentlyBanned(d){if(d.isBanned===true)return true;const t=d.tempBanUntil;if(!t)return false;const until=t.toDate?t.toDate():new Date(t);return Number.isFinite(until.getTime())&&until.getTime()>Date.now();}
     function leaderboardValue(d,category){
-      if(category==='fish')return Math.max(0,Number(d.totalFishCaught)||0,Array.isArray(d.fishes)?d.fishes.length:0);
-      if(category==='pearls')return Math.max(0,Number(d.totalPearlsEarned)||0,Number(d.pearls)||0);
-      if(category==='divine'){
-        const recorded=Number(d.totalDivineCaught)||0;
-        const divineNames=new Set(ALLOWED_FISH_TYPES.filter(f=>f.rarity==='Divine').map(f=>f.name));
-        const held=Array.isArray(d.fishes)?d.fishes.filter(f=>divineNames.has(f.name)).length:0;
-        return Math.max(recorded,held);
-      }
+      if(category==='fish')return Math.max(0,Number(d.totalFishCaught)||0);
+      if(category==='pearls')return Math.max(0,Number(d.totalPearlsEarned)||0);
+      if(category==='divine')return Math.max(0,Number(d.totalDivineCaught)||0);
       return Math.max(0,Number(d[LEADERBOARD_META[category].field])||0);
     }
     window.openLeaderboard=async function(){leaderboardPage=0;openModal('modal-leaderboard');await loadLeaderboard('xp');};
@@ -2097,10 +2092,22 @@
     window.changeLeaderboardPage=function(delta){const pages=Math.max(1,Math.ceil(leaderboardRows.length/5));leaderboardPage=Math.max(0,Math.min(pages-1,leaderboardPage+delta));renderLeaderboardPage();};
     function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
     async function unlockKingAchievement(){
-      const user=auth.currentUser;if(!user)return false;const ref=db.collection('jugadores').doc(user.uid);let newlyUnlocked=false;
-      await db.runTransaction(async tx=>{const snap=await tx.get(ref);if(!snap.exists)return;const a={...(snap.data().achievements||{})};if(a.kingOfTheHill===true)return;a.kingOfTheHill=true;tx.update(ref,{achievements:a});newlyUnlocked=true;});
-      const card=document.getElementById('ach-king-of-the-hill-status');if(card){card.textContent='Unlocked';card.style.color='#16a34a';document.getElementById('ach-king-of-the-hill').style.opacity='1';}
-      if(newlyUnlocked&&window.showAchievementUnlocked)window.showAchievementUnlocked('King of the hill',"I'm the best of the best.",'Be the Top 1 on any leaderboard.');
+      const user=auth.currentUser;if(!user)return false;
+      const ref=db.collection('jugadores').doc(user.uid);let newlyUnlocked=false;
+      await db.runTransaction(async tx=>{
+        const snap=await tx.get(ref);if(!snap.exists)return;
+        const data=snap.data()||{},achievements={...(data.achievements||{})};
+        if(achievements.kingOfTheHill===true)return;
+        achievements.kingOfTheHill=true;
+        tx.update(ref,{achievements});newlyUnlocked=true;
+      });
+      const card=document.getElementById('ach-king-of-the-hill-status');
+      const item=document.getElementById('ach-king-of-the-hill');
+      if(card){card.textContent='Completed';card.style.color='#16a34a';}
+      if(item){item.style.opacity='1';item.style.borderColor='#2ecc71';}
+      if(newlyUnlocked&&window.showAchievementUnlocked){
+        window.showAchievementUnlocked('King of the hill',"I'm the best of the best.",'Be the Top 1 on any leaderboard.');
+      }
       return newlyUnlocked;
     }
     function paintLevel(elId,data){const el=document.getElementById(elId);if(!el)return;const v=levelFromXP(data&&data.totalXP||0);el.textContent=`Level ${v.level} · ${v.xpInto} / ${v.xpNeeded} XP (${v.xpNeeded-v.xpInto} to next level)`;}
@@ -2606,30 +2613,20 @@
           }
         }
 
-        // Pick from a weighted variety of daily rewards instead of always
-        // granting the same 300 coins + 2 Worm Baits.
-        const dailyRewardPool = [
-          { coins: 150 },
-          { coins: 250, baits: 1 },
-          { coins: 400 },
-          { coins: 500 },
-          { baits: 3 },
-          { baits: 4 },
-          { coins: 200, cubes: 2 },
-          { coins: 350, cubes: 1 },
-          { coins: 200, baits: 2 },
-          { coins: 300, baits: 2 },
-          { coins: 150, miniTanks: 1 },
-          { coins: 250, cubes: 3 }
-        ];
-        const reward = dailyRewardPool[Math.floor(Math.random() * dailyRewardPool.length)];
+        // Daily rewards are intentionally modest. Worm Bait is uncommon (2%),
+        // and a single Mini Tank is extremely rare (0.1%, Divine-like odds).
+        // Mini Tuna Cubes are never part of the daily reward pool.
+        const roll=Math.random();
+        let reward;
+        if(roll<0.001) reward={miniTanks:1};
+        else if(roll<0.021) reward={baits:1};
+        else reward={coins:50+Math.floor(Math.random()*101)};
 
         const updateData = {
           lastDailyClaim: firebase.firestore.FieldValue.serverTimestamp()
         };
         if (reward.coins) updateData.coins = firebase.firestore.FieldValue.increment(reward.coins);
         if (reward.baits) updateData.wormBaitsCount = firebase.firestore.FieldValue.increment(reward.baits);
-        if (reward.cubes) updateData.miniTunaCubesCount = firebase.firestore.FieldValue.increment(reward.cubes);
         if (reward.miniTanks) updateData.miniTanksCount = firebase.firestore.FieldValue.increment(reward.miniTanks);
 
         await docRef.update(updateData);
@@ -2638,7 +2635,6 @@
         const rewardParts = [];
         if (reward.coins) rewardParts.push(`+${reward.coins} 💰`);
         if (reward.baits) rewardParts.push(`+${reward.baits} Worm Baits`);
-        if (reward.cubes) rewardParts.push(`+${reward.cubes} Mini Tuna Cubes`);
         if (reward.miniTanks) rewardParts.push(`+${reward.miniTanks} Mini Tank`);
         showToast(`Daily Reward Claimed! ${rewardParts.join(', ')}`);
         updateGameHUD();
@@ -3794,6 +3790,15 @@
           if (achievements.makingBusiness) {
             achItem5.style.opacity = '1'; achItem5.style.borderColor = '#2ecc71';
             achStatus5.innerHTML = 'Completed'; achStatus5.style.color = '#2ecc71';
+          }
+          const kingItem=document.getElementById('ach-king-of-the-hill');
+          const kingStatus=document.getElementById('ach-king-of-the-hill-status');
+          if(kingItem&&kingStatus){
+            const kingUnlocked=achievements.kingOfTheHill===true;
+            kingItem.style.opacity=kingUnlocked?'1':'.5';
+            kingItem.style.borderColor=kingUnlocked?'#2ecc71':'#cbd5e1';
+            kingStatus.textContent=kingUnlocked?'Completed':'Locked';
+            kingStatus.style.color=kingUnlocked?'#16a34a':'#e74c3c';
           }
         }
       } catch (err) {
@@ -8756,7 +8761,7 @@
     color: #92400e; background: rgba(255, 255, 255, .78); border-radius: 999px; padding: 1px 5px;
   }
   .fish-slot-happiness .bar { width: 22px; height: 4px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
-  .fish-slot-happiness .bar i { display: block; height: 100%; background: linear-gradient(90deg,#22c55e 0%,#a3e635 35%,#facc15 58%,#f97316 80%,#ef4444 100%); transition: width .4s ease; }
+  .fish-slot-happiness .bar i { display: block; height: 100%; background-color: #22c55e; background-image: none !important; transition: width .4s ease, background-color .4s ease; }
   #modal-aquarium .modal-card.fish-feeding { box-shadow: 0 0 0 3px rgba(109, 74, 203, .24), 0 10px 30px rgba(0, 0, 0, .25); }
   #modal-aquarium .modal-card.fish-feeding [id^="shelf-"] { cursor: crosshair !important; }
   #modal-aquarium .modal-card.fish-feeding img[class*="swimming-fish"] { filter: drop-shadow(0 0 5px rgba(109, 74, 203, .9)); }
@@ -9589,10 +9594,11 @@
       const key = `${AQ.roomKey}:${i}`;
       const name = AQ.names[key] || species;
       const value = Math.round(currentHappiness(key, species));
+      const happinessColor=value>=75?'#22c55e':value>=50?'#eab308':value>=25?'#f97316':'#ef4444';
       label.innerHTML =
         `<span class="fish-slot-name" title="${esc(name)}">${esc(name)}</span>` +
         `<span class="fish-slot-happiness" title="Happiness: ${value}%">` +
-        `<span class="bar"><i style="width:${value}%"></i></span>${value}%</span>`;
+        `<span class="bar"><i style="width:${value}%;background-color:${happinessColor};background-image:none"></i></span>${value}%</span>`;
     }
   }
 
