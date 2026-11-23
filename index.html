@@ -6845,7 +6845,7 @@
         <div id="grill-fish-stage" style="background:#f8fafc;border:1px solid #cbd5e1"><img src="${IMG.grillTop}" alt="Grill top" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none"><img id="grill-fish-image" class="grill-fish" style="display:none" ondblclick="flipGrillFish()"></div>
         <p id="grill-status" style="font-size:.9rem;color:#475569">Add a fish or turkey to begin.</p>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
-          <button class="rebuild-btn" onclick="openGrillFishPicker()">Add</button>
+          <button id="btn-open-grill-picker" class="rebuild-btn" onclick="openGrillFishPicker()">Add</button>
           <button id="buy-event-turkey" class="rebuild-btn" style="display:none" onclick="buyTurkey()">Buy a turkey for 1000</button>
           <button id="btn-flip-grill-fish" class="rebuild-btn" style="background:#d97706" onclick="flipGrillFish()">Flip</button>
           <button class="rebuild-btn alt" onclick="finishGrilling()">Finish Cooking</button>
@@ -7057,9 +7057,9 @@
 
   // Bait selection and consumption: only one Equip Bait control, both bait types persist.
   async function openBaitSelector(){
-    try{const d=(await playerRef().get()).data()||{};const active=d.equippedBait||'';
+    try{const d=(await playerRef().get()).data()||{};const active=d.equippedBait||(d.isBaitActive?'worm':'');
       const available=[['worm','Worm Bait',d.wormBaitsCount||0,'https://i.postimg.cc/KYgqH6Sn/worm-bait.png'],['cube','Mini Tuna Cube',d.miniTunaCubesCount||0,IMG.tunaCube],['tung','Mini Tung Cube',d.miniTungCubesCount||0,IMG.miniTungCube]].filter(([,n,q])=>Number(q)>0);
-       document.getElementById('bait-options').innerHTML=available.map(([id,n,q,img])=>`<div class="rebuild-item"><img src="${img}"><strong>${esc(n)}</strong><p>${esc(BAIT_DESCRIPTIONS[n])}</p><p>Owned: ${q}</p><p>${active===id?'Equipped':''}</p><button class="rebuild-btn" onclick="equipBaitType('${id}')">${active===id?'Equipped':'Equip'}</button></div>`).join('')||'<p>You do not own any bait yet.</p>';
+       document.getElementById('bait-options').innerHTML=available.map(([id,n,q,img])=>`<div class="rebuild-item"><img src="${img}"><strong>${esc(n)}</strong><p>${esc(BAIT_DESCRIPTIONS[n])}</p><p>Owned: ${q}</p><p>${active===id?'Equipped':''}</p><button class="rebuild-btn" ${active===id?'disabled style="opacity:.65;cursor:default"':''} onclick="equipBaitType('${id}')">${active===id?'Equipped':'Equip'}</button>${active===id?'<button class="rebuild-btn alt" onclick="unequipBait()">Unequip</button>':''}</div>`).join('')||'<p>You do not own any bait yet.</p>';
       document.getElementById('modal-equip-bait').style.display='flex';
     }catch(e){showToast(e.message);}
   }
@@ -7068,7 +7068,19 @@
       showToast(type==='worm'?'Worm Bait equipped.':type==='tung'?'Mini Tung Cube equipped.':'Mini Tuna Cube equipped.');openBaitSelector();loadBackpackData();
     }catch(e){showToast(e.message);}
   }
-  window.openBaitSelector=openBaitSelector;window.equipBaitType=equipBaitType;
+  async function unequipBait(){
+    try{
+      const ref=playerRef();
+      await db.runTransaction(async tx=>{
+        const snap=await tx.get(ref);if(!snap.exists)throw Error('Player profile not found.');
+        tx.update(ref,{equippedBait:'',isBaitActive:false});
+      });
+      showToast('Bait unequipped.');
+      await openBaitSelector();
+      loadBackpackData();
+    }catch(e){showToast('Could not unequip bait: '+e.message);}
+  }
+  window.openBaitSelector=openBaitSelector;window.equipBaitType=equipBaitType;window.unequipBait=unequipBait;
 
   let grillOwnerUid = '', turkeyExpiryHandled = false, turkeyExpiryAttempt = 0;
 
@@ -7143,7 +7155,7 @@
       });
       grillOwnerUid=auth.currentUser.uid;
       grillState=reserved;
-      document.getElementById('grill-fish-picker').style.display='none';
+      setGrillPickerOpen(false);
       renderGrillState();
       showToast('Bought 1 Raw Turkey! It is on the Grill.');
       playGameSound('buy');
@@ -7216,7 +7228,18 @@
       ? `Turkey — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: Side ${grillState.activeSide} (${grillState.zone==='rest'?'Resting':'On Fire'}).`
       : `${grillState.fish.name} — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: ${grillState.activeSide===1?'Side 1':'Side 2'} (${grillState.zone==='rest'?'Resting':'On Fire'}).`;
   }
+  function setGrillPickerOpen(open){
+    const picker=document.getElementById('grill-fish-picker');
+    const button=document.getElementById('btn-open-grill-picker');
+    if(picker)picker.style.display=open?'block':'none';
+    if(button)button.textContent=open?'Cancel':'Add';
+  }
   async function openGrillFishPicker(){
+    const picker=document.getElementById('grill-fish-picker');
+    if(picker&&picker.style.display!=='none'&&picker.style.display!==''){
+      setGrillPickerOpen(false);
+      return;
+    }
     const d=(await playerRef().get()).data()||{};const fishes=d.fishes||[];
     const available=new Set(getUnplacedFishes(d,fishes));
     const market=await db.collection('marketListings').where('sellerUid','==',auth.currentUser.uid).get();
@@ -7229,28 +7252,32 @@
       eligible.push({fish:f,index:i});
     });
     const c=document.getElementById('grill-fish-options');
-    c.innerHTML=eligible.length?eligible.map(({fish:f,index:i})=>{
+    const fishCards=eligible.map(({fish:f,index:i})=>{
       const m=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);
       const ck=f.cooking;
       const avgPct=ck?Math.round(((Number(ck.side1)||0)+(Number(ck.side2)||0))/2):0;
       const s1=ck?stage(ck.side1):'Raw',s2=ck?stage(ck.side2):'Raw';
       const badge=ck?`<span style="display:block;font-size:0.7rem;color:#b45309;">${esc(s1)} ${ck.side1}% / ${esc(s2)} ${ck.side2}%</span>`:'<span style="display:block;font-size:0.7rem;color:#64748b;">Raw (0%)</span>';
       return `<div class="rebuild-item"><img src="${m.img}" style="filter:${getCookedFilter(avgPct)}"><strong>${esc(f.name)}</strong>${badge}<button class="rebuild-btn" onclick="addFishToGrill('${esc(f.id||'')}','${esc(f.name)}','${esc(f.timestamp||'')}',${i})">Select</button></div>`;
-    }).join(''):'<p>No eligible fish. Legacy, Secret and limited fish are protected.</p>';
+    }).join('');
     const grillTurkeys = (d.turkeys || []).filter(turkey => turkey && (turkey.testOnly === true || Date.now() < TURKEY_END));
-    c.innerHTML += grillTurkeys.map(turkey => {
+    const turkeyCards=grillTurkeys.map(turkey => {
       const sides=turkeySides(turkey), first=stage(sides.side1), second=stage(sides.side2);
       const label=first===second?`${first} Turkey`:'Turkey';
       const testTag=turkey.testOnly===true?' <small style="color:#d97706">(TEST)</small>':'';
       return `<div class="rebuild-item"><img src="${TURKEY_IMAGES[stage(Math.max(sides.side1,sides.side2))]}" alt="${esc(label)}"><strong>${esc(label)}${testTag}</strong><p>Side 1: ${sides.side1}% (${first}) / Side 2: ${sides.side2}% (${second})</p><button class="rebuild-btn" data-turkey-id="${esc(turkey.id)}">Select</button></div>`;
     }).join('');
+    // Only show the empty-state notice when neither eligible fish nor grillable turkeys exist.
+    c.innerHTML = fishCards + turkeyCards + (!fishCards && !turkeyCards
+      ? '<p style="grid-column:1/-1;text-align:center;margin:12px 0;color:#64748b;">No eligible fish. Legacy, Secret and limited fish are protected.</p>'
+      : '');
     c.querySelectorAll('[data-turkey-id]').forEach(button=>button.addEventListener('click',()=>addTurkeyToGrill(button.dataset.turkeyId)));
-    document.getElementById('grill-fish-picker').style.display='block';
+    setGrillPickerOpen(true);
   }
   async function addFishToGrill(fishId,fishName,fishTimestamp,fallbackIndex){
     if(grillState){showToast('Finish or remove the current fish first.');return;}
     try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.grillState)throw Error('The Grill is already occupied.');const fs=[...(d.fishes||[])];let idx=-1;if(fishId)idx=fs.findIndex(f=>f.id===fishId);if(idx<0&&fishTimestamp)idx=fs.findIndex(f=>f.name===fishName&&f.timestamp===fishTimestamp);if(idx<0&&typeof fallbackIndex==='number'&&fs[fallbackIndex]&&fs[fallbackIndex].name===fishName)idx=fallbackIndex;if(idx<0)idx=fs.findIndex(f=>f.name===fishName);if(idx<0)throw Error('Fish is no longer available.');const f=fs[idx];if(!getUnplacedFishes(d,fs).includes(f))throw Error('Fish is displayed in your Aquarium.');const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity))throw Error('This fish is protected from cooking.');const prevCk=f.cooking||{side1:0,side2:0};fs.splice(idx,1);tx.update(ref,{fishes:fs,grillState:{fish:{...f,id:f.id||'fish-'+Date.now()},side1:Number(prevCk.side1)||0,side2:Number(prevCk.side2)||0,activeSide:1,zone:'hot',posX:35,posY:38,updatedAt:Date.now()}});});
-      grillState=(await ref.get()).data().grillState;document.getElementById('grill-fish-picker').style.display='none';renderGrillState();playGameSound('cook');loadBackpackData();
+      grillState=(await ref.get()).data().grillState;setGrillPickerOpen(false);renderGrillState();playGameSound('cook');loadBackpackData();
     }catch(e){showToast('Could not add fish: '+e.message);}
   }
   function startGrillTicker(){if(grillTimer)clearInterval(grillTimer);grillTimer=setInterval(()=>{if(!grillState||grillState.zone!=='hot'||(grillState.kind==='turkey'&&!grillState.testOnly&&Date.now()>=TURKEY_END))return;const key=grillState.activeSide===1?'side1':'side2';if(grillState[key]>=100)return;grillState[key]=Math.min(100,grillState[key]+1);renderGrillState();},1000);if(grillSaveTimer)clearInterval(grillSaveTimer);grillSaveTimer=setInterval(saveGrillState,5000);}
@@ -7341,7 +7368,7 @@
     loadBackpackData();
   }catch(e){showToast('Could not finish cooking: '+e.message);}}
   async function closeGrillStation(){await saveGrillState();if(grillTimer)clearInterval(grillTimer);if(grillSaveTimer)clearInterval(grillSaveTimer);grillTimer=grillSaveTimer=null;closeRebuildModal('modal-grill-station');}
-  window.openGrillStation=openGrillStation;window.openGrillFishPicker=openGrillFishPicker;window.addFishToGrill=addFishToGrill;window.toggleGrillZone=toggleGrillZone;window.flipGrillFish=flipGrillFish;window.finishGrilling=finishGrilling;window.closeGrillStation=closeGrillStation;
+  window.openGrillStation=openGrillStation;window.openGrillFishPicker=openGrillFishPicker;window.setGrillPickerOpen=setGrillPickerOpen;window.addFishToGrill=addFishToGrill;window.toggleGrillZone=toggleGrillZone;window.flipGrillFish=flipGrillFish;window.finishGrilling=finishGrilling;window.closeGrillStation=closeGrillStation;
   auth.onAuthStateChanged(() => { turkeyExpiryHandled=false; turkeyExpiryAttempt=0; });
   setInterval(() => {
     updateTurkeyButton();
