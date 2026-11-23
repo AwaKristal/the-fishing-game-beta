@@ -894,11 +894,11 @@
       <button class="img-btn" onclick="openModal('modal-shop')">
         <img src="https://i.postimg.cc/2yGLxwj8/shop.png" alt="Shop">
       </button>
-      <button class="img-btn" onclick="startGame()">
-        <img src="https://i.postimg.cc/d36Z9BQ7/play.png" alt="Play">
-      </button>
       <button class="img-btn" onclick="openModal('modal-achievements')">
         <img src="https://i.postimg.cc/rsjR9JyD/achievements.png" alt="Achievements">
+      </button>
+      <button class="img-btn" onclick="startGame()">
+        <img src="https://i.postimg.cc/d36Z9BQ7/play.png" alt="Play">
       </button>
       <button class="img-btn" onclick="openGrillStation()" title="Cook">
         <img src="https://i.postimg.cc/2y6St1Nb/cook-button.png" alt="Cook">
@@ -1623,7 +1623,11 @@
       <button class="modal-close" onclick="closeAllModals()">✖</button>
       <h2>Achievements</h2>
       <p style="font-size:0.85rem; color:#64748b; margin-bottom:15px;">Unlock achievements as you progress in the game!</p>
-      
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <button type="button" id="achievements-regular-tab" class="modal-action-btn" style="width:auto;" onclick="switchAchievementsSection('regular')" aria-pressed="true">Regular</button>
+        <button type="button" id="achievements-limited-tab" class="modal-action-btn" style="width:auto;" onclick="switchAchievementsSection('limited')" aria-pressed="false">Limited</button>
+      </div>
+      <div id="achievements-regular-section">
       <div id="achievements-list" style="display: flex; flex-direction: column; gap: 10px;">
         <div id="ach-catch-first" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; align-items: center; gap: 12px; opacity: 0.5;">
           <div>
@@ -1679,6 +1683,17 @@
         <span id="achievements-page" aria-live="polite"></span>
         <button type="button" id="achievements-next" aria-label="Next achievement page">Next</button>
       </nav>
+      </div>
+      <section id="achievements-limited-section" style="display:none;">
+        <h3>Limited</h3>
+        <details open>
+          <summary style="cursor:pointer;font-weight:bold;margin-bottom:10px;">Thanksgiving 2026</summary>
+          <div id="ach-not-a-common-one" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:.5;">
+            <div><h4 style="margin:0 0 3px;font-size:1rem;color:#1e3a8a;">Not a common one</h4><p style="margin:0 0 3px;font-size:.85rem;color:#1f2937;font-weight:bold;">Didn't know fishes ate that.</p><span style="font-size:.75rem;color:#64748b;">Give a well cooked turkey to a fish.</span></div>
+            <div id="ach-not-a-common-one-status" style="margin-left:auto;font-weight:bold;color:#e74c3c;font-size:.85rem;">Locked</div>
+          </div>
+        </details>
+      </section>
     </div>
   </div>
 
@@ -1802,19 +1817,20 @@
 
 
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
-      <h3>User Fish Food (Give / Remove)</h3>
+      <h3>User Fish Food (Give / Remove) and Turkeys (Give)</h3>
       <div id="admin-target-foods-list" style="max-height: 140px; overflow-y: auto; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #cbd5e1;">
         <p style="font-size:0.8rem; color:#64748b; text-align:center; margin:10px 0;">Select a target username above to view fish food...</p>
       </div>
       <div class="form-group">
-        <label>Give Fish Food (type the exact food name)</label>
+        <label>Give Fish Food or Turkey (type the exact name)</label>
         <div style="display:flex; gap:8px;">
-          <input type="text" id="adminFoodName" list="adminFoodTypes" placeholder="Fish Food" autocomplete="off" style="flex:2;">
+          <input type="text" id="adminFoodName" list="adminFoodAndTurkeyTypes" placeholder="Fish Food" autocomplete="off" style="flex:2;">
+          <datalist id="adminFoodAndTurkeyTypes"></datalist>
           <datalist id="adminFoodTypes"><option value="Fish Food"></option></datalist>
           <input type="number" id="adminFoodQty" placeholder="Feeds" value="1" min="1" autocomplete="off" style="flex:1;">
         </div>
       </div>
-      <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('food')">Give Fish Food</button>
+      <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('food')">Give Fish Food or Turkey</button>
 
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>User Cosmetics (Give / Remove)</h3>
@@ -2309,6 +2325,7 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
+    let accountSetupInProgress = false;
 
     const ADMIN_UID = "09SjiwOt9fYdFbc1wQp17Ot467F2";
 
@@ -3839,6 +3856,13 @@
             achItem5.style.opacity = '1'; achItem5.style.borderColor = '#2ecc71';
             achStatus5.innerHTML = 'Completed'; achStatus5.style.color = '#2ecc71';
           }
+          const turkeyItem=document.getElementById('ach-not-a-common-one');
+          const turkeyStatus=document.getElementById('ach-not-a-common-one-status');
+          const turkeyUnlocked=achievements.notACommonOne===true;
+          turkeyItem.style.opacity=turkeyUnlocked?'1':'.5';
+          turkeyItem.style.borderColor=turkeyUnlocked?'#2ecc71':'#cbd5e1';
+          turkeyStatus.textContent=turkeyUnlocked?'Completed':'Locked';
+          turkeyStatus.style.color=turkeyUnlocked?'#16a34a':'#e74c3c';
           const kingItem=document.getElementById('ach-king-of-the-hill');
           const kingStatus=document.getElementById('ach-king-of-the-hill-status');
           if(kingItem&&kingStatus){
@@ -4792,8 +4816,8 @@
 
     function startGame() {
       const user = auth.currentUser;
-      if (!user) {
-        showToast("You must be logged in to play!");
+      if (!user || !user.emailVerified || accountSetupInProgress) {
+        showToast("Verify your email and log in to play.");
         openModal('modal-account');
         return;
       }
@@ -5342,21 +5366,18 @@
       const pass = document.getElementById('reg-password').value;
       const bio = document.getElementById('reg-bio').value;
       const fileInput = document.getElementById('reg-avatar').files[0];
+      if (fileInput && fileInput.size > 1048576) {
+        showToast("Image exceeds 1MB limit.");
+        return;
+      }
 
+      let registered = false;
       try {
+        const photoURL = fileInput ? await comprimirImagen(fileInput) : "";
+        accountSetupInProgress = true;
         const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+        registered = true;
         const user = userCred.user;
-
-        let photoURL = "";
-        if (fileInput) {
-          if (fileInput.size > 1048576) {
-            showToast("Image exceeds 1MB limit.");
-            return;
-          }
-          photoURL = await comprimirImagen(fileInput);
-        }
-
-        await user.sendEmailVerification();
         await user.updateProfile({ displayName: username });
 
         await db.collection('jugadores').doc(user.uid).set({
@@ -5392,12 +5413,17 @@
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
+        await user.sendEmailVerification();
         showToast("Account created! Verification email sent. Verify your address before logging in.");
-        await auth.signOut();
         closeAllModals();
         grecaptcha.reset(recaptchaRegisterId);
       } catch (err) {
         showToast("Registration error: " + err.message);
+      } finally {
+        if (accountSetupInProgress) {
+          accountSetupInProgress = false;
+          if (registered) await auth.signOut();
+        }
       }
     }
 
@@ -5409,10 +5435,13 @@
         return;
       }
 
+      accountSetupInProgress = true;
+      let resendSignedIn = false;
       try {
         const cred = await auth.signInWithEmailAndPassword(email, pass);
+        resendSignedIn = true;
         if (cred.user.emailVerified) {
-          showToast("Your email is already verified!");
+          showToast("Your email is already verified! Please log in.");
         } else {
           await cred.user.sendEmailVerification();
           showToast("Fresh verification email sent!");
@@ -5420,6 +5449,9 @@
         closeAllModals();
       } catch (err) {
         showToast("Error: " + err.message);
+      } finally {
+        accountSetupInProgress = false;
+        if (resendSignedIn) await auth.signOut();
       }
     }
 
@@ -6572,10 +6604,17 @@
       const friendsBtn = document.getElementById('btn-friends');
       const backpackInline = document.getElementById('backpack-badge-inline');
 
+      if (accountSetupInProgress) return;
       if (user) {
+        try {
+          await user.reload();
+        } catch (err) {
+          await auth.signOut();
+          showToast("Could not verify your account. Please log in again.");
+          return;
+        }
+        if (auth.currentUser !== user) return;
         if (!user.emailVerified) {
-          const registrationForm = document.getElementById('form-register');
-          if (registrationForm && registrationForm.style.display !== 'none') return;
           await auth.signOut();
           showToast("Email verification required. Check your inbox or resend the verification email.");
           openModal('modal-account');
@@ -6728,10 +6767,22 @@
 
   const playerRef = () => {
     const u = auth.currentUser;
-    if (!u) throw new Error('You must be logged in.');
+    if (!u || !u.emailVerified || accountSetupInProgress) throw new Error('Verify your email and log in.');
     return db.collection('jugadores').doc(u.uid);
   };
   const stage = p => { const n = Number(p) || 0; if (n <= 0) return 'Raw'; if (n <= 45) return 'Slightly Cooked'; if (n <= 60) return 'Well Cooked'; if (n <= 85) return 'Overcooked'; return 'Burnt'; };
+  const turkeySides = turkey => ({ side1: Number(turkey.side1 ?? turkey.percent) || 0, side2: Number(turkey.side2) || 0 });
+  const turkeyIsWellCooked = (side1, side2) => stage(side1) === 'Well Cooked' && stage(side2) === 'Well Cooked';
+  const TURKEY_START = Date.UTC(2026, 10, 26, 6);
+  const TURKEY_END = Date.UTC(2026, 10, 27, 6);
+  const TURKEY_IMAGES = {
+    'Raw': 'https://i.postimg.cc/02GBFPcp/turkeydefault.png',
+    'Slightly Cooked': 'https://i.postimg.cc/xTG4hnt3/turkey-sightly.png',
+    'Well Cooked': 'https://i.postimg.cc/7Y1WdwmS/turkey-cooked.png',
+    'Overcooked': 'https://i.postimg.cc/ncKPgp0K/turkey-overcooked.png',
+    'Burnt': 'https://i.postimg.cc/c47b20XR/turkey-burnt.png'
+  };
+  const turkeyEventActive = () => Date.now() >= TURKEY_START && Date.now() < TURKEY_END;
   const safeInt = (v, min=1) => { const n = Number(v); return Number.isSafeInteger(n) && n >= min ? n : null; };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let grillTimer = null, grillSaveTimer = null, grillState = null, grillHot = true;
@@ -6787,11 +6838,12 @@
         <div id="grill-fish-stage" style="background:#f8fafc;border:1px solid #cbd5e1"><img src="${IMG.grillTop}" alt="Grill top" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none"><img id="grill-fish-image" class="grill-fish" style="display:none" ondblclick="flipGrillFish()"></div>
         <p id="grill-status" style="font-size:.9rem;color:#475569">Add a fish to begin. Drag anywhere on the grill (left/center = hot, far right = rest), or press Flip Fish.</p>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
-          <button class="rebuild-btn" onclick="openGrillFishPicker()">Add Fish</button>
-          <button id="btn-flip-grill-fish" class="rebuild-btn" style="background:#d97706" onclick="flipGrillFish()">Flip Fish</button>
+          <button class="rebuild-btn" onclick="openGrillFishPicker()">Add Fish or Turkey</button>
+          <button id="buy-event-turkey" class="rebuild-btn" style="display:none" onclick="buyTurkey()">Buy a turkey for 1000</button>
+          <button id="btn-flip-grill-fish" class="rebuild-btn" style="background:#d97706" onclick="flipGrillFish()">Flip Fish / Turkey</button>
           <button class="rebuild-btn alt" onclick="finishGrilling()">Finish Cooking</button>
         </div>
-        <div id="grill-fish-picker" style="display:none;margin-top:10px"><h3>Select a fish</h3><div id="grill-fish-options" class="rebuild-grid"></div></div>
+        <div id="grill-fish-picker" style="display:none;margin-top:10px"><h3>Select a fish or turkey</h3><div id="grill-fish-options" class="rebuild-grid"></div></div>
       </div></div>
       <div id="modal-equip-bait" class="rebuild-modal"><div class="rebuild-card"><button class="rebuild-btn red" style="float:right" onclick="closeRebuildModal('modal-equip-bait')">Close</button><h2>Baits</h2><div id="bait-options" class="rebuild-grid"></div></div></div>
       <div id="modal-make-offer" class="rebuild-modal"><div class="rebuild-card" style="max-width:560px">
@@ -6951,8 +7003,8 @@
     {id:'sandcastle',name:'Sandcastle',price:500,img:IMG.sandcastle,buy:async r=>r.update({})},
     {id:'verity',name:'Verity',price:350,img:IMG.verity,buy:async r=>r.update({})},
     {id:'trade',name:'Trade',price:1000,img:'https://i.postimg.cc/NMG4CPhB/trade.png',buy:async r=>r.update({tradeOwned:true})},
-    {id:'food',name:'Fish Food',price:150,note:'5 uses',img:'https://i.postimg.cc/CLp4gVxy/fish-food.png',buy:async r=>r.update({})},
-    {id:'algae',name:'Algae',price:250,note:'5 uses',img:'https://i.postimg.cc/FswT4qSQ/algae.png'},
+    {id:'food',name:'Fish Food',price:350,note:'3 uses',img:'https://i.postimg.cc/CLp4gVxy/fish-food.png',buy:async r=>r.update({})},
+    {id:'algae',name:'Algae',price:750,note:'3 uses',img:'https://i.postimg.cc/FswT4qSQ/algae.png'},
     {id:'palm',name:'Palm',price:700,img:'https://i.postimg.cc/wjJ0TV58/palm.png'}
   ];
   // Correct cosmetic purchase uses a transaction so the map is merged, not replaced.
@@ -6975,7 +7027,7 @@
         if(id==='food'||id==='algae'){
           const tools=window.getFishFoodCounts(d);
           const foodName=id==='algae'?'Algae':'Fish Food';
-          tools[foodName]=(Number(tools[foodName])||0)+5;
+          tools[foodName]=(Number(tools[foodName])||0)+3;
           updates.fishTools=tools;
           updates.fishFoodCount=Object.values(tools).reduce((sum,v)=>sum+(Number(v)||0),0);
         }
@@ -6983,7 +7035,7 @@
         tx.update(ref,updates);
       });
       await awardPlayerXP(5, 'purchase');
-      showToast(id==='food'||id==='algae'?`Bought ${SHOP_ITEMS.find(x=>x.id===id).name} (5 uses)!`:`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); playGameSound('buy'); updateGameHUD(); loadBackpackData();
+      showToast(id==='food'||id==='algae'?`Bought ${SHOP_ITEMS.find(x=>x.id===id).name} (3 uses)!`:`${SHOP_ITEMS.find(x=>x.id===id).name} purchased!`); playGameSound('buy'); updateGameHUD(); loadBackpackData();
     }catch(e){showToast('Purchase failed: '+e.message);}
   }
   function openPaginatedShop(){shopPage=0;renderShopPage();document.getElementById('modal-shop-pages').style.display='flex';}
@@ -7011,12 +7063,119 @@
   }
   window.openBaitSelector=openBaitSelector;window.equipBaitType=equipBaitType;
 
-  // Grill state uses a single reserved fish object and two independent side percentages.
+  let grillOwnerUid = '', turkeyExpiryHandled = false, turkeyExpiryAttempt = 0;
+
+  function updateTurkeyButton() {
+    const button = document.getElementById('buy-event-turkey');
+    if (button) button.style.display = turkeyEventActive() ? 'inline-block' : 'none';
+  }
+
+  async function cleanupTurkeyInventory() {
+    if (Date.now() < TURKEY_END || !auth.currentUser || !auth.currentUser.emailVerified || accountSetupInProgress) return;
+    const uid = auth.currentUser.uid;
+    const active = grillOwnerUid === uid && grillState && grillState.kind === 'turkey' ? { ...grillState } : null;
+    const ref = db.collection('jugadores').doc(uid);
+    await db.runTransaction(async tx => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) return;
+      const data = snap.data() || {};
+      const updates = {};
+      // At the event cutoff, convert every turkey that is Well Cooked on BOTH sides
+      // into usable fish food. Every other raw/in-progress/overcooked/burnt turkey is deleted.
+      const turkeyInventory = Array.isArray(data.turkeys) ? data.turkeys : [];
+      let wellCookedToKeep = turkeyInventory.reduce((count, turkey) => {
+        const sides = turkeySides(turkey || {});
+        return count + (turkeyIsWellCooked(sides.side1, sides.side2) ? 1 : 0);
+      }, 0);
+      if (turkeyInventory.length) updates.turkeys = [];
+
+      const saved = data.grillState;
+      if (saved && saved.kind === 'turkey') {
+        const sides = turkeySides(saved);
+        if (active && active.fish && saved.fish && active.fish.id === saved.fish.id) {
+          sides.side1 = Math.max(sides.side1, Number(active.side1) || 0);
+          sides.side2 = Math.max(sides.side2, Number(active.side2) || 0);
+        }
+        if (turkeyIsWellCooked(sides.side1, sides.side2)) wellCookedToKeep += 1;
+        updates.grillState = null;
+      }
+
+      if (wellCookedToKeep > 0) {
+        const foods = window.getFishFoodCounts(data);
+        foods['Well Cooked Turkey'] = (Number(foods['Well Cooked Turkey']) || 0) + wellCookedToKeep;
+        updates.fishTools = foods;
+        updates.fishFoodCount = Object.values(foods).reduce((sum, value) => sum + (Number(value) || 0), 0);
+      }
+      if (Object.keys(updates).length) tx.update(ref, updates);
+    });
+    if (auth.currentUser && auth.currentUser.uid === uid && grillOwnerUid === uid && grillState && grillState.kind === 'turkey') {
+      grillState = null;
+      renderGrillState();
+    }
+  }
+
+  async function buyTurkey() {
+    if (!turkeyEventActive()) { updateTurkeyButton(); showToast('The turkey event is not active.'); return; }
+    try {
+      const ref = playerRef(), id = db.collection('jugadores').doc().id;
+      const reserved = await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw Error('Player profile not found.');
+        const data = snap.data() || {};
+        if (!turkeyEventActive()) throw Error('The turkey event has ended.');
+        if (!data.grillOwned) throw Error('Buy a Grill first.');
+        if (data.grillState) throw Error('Finish the current item before buying a turkey.');
+        if ((Number(data.coins) || 0) < 1000) throw Error('Not enough Coins. You need 1000.');
+        const state={kind:'turkey',fish:{id,name:'Turkey'},side1:0,side2:0,activeSide:1,zone:'hot',posX:35,posY:38,updatedAt:Date.now()};
+        tx.update(ref, { coins: Number(data.coins) - 1000, grillState: state });
+        return state;
+      });
+      grillOwnerUid=auth.currentUser.uid;
+      grillState=reserved;
+      document.getElementById('grill-fish-picker').style.display='none';
+      renderGrillState();
+      showToast('Bought 1 Raw Turkey! It is on the Grill.');
+      playGameSound('buy');
+      updateGameHUD();
+      loadBackpackData();
+    } catch (err) { showToast('Purchase failed: ' + err.message); }
+  }
+
+  async function addTurkeyToGrill(id) {
+    if (Date.now() >= TURKEY_END) { showToast('The turkey event has ended.'); return; }
+    if (grillState) { showToast('Finish the current item first.'); return; }
+    try {
+      const ref = playerRef();
+      await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw Error('Player profile not found.');
+        const data = snap.data() || {};
+        if (Date.now() >= TURKEY_END) throw Error('The turkey event has ended.');
+        if (data.grillState) throw Error('The Grill is already occupied.');
+        const turkeys = [...(data.turkeys || [])];
+        const index = turkeys.findIndex(turkey => turkey.id === id);
+        if (index < 0) throw Error('Turkey is no longer available.');
+        const sides = turkeySides(turkeys[index]);
+        turkeys.splice(index, 1);
+        const updates = { turkeys };
+        updates.grillState = { kind: 'turkey', fish: { id, name: 'Turkey' }, ...sides, activeSide: 1, zone: 'hot', posX: 35, posY: 38, updatedAt: Date.now() };
+        tx.update(ref, updates);
+      });
+      grillState = (await ref.get()).data().grillState;
+      document.getElementById('grill-fish-picker').style.display = 'none';
+      renderGrillState();
+      playGameSound('cook');
+    } catch (err) { showToast('Could not add turkey: ' + err.message); }
+  }
+
   async function openGrillStation(){
-    try{const d=(await playerRef().get()).data()||{};if(!d.grillOwned)throw Error('Buy the Grill in the Shop first (2500 Coins).');
-      grillState=d.grillState||null;renderGrillState();document.getElementById('modal-grill-station').style.display='flex';startGrillTicker();
+    try {
+      await cleanupTurkeyInventory();
+      const d=(await playerRef().get()).data()||{};if(!d.grillOwned)throw Error('Buy the Grill in the Shop first (2500 Coins).');
+      grillOwnerUid=auth.currentUser.uid;grillState=d.grillState||null;updateTurkeyButton();renderGrillState();document.getElementById('modal-grill-station').style.display='flex';startGrillTicker();
     }catch(e){showToast(e.message);}
   }
+  window.buyTurkey=buyTurkey;window.addTurkeyToGrill=addTurkeyToGrill;
   function getCookedFilter(pct){
     const p=Math.max(0,Math.min(100,Number(pct)||0));
     if(p<=0)return 'none';
@@ -7027,18 +7186,23 @@
   }
   function renderGrillState(){
     const img=document.getElementById('grill-fish-image'),status=document.getElementById('grill-status');
-    if(!grillState){img.style.display='none';img.style.filter='none';img.style.transform='scaleX(1)';status.textContent='Add a fish to begin. The fish cooks at 1% per second on the grill.';return;}
-    const f=ALLOWED_FISH_TYPES.find(x=>x.name===grillState.fish.name);img.src=f?f.img:'';img.style.display='block';
+    if(!grillState){img.style.display='none';img.style.filter='none';img.style.transform='scaleX(1)';status.textContent='Add a fish or turkey to begin. Food cooks at 1% per second on the grill.';return;}
+    const f=ALLOWED_FISH_TYPES.find(x=>x.name===grillState.fish.name);
+    const activePct=grillState.activeSide===1?grillState.side1:grillState.side2;
+    img.src=grillState.kind==='turkey'?TURKEY_IMAGES[stage(activePct)]:(f?f.img:'');
+    img.alt=grillState.kind==='turkey'?`${stage(activePct)} Turkey`:grillState.fish.name;
+    img.style.display='block';
     if(!window.__isDraggingGrillFish){
       const leftPos=typeof grillState.posX==='number'?grillState.posX:(grillState.zone==='rest'?70:35);
       const topPos=typeof grillState.posY==='number'?grillState.posY:38;
       img.style.left=leftPos+'%';
       img.style.top=topPos+'%';
     }
-    const activePct=grillState.activeSide===1?grillState.side1:grillState.side2;
-    img.style.filter=getCookedFilter(activePct);
+    img.style.filter=grillState.kind==='turkey'?'none':getCookedFilter(activePct);
     img.style.transform=grillState.activeSide===2?'scaleX(-1) scaleY(-1)':'scaleX(1) scaleY(1)';
-    status.textContent=`${grillState.fish.name} — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: ${grillState.activeSide===1?'Side 1':'Side 2'} (${grillState.zone==='rest'?'Resting':'On Fire'}).`;
+    status.textContent=grillState.kind==='turkey'
+      ? `Turkey — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: Side ${grillState.activeSide} (${grillState.zone==='rest'?'Resting':'On Fire'}). Both sides must be 46%–60%.`
+      : `${grillState.fish.name} — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: ${grillState.activeSide===1?'Side 1':'Side 2'} (${grillState.zone==='rest'?'Resting':'On Fire'}).`;
   }
   async function openGrillFishPicker(){
     const d=(await playerRef().get()).data()||{};const fishes=d.fishes||[];
@@ -7061,26 +7225,99 @@
       const badge=ck?`<span style="display:block;font-size:0.7rem;color:#b45309;">${esc(s1)} ${ck.side1}% / ${esc(s2)} ${ck.side2}%</span>`:'<span style="display:block;font-size:0.7rem;color:#64748b;">Raw (0%)</span>';
       return `<div class="rebuild-item"><img src="${m.img}" style="filter:${getCookedFilter(avgPct)}"><strong>${esc(f.name)}</strong>${badge}<button class="rebuild-btn" onclick="addFishToGrill('${esc(f.id||'')}','${esc(f.name)}','${esc(f.timestamp||'')}',${i})">Select</button></div>`;
     }).join(''):'<p>No eligible fish. Legacy, Secret and limited fish are protected.</p>';
+    if (Date.now() < TURKEY_END) {
+      c.innerHTML += (d.turkeys || []).map(turkey => {
+        const sides=turkeySides(turkey), first=stage(sides.side1), second=stage(sides.side2);
+        const label=first===second?`${first} Turkey`:'Turkey';
+        return `<div class="rebuild-item"><img src="${TURKEY_IMAGES[stage(Math.max(sides.side1,sides.side2))]}" alt="${esc(label)}"><strong>${esc(label)}</strong><p>Side 1: ${sides.side1}% (${first}) / Side 2: ${sides.side2}% (${second})</p><button class="rebuild-btn" data-turkey-id="${esc(turkey.id)}">Select</button></div>`;
+      }).join('');
+      c.querySelectorAll('[data-turkey-id]').forEach(button=>button.addEventListener('click',()=>addTurkeyToGrill(button.dataset.turkeyId)));
+    }
     document.getElementById('grill-fish-picker').style.display='block';
   }
   async function addFishToGrill(fishId,fishName,fishTimestamp,fallbackIndex){
     if(grillState){showToast('Finish or remove the current fish first.');return;}
-    try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};const fs=[...(d.fishes||[])];let idx=-1;if(fishId)idx=fs.findIndex(f=>f.id===fishId);if(idx<0&&fishTimestamp)idx=fs.findIndex(f=>f.name===fishName&&f.timestamp===fishTimestamp);if(idx<0&&typeof fallbackIndex==='number'&&fs[fallbackIndex]&&fs[fallbackIndex].name===fishName)idx=fallbackIndex;if(idx<0)idx=fs.findIndex(f=>f.name===fishName);if(idx<0)throw Error('Fish is no longer available.');const f=fs[idx];if(!getUnplacedFishes(d,fs).includes(f))throw Error('Fish is displayed in your Aquarium.');const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity))throw Error('This fish is protected from cooking.');const prevCk=f.cooking||{side1:0,side2:0};fs.splice(idx,1);tx.update(ref,{fishes:fs,grillState:{fish:{...f,id:f.id||'fish-'+Date.now()},side1:Number(prevCk.side1)||0,side2:Number(prevCk.side2)||0,activeSide:1,zone:'hot',posX:35,posY:38,updatedAt:Date.now()}});});
+    try{const ref=playerRef();await db.runTransaction(async tx=>{const s=await tx.get(ref);const d=s.data()||{};if(d.grillState)throw Error('The Grill is already occupied.');const fs=[...(d.fishes||[])];let idx=-1;if(fishId)idx=fs.findIndex(f=>f.id===fishId);if(idx<0&&fishTimestamp)idx=fs.findIndex(f=>f.name===fishName&&f.timestamp===fishTimestamp);if(idx<0&&typeof fallbackIndex==='number'&&fs[fallbackIndex]&&fs[fallbackIndex].name===fishName)idx=fallbackIndex;if(idx<0)idx=fs.findIndex(f=>f.name===fishName);if(idx<0)throw Error('Fish is no longer available.');const f=fs[idx];if(!getUnplacedFishes(d,fs).includes(f))throw Error('Fish is displayed in your Aquarium.');const meta=ALLOWED_FISH_TYPES.find(x=>x.name===f.name);if(!meta||meta.isLimited||['Legacy','Secret'].includes(meta.rarity))throw Error('This fish is protected from cooking.');const prevCk=f.cooking||{side1:0,side2:0};fs.splice(idx,1);tx.update(ref,{fishes:fs,grillState:{fish:{...f,id:f.id||'fish-'+Date.now()},side1:Number(prevCk.side1)||0,side2:Number(prevCk.side2)||0,activeSide:1,zone:'hot',posX:35,posY:38,updatedAt:Date.now()}});});
       grillState=(await ref.get()).data().grillState;document.getElementById('grill-fish-picker').style.display='none';renderGrillState();playGameSound('cook');loadBackpackData();
     }catch(e){showToast('Could not add fish: '+e.message);}
   }
-  function startGrillTicker(){if(grillTimer)clearInterval(grillTimer);grillTimer=setInterval(()=>{if(!grillState||grillState.zone!=='hot')return;const key=grillState.activeSide===1?'side1':'side2';if(grillState[key]>=100)return;grillState[key]=Math.min(100,grillState[key]+1);renderGrillState();},1000);if(grillSaveTimer)clearInterval(grillSaveTimer);grillSaveTimer=setInterval(saveGrillState,5000);}
-  async function saveGrillState(){if(!auth.currentUser||!grillState)return;try{await playerRef().update({grillState:grillState});}catch(e){console.error('Grill save failed',e);}}
+  function startGrillTicker(){if(grillTimer)clearInterval(grillTimer);grillTimer=setInterval(()=>{if(!grillState||grillState.zone!=='hot'||(grillState.kind==='turkey'&&Date.now()>=TURKEY_END))return;const key=grillState.activeSide===1?'side1':'side2';if(grillState[key]>=100)return;grillState[key]=Math.min(100,grillState[key]+1);renderGrillState();},1000);if(grillSaveTimer)clearInterval(grillSaveTimer);grillSaveTimer=setInterval(saveGrillState,5000);}
+  async function saveGrillState(){
+    if(!auth.currentUser||auth.currentUser.uid!==grillOwnerUid||!grillState)return;
+    try {
+      if(grillState.kind==='turkey') {
+        if(Date.now()>=TURKEY_END){await cleanupTurkeyInventory();return;}
+        const ref=playerRef(), current={...grillState};
+        const sides=await db.runTransaction(async tx=>{
+          const snap=await tx.get(ref);
+          const saved=snap.exists?(snap.data()||{}).grillState:null;
+          if(!saved||saved.kind!=='turkey'||saved.fish.id!==current.fish.id||Date.now()>=TURKEY_END)return null;
+          current.side1=Math.max(Number(saved.side1)||0,Number(current.side1)||0);
+          current.side2=Math.max(Number(saved.side2)||0,Number(current.side2)||0);
+          tx.update(ref,{grillState:current});
+          return {side1:current.side1,side2:current.side2};
+        });
+        if(grillState&&grillState.kind==='turkey'&&grillState.fish.id===current.fish.id){
+          if(sides){
+            grillState.side1=Math.max(grillState.side1,sides.side1);
+            grillState.side2=Math.max(grillState.side2,sides.side2);
+          } else {
+            grillState=null;showToast('The Grill changed in another session. Reopen it to refresh.');
+          }
+          renderGrillState();
+        }
+      } else {
+        const ref=playerRef(), current={...grillState};
+        const saved=await db.runTransaction(async tx=>{
+          const snap=await tx.get(ref);
+          const existing=snap.exists?(snap.data()||{}).grillState:null;
+          if(!existing||existing.kind==='turkey'||(existing.fish||{}).id!==current.fish.id)return false;
+          tx.update(ref,{grillState:current});
+          return true;
+        });
+        if(!saved&&grillState&&grillState.fish.id===current.fish.id){
+          grillState=null;renderGrillState();showToast('The Grill changed in another session. Reopen it to refresh.');
+        }
+      }
+    } catch(e){console.error('Grill save failed',e);}
+  }
   function toggleGrillZone(){if(!grillState)return;grillState.zone=grillState.zone==='hot'?'rest':'hot';renderGrillState();if(grillState.zone==='hot')playGameSound('cook');saveGrillState();}
-  function flipGrillFish(){if(!grillState){showToast('Add a fish to the grill first.');return;}grillState.activeSide=grillState.activeSide===1?2:1;const nextPct=grillState[grillState.activeSide===1?'side1':'side2'];if(grillState.zone==='rest'&&nextPct<99){grillState.zone='hot';}renderGrillState();playGameSound('flip');saveGrillState();showToast(`Flipped to Side ${grillState.activeSide}!`);}
-  async function finishGrilling(){if(!grillState)return;try{
+  function flipGrillFish(){if(!grillState){showToast('Add a fish or turkey to the grill first.');return;}grillState.activeSide=grillState.activeSide===1?2:1;const nextPct=grillState[grillState.activeSide===1?'side1':'side2'];if(grillState.zone==='rest'&&nextPct<99){grillState.zone='hot';}renderGrillState();playGameSound('flip');saveGrillState();showToast(`Flipped to Side ${grillState.activeSide}!`);}
+  async function finishTurkey() {
+    const current={...grillState};
+    try {
+      const ref=playerRef();
+      let result='';
+      await db.runTransaction(async tx=>{
+        const snap=await tx.get(ref);
+        if(!snap.exists)throw Error('Player profile missing.');
+        const data=snap.data()||{}, saved=data.grillState;
+        if(!saved||saved.kind!=='turkey'||saved.fish.id!==current.fish.id)throw Error('Turkey is no longer on the Grill.');
+        const sides={side1:Math.max(Number(current.side1)||0,Number(saved.side1)||0),side2:Math.max(Number(current.side2)||0,Number(saved.side2)||0)};
+        const updates={grillState:null};
+        if(turkeyIsWellCooked(sides.side1,sides.side2)) {
+          const foods=window.getFishFoodCounts(data);
+          foods['Well Cooked Turkey']=(Number(foods['Well Cooked Turkey'])||0)+1;
+          updates.fishTools=foods;
+          updates.fishFoodCount=Object.values(foods).reduce((sum,value)=>sum+(Number(value)||0),0);
+          result='Well Cooked Turkey is ready as fish food!';
+        } else if(Date.now()<TURKEY_END) {
+          updates.turkeys=[...(data.turkeys||[]),{id:current.fish.id,...sides}];
+          result='Turkey returned to your Fish Foods inventory.';
+        } else result='The turkey event ended and the turkey was not Well Cooked.';
+        tx.update(ref,updates);
+      });
+      grillState=null;renderGrillState();showToast(result);playGameSound('ding');loadBackpackData();
+    } catch(err) {showToast('Could not finish cooking: '+err.message);}
+  }
+  async function finishGrilling(){if(!grillState)return;if(grillState.kind==='turkey')return finishTurkey();try{
     const side1=Number(grillState.side1)||0,side2=Number(grillState.side2)||0;
     const done={...grillState.fish,cooking:{side1,side2,stage1:stage(side1),stage2:stage(side2),cookedAt:Date.now()}};
     const earnsDing=side1>=100&&side2>=100;
     const ref=playerRef();let dingWasNew=false,cookWasNew=false;
     await db.runTransaction(async tx=>{
       const s=await tx.get(ref);if(!s.exists)throw Error('Player profile missing.');
-      const d=s.data()||{};if(!d.grillState)throw Error('No fish is on the Grill.');
+      const d=s.data()||{};if(!d.grillState||d.grillState.kind==='turkey'||(d.grillState.fish||{}).id!==done.id)throw Error('This fish is no longer on the Grill.');
       const achievements={...(d.achievements||{})};
       cookWasNew=!achievements.cookMaster;achievements.cookMaster=true;
       if(earnsDing&&!achievements.dingReady){achievements.dingReady=true;dingWasNew=true;}
@@ -7093,6 +7330,16 @@
   }catch(e){showToast('Could not finish cooking: '+e.message);}}
   async function closeGrillStation(){await saveGrillState();if(grillTimer)clearInterval(grillTimer);if(grillSaveTimer)clearInterval(grillSaveTimer);grillTimer=grillSaveTimer=null;closeRebuildModal('modal-grill-station');}
   window.openGrillStation=openGrillStation;window.openGrillFishPicker=openGrillFishPicker;window.addFishToGrill=addFishToGrill;window.toggleGrillZone=toggleGrillZone;window.flipGrillFish=flipGrillFish;window.finishGrilling=finishGrilling;window.closeGrillStation=closeGrillStation;
+  auth.onAuthStateChanged(() => { turkeyExpiryHandled=false; turkeyExpiryAttempt=0; });
+  setInterval(() => {
+    updateTurkeyButton();
+    const user=auth.currentUser, at=Date.now();
+    if(at<TURKEY_END||!user||!user.emailVerified||accountSetupInProgress||turkeyExpiryHandled||at-turkeyExpiryAttempt<30000)return;
+    turkeyExpiryAttempt=at;
+    cleanupTurkeyInventory().then(()=>{
+      if(auth.currentUser&&auth.currentUser.uid===user.uid)turkeyExpiryHandled=true;
+    }).catch(err=>console.error('Could not expire turkeys',err));
+  },1000);
 
   // Bob trade uses exact two-side stages, a persistent 10-minute timestamp and one-time claim.
   let bobCountdownInterval=null;
@@ -7142,12 +7389,18 @@
   async function openCosmeticsInventory(){try{const d=(await playerRef().get()).data()||{},inv=d.cosmeticsInventory||{};const cMap=d.aquariumCosmeticsMap||{};const html=Object.keys(TANK_PLACEABLE_COSMETICS).map(name=>{const n=Number(inv[name])||0,placedCount=Object.values(cMap).flat().filter(x=>x===name).length,img=TANK_PLACEABLE_COSMETICS[name];if(n<=0&&placedCount===0)return '';return `<div class="rebuild-item"><img src="${esc(img)}" alt="${esc(name)}"><strong>${esc(name)}</strong><p>${esc(COSMETIC_DESCRIPTIONS[name])}</p><p>In bag: ${n} | Placed: ${placedCount}</p></div>`;}).join('');document.getElementById('cosmetic-inventory').innerHTML=html||'<p>You do not own any cosmetics yet.</p>';document.getElementById('modal-cosmetics').style.display='flex';}catch(e){showToast(e.message);}}
   async function openFishFoodsInventory(){
     try{
+      await cleanupTurkeyInventory();
       const snapshot=await playerRef().get();
       if(!snapshot.exists)throw Error('Player profile not found.');
-      const counts=window.getFishFoodCounts(snapshot.data()||{});
-      const html=window.FISH_FOOD_TYPES.filter(food=>(Number(counts[food.name])||0)>0).map(food=>{
+      const data=snapshot.data()||{}, counts=window.getFishFoodCounts(data);
+      let html=window.FISH_FOOD_TYPES.filter(food=>(Number(counts[food.name])||0)>0).map(food=>{
         const uses=Number(counts[food.name])||0;
         return `<div class="rebuild-item"><img src="${esc(food.img)}" alt="${esc(food.name)}"><strong>${esc(food.name)}</strong><p>${esc(food.desc)}</p><p>${uses} use${uses===1?'':'s'} left · +${food.happiness} happiness per use</p></div>`;
+      }).join('');
+      if(Date.now()<TURKEY_END)html+=(data.turkeys||[]).map(turkey=>{
+        const sides=turkeySides(turkey),first=stage(sides.side1),second=stage(sides.side2);
+        const label=first===second?`${first} Turkey`:'Turkey';
+        return `<div class="rebuild-item"><img src="${TURKEY_IMAGES[stage(Math.max(sides.side1,sides.side2))]}" alt="${esc(label)}"><strong>${esc(label)}</strong><p>Side 1: ${sides.side1}% (${first}) / Side 2: ${sides.side2}% (${second}). Cook it on the Grill.</p></div>`;
       }).join('');
       document.getElementById('fish-foods-inventory-list').innerHTML=html||'<p>You do not own any fish food yet.</p>';
       const modal=document.getElementById('modal-fish-foods-inventory');
@@ -8891,9 +9144,9 @@
       id: 'fish-food',
       name: 'Fish Food',
       img: 'https://i.postimg.cc/CLp4gVxy/fish-food.png',
-      price: 150,
-      feedsPerPurchase: 5,
-      usesPerPack: 5,
+      price: 350,
+      feedsPerPurchase: 3,
+      usesPerPack: 3,
       happiness: 20,
       desc: 'A balanced meal that keeps any fish happy.'
     },
@@ -8906,12 +9159,20 @@
       desc: 'A cheesy treat from Sir. Squeaksalot that makes fish extra happy.'
     },
     {
+      id: 'turkey',
+      name: 'Well Cooked Turkey',
+      img: 'https://i.postimg.cc/7Y1WdwmS/turkey-cooked.png',
+      usesPerPack: 1,
+      happiness: 50,
+      desc: 'A well cooked turkey that restores 50% happiness.'
+    },
+    {
       id: 'algae',
       name: 'Algae',
       img: 'https://i.postimg.cc/FswT4qSQ/algae.png',
-      price: 250,
-      feedsPerPurchase: 5,
-      usesPerPack: 5,
+      price: 750,
+      feedsPerPurchase: 3,
+      usesPerPack: 3,
       happiness: 35,
       desc: 'A fresh aquatic snack that brings a generous boost of happiness to any fish.'
     }
@@ -8923,14 +9184,23 @@
 
   const ACTIVE_DECAY_MS = 90 * 1000;
   const AWAY_DECAY_MS = 5 * 60 * 1000;
-  const PAY_INTERVAL_MS = 5 * 60 * 1000;
+  const PAY_INTERVAL_MS = 10 * 60 * 1000;
   const HAPPINESS_START = 50;
   const DOTS_PER_FEED = 10;
-  const RARITY_INCOME = { Common: 12, Rare: 18, Epic: 25, Legendary: 35, Mythic: 50, Divine: 70, Legacy: 85, Secret: 100 };
-  const activity = [{ at: nowMs(), active: document.visibilityState === 'visible' }];
-  document.addEventListener('visibilitychange', () => {
-    activity.push({ at: nowMs(), active: document.visibilityState === 'visible' });
-  });
+  const RARITY_INCOME = { Common: 6, Rare: 9, Epic: 12, Legendary: 17, Mythic: 25, Divine: 35, Legacy: 42, Secret: 50 };
+  const ownerIsActive = () => !!(auth.currentUser && auth.currentUser.emailVerified && !accountSetupInProgress && navigator.onLine && document.visibilityState === 'visible');
+  const activity = [{ at: nowMs(), active: ownerIsActive() }];
+  const recordActivity = () => activity.push({ at: nowMs(), active: ownerIsActive() });
+  const syncActivity = () => {
+    recordActivity();
+    if (!navigator.onLine || !auth.currentUser || !auth.currentUser.emailVerified || accountSetupInProgress) return;
+    if (AQ.open && AQ.owner) settleRoom(AQ.token);
+    else settleBackground(auth.currentUser.uid);
+  };
+  document.addEventListener('visibilitychange', syncActivity);
+  window.addEventListener('online', syncActivity);
+  window.addEventListener('offline', syncActivity);
+  auth.onAuthStateChanged(recordActivity);
 
   const speciesDef = name => (ALLOWED_FISH_TYPES || []).find(f => f.name === name) || { name: name, rarity: 'Common', value: 0, img: '' };
   const isLimitedFish = def => !!(def && (def.isLimited || ['Legacy', 'Secret'].includes(def.rarity)));
@@ -9574,11 +9844,13 @@
     token: 0,
     menuIndex: -1,
     paying: false,
+    unsubscribe: null,
     hapTimer: null
   };
 
   let tinyHungryUnlocked = false;
   let tinyHungryUnlockPending = false;
+  const turkeyAchievementPending = new Set();
   let happinessWrites = Promise.resolve(), happinessRevision = 0;
 
   async function unlockTinyButHungry() {
@@ -9610,6 +9882,32 @@
     }
   }
 
+  async function unlockTurkeyAchievement() {
+    const uid = AQ.uid;
+    if (!AQ.owner || !uid || !auth.currentUser || auth.currentUser.uid !== uid || turkeyAchievementPending.has(uid)) return;
+    if (AQ.doc && AQ.doc.achievements && AQ.doc.achievements.notACommonOne) return;
+    turkeyAchievementPending.add(uid);
+    try {
+      const ref = db.collection('jugadores').doc(uid);
+      const unlocked = await db.runTransaction(async tx => {
+        const snap = await tx.get(ref);
+        if (!snap.exists || (snap.data().achievements || {}).notACommonOne) return false;
+        tx.update(ref, { 'achievements.notACommonOne': true });
+        return true;
+      });
+      if (unlocked && AQ.uid === uid && AQ.doc) {
+        AQ.doc.achievements = { ...(AQ.doc.achievements || {}), notACommonOne: true };
+      }
+      if (unlocked && auth.currentUser && auth.currentUser.uid === uid && window.showAchievementUnlocked) {
+        window.showAchievementUnlocked('Not a common one', "Didn't know fishes ate that.", 'Give a well cooked turkey to a fish.');
+      }
+    } catch (err) {
+      console.error('Could not unlock Not a common one', err);
+    } finally {
+      turkeyAchievementPending.delete(uid);
+    }
+  }
+
   function slotElement(index) {
     return $(index < 4 ? `shelf-top-${index}` : `shelf-bot-${index - 4}`);
   }
@@ -9618,7 +9916,10 @@
     const entry = AQ.happiness[key];
     if (!entry) return HAPPINESS_START;
     const at = nowMs();
-    return clamp(num(entry.v) - happinessDecay(num(entry.t) || at, at), 0, 100);
+    const from = num(entry.t) || at;
+    const activeUntil = clamp(num(AQ.doc && AQ.doc.aquariumActiveUntil), from, at);
+    const decay = AQ.owner ? happinessDecay(from, at) : (activeUntil - from) / ACTIVE_DECAY_MS + (at - activeUntil) / AWAY_DECAY_MS;
+    return clamp(num(entry.v) - decay, 0, 100);
   }
 
   function updateSlotLabels() {
@@ -9770,7 +10071,8 @@
       const update = {
         aquariumHappinessMap: happiness,
         aquariumFishNamesMap: names,
-        aquariumFishSpeciesMap: speciesMap
+        aquariumFishSpeciesMap: speciesMap,
+        aquariumActiveUntil: ownerIsActive() ? at + 65000 : at
       };
       if (paid > 0) update.coins = num(data.coins) + paid;
       tx.update(ref, update);
@@ -10007,14 +10309,16 @@
   function spawnFallingFood(viewport, image, opts) {
     opts = opts || {};
     const bounds = feedingBounds(viewport, image);
+    const singlePortion = opts.foodName === 'Tiny Cheese' || opts.foodName === 'Well Cooked Turkey';
     const portion = {
       img: opts.target ? image : null,
       vp: viewport,
       key: opts.key || null,
       species: opts.species || null,
-      happinessPerDot: (findFood(opts.foodName) || FISH_FOOD_TYPES[0]).happiness / (opts.foodName === 'Tiny Cheese' ? 1 : DOTS_PER_FEED),
+      foodName: opts.foodName,
+      happinessPerDot: (findFood(opts.foodName) || FISH_FOOD_TYPES[0]).happiness / (singlePortion ? 1 : DOTS_PER_FEED),
       dots: [],
-      remaining: opts.foodName === 'Tiny Cheese' ? 1 : DOTS_PER_FEED,
+      remaining: singlePortion ? 1 : DOTS_PER_FEED,
       container: document.createElement('div'),
       floor: bounds.floor,
       minX: bounds.minX,
@@ -10029,9 +10333,9 @@
       : (bounds.minX + bounds.maxX) / 2;
     const halfSpread = Math.min(26, Math.max(0, bounds.maxX - bounds.minX) / 2);
 
-    const portionCount = opts.foodName === 'Tiny Cheese' ? 1 : DOTS_PER_FEED;
+    const portionCount = singlePortion ? 1 : DOTS_PER_FEED;
     for (let i = 0; i < portionCount; i++) {
-      const usesFoodImage = opts.foodName === 'Tiny Cheese' || opts.foodName === 'Algae';
+      const usesFoodImage = singlePortion || opts.foodName === 'Algae';
       const dot = document.createElement(usesFoodImage ? 'img' : 'span');
       dot.className = 'fish-food-dot';
       if (usesFoodImage) {
@@ -10073,6 +10377,12 @@
     if (!AQ.owner || AQ.feedPending) return;
     if (!AQ.doc) await loadViewDoc(AQ.token);
     if (!AQ.open) return;
+    if (AQ.paying) { showToast('Please wait for the fish earnings to update.'); return; }
+    const token = AQ.token;
+    AQ.feedPending = true;
+    await settleRoom(token);
+    AQ.feedPending = false;
+    if (!AQ.open || token !== AQ.token) return;
     const species = AQ.slots[index];
     if (!species) {
       showToast('No fish in this slot.');
@@ -10096,7 +10406,6 @@
     const key = `${AQ.roomKey}:${index}`;
     const name = AQ.names[key] || species;
     const happiness = currentHappiness(key, species);
-    const token = AQ.token;
     AQ.feedPending = true;
     const consumed = await consumeFood(foodName, 1);
     AQ.feedPending = false;
@@ -10146,6 +10455,7 @@
       const dotIndex = portion.dots.indexOf(dot);
       if (dotIndex >= 0) portion.dots[dotIndex] = null;
       portion.remaining = portion.dots.filter(item => item && item.isConnected && !item.__expired).length;
+      if (portion.foodName === 'Well Cooked Turkey') unlockTurkeyAchievement();
 
       const current = currentHappiness(portion.key, portion.species);
       const entry = AQ.happiness[portion.key] || { v: current, t: nowMs(), p: nowMs() };
@@ -10185,6 +10495,7 @@
       const happiness = currentHappiness(portion.key, portion.species);
       const canEat = Math.max(0, Math.min(alive.length, Math.ceil((100 - happiness) / portion.happinessPerDot)));
       if (canEat > 0) {
+        if (portion.foodName === 'Well Cooked Turkey') unlockTurkeyAchievement();
         happinessRevision++;
         const entry = AQ.happiness[portion.key] || { v: happiness, t: nowMs(), p: nowMs() };
         AQ.happiness[portion.key] = {
@@ -10310,14 +10621,14 @@
     menu.querySelector('#tf-fish-happiness-hint').textContent = happiness >= 99.5
       ? 'This fish is completely full. Extra food will sink and be wasted.'
       : (AQ.owner
-        ? `Feed your fish to raise happiness. This ${def.rarity} fish earns up to ${maxIncome} coins every 5 minutes.`
+        ? `Feed your fish to raise happiness. This ${def.rarity} fish earns up to ${maxIncome} coins every 10 minutes.`
         : 'Happiness decays over time. The owner can feed this fish to make it happier.');
 
     menu.querySelector('#tf-fish-rarity-stat').textContent = def.rarity;
     menu.querySelector('#tf-fish-price').textContent = isLimitedFish(def)
       ? 'Not defined'
       : (def.value ? `${def.value} 💰` : 'Not defined');
-    menu.querySelector('#tf-fish-earn').textContent = `${perTick} 💰 / 5 min`;
+    menu.querySelector('#tf-fish-earn').textContent = `${perTick} 💰 / 10 min`;
     menu.querySelector('#tf-fish-status').textContent = happiness >= 99.5 ? 'Full' : happiness >= 60 ? 'Content' : happiness >= 25 ? 'Hungry' : 'Very hungry';
 
     const manage = menu.querySelector('#tf-fish-manage');
@@ -10423,6 +10734,8 @@
   if (typeof originalRenderAquarium === 'function') {
     window.renderAquarium = function (username, fishes, tanksMap, cosmeticMap, tankTypesMap) {
       if (AQ.portions.length) finalizeFeeding();
+      if (AQ.unsubscribe) AQ.unsubscribe();
+      AQ.unsubscribe = null;
 
       AQ.open = true;
       AQ.owner = !!isViewingMyAquarium;
@@ -10450,7 +10763,13 @@
       refreshFeedBarUI();
       updateSlotLabels();
       loadViewDoc(token).then(data => {
-        if (data && AQ.owner) settleRoom(token);
+        if (!data || token !== AQ.token || !AQ.open) return;
+        if (AQ.owner) settleRoom(token);
+        else AQ.unsubscribe = db.collection('jugadores').doc(AQ.uid).onSnapshot(snapshot => {
+          if (!snapshot.exists || token !== AQ.token || !AQ.open) return;
+          AQ.doc = snapshot.data() || {};
+          applyAquariumDoc(AQ.doc, token);
+        }, err => console.error('Could not watch aquarium data', err));
       });
       return result;
     };
@@ -10482,6 +10801,8 @@
       hideFishMenu();
       hideFoodPicker();
       AQ.open = false;
+      if (AQ.unsubscribe) AQ.unsubscribe();
+      AQ.unsubscribe = null;
       return originalCloseAquariumModal.apply(this, arguments);
     };
   }
@@ -10493,6 +10814,8 @@
       hideFishMenu();
       hideFoodPicker();
       AQ.open = false;
+      if (AQ.unsubscribe) AQ.unsubscribe();
+      AQ.unsubscribe = null;
       return originalCloseAllModals.apply(this, arguments);
     };
   }
@@ -10505,11 +10828,20 @@
     });
   }
 
+  const adminTurkeyStages = {
+    'Raw Turkey': 0,
+    'Slightly Cooked Turkey': 25,
+    'Overcooked Turkey': 70,
+    'Burnt Turkey': 90
+  };
+
   function initAdminFood() {
-    const datalist = $('adminFoodTypes');
-    if (datalist) {
-      datalist.innerHTML = FISH_FOOD_TYPES.map(def => `<option value="${esc(def.name)}"></option>`).join('');
-    }
+    const foodNames = FISH_FOOD_TYPES.map(def => def.name);
+    const foodList = $('adminFoodTypes');
+    const adminList = $('adminFoodAndTurkeyTypes');
+    if (foodList) foodList.innerHTML = foodNames.map(name => `<option value="${esc(name)}"></option>`).join('');
+    if (adminList) adminList.innerHTML = [...foodNames, ...Object.keys(adminTurkeyStages)]
+      .map(name => `<option value="${esc(name)}"></option>`).join('');
   }
 
   function renderAdminFishFoodList(data) {
@@ -10578,23 +10910,35 @@
       if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) throw new Error('Admin only.');
       const username = ($('adminTargetUsername') && $('adminTargetUsername').value.trim()) || '';
       const typedName = ($('adminFoodName') && $('adminFoodName').value.trim()) || '';
-      const quantity = Math.floor(Number(($('adminFoodQty') && $('adminFoodQty').value) || '1'));
-      if (!username || !typedName) throw new Error('Enter the target username and the exact food name.');
-      if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error('Enter a whole number of feeds (1 or more).');
+      const quantity = Number(($('adminFoodQty') && $('adminFoodQty').value) || '1');
+      if (!username || !typedName) throw new Error('Enter the target username and the exact item name.');
+      if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error('Enter a whole number (1 or more).');
       const def = findFood(typedName);
-      if (!def) throw new Error('Unknown fish food. Use the exact name shown in the list.');
+      const turkeyName = Object.keys(adminTurkeyStages).find(name => name.toLowerCase() === typedName.toLowerCase());
+      if (!def && !turkeyName) throw new Error('Unknown fish food or turkey. Use the exact name shown in the list.');
+      if (turkeyName && quantity > 100) throw new Error('Give at most 100 turkeys at a time.');
       const uid = await getUidByUsername(username);
       if (!uid) throw new Error('Player not found.');
       const ref = db.collection('jugadores').doc(uid);
+      const turkeys = turkeyName ? Array.from({ length: quantity }, () => ({
+        id: db.collection('jugadores').doc().id,
+        side1: adminTurkeyStages[turkeyName],
+        side2: adminTurkeyStages[turkeyName]
+      })) : [];
       await db.runTransaction(async tx => {
         const snap = await tx.get(ref);
         if (!snap.exists) throw new Error('Player profile not found.');
         const data = snap.data() || {};
-        const tools = foodCountsFromDoc(data);
-        tools[def.name] = num(tools[def.name]) + quantity;
-        tx.update(ref, { fishTools: tools, fishFoodCount: totalFood(tools) });
+        if (turkeyName) {
+          if (Date.now() >= Date.UTC(2026, 10, 27, 6)) throw new Error('Only Well Cooked Turkey can be given after the event.');
+          tx.update(ref, { turkeys: [...(data.turkeys || []), ...turkeys] });
+        } else {
+          const tools = foodCountsFromDoc(data);
+          tools[def.name] = num(tools[def.name]) + quantity;
+          tx.update(ref, { fishTools: tools, fishFoodCount: totalFood(tools) });
+        }
       });
-      showToast(`Gave ${quantity} ${def.name} feed${quantity === 1 ? '' : 's'} to ${username}.`);
+      showToast(`Gave ${quantity} ${turkeyName || def.name} to ${username}.`);
       if (window.playGameSound) playGameSound('buy');
       if ($('adminFoodName')) $('adminFoodName').value = '';
       if (typeof loadTargetUserInventoryForAdmin === 'function') loadTargetUserInventoryForAdmin();
@@ -10605,11 +10949,11 @@
 
   let backgroundPaying = false;
   async function settleBackground(uid) {
-    if (backgroundPaying || (AQ.open && AQ.owner)) return;
+    if (accountSetupInProgress || backgroundPaying || (AQ.open && AQ.owner)) return;
     backgroundPaying = true;
     try {
       await happinessWrites.catch(() => {});
-      if (!auth.currentUser || auth.currentUser.uid !== uid || (AQ.open && AQ.owner)) return;
+      if (accountSetupInProgress || !auth.currentUser || auth.currentUser.uid !== uid || (AQ.open && AQ.owner)) return;
       const outcome = await settleAllRooms(uid);
       if (outcome && outcome.paid > 0 && auth.currentUser && auth.currentUser.uid === uid) {
         updateGameHUD();
@@ -10627,17 +10971,17 @@
   initClippyTypewriter();
   initAdminFood();
   auth.onAuthStateChanged(user => {
-    if (user && user.emailVerified) settleBackground(user.uid);
+    if (user && user.emailVerified && !accountSetupInProgress) settleBackground(user.uid);
   });
 
   setInterval(() => {
     if (AQ.open) updateSlotLabels();
-  }, 30000);
+  }, 10000);
 
   setInterval(() => {
     if (AQ.open && AQ.owner) settleRoom(AQ.token);
     else if (auth.currentUser && auth.currentUser.emailVerified) settleBackground(auth.currentUser.uid);
-  }, PAY_INTERVAL_MS);
+  }, 60000);
 })();
 </script>
 <script>
@@ -10861,6 +11205,14 @@
   mapImage.src = 'https://i.postimg.cc/3N1KpnjJ/map2.png';
   let page = 0, birdTimer = null, bird = null, birdBusy = false;
 
+  window.switchAchievementsSection = function(section) {
+    const limited=section==='limited';
+    document.getElementById('achievements-regular-section').style.display=limited?'none':'block';
+    document.getElementById('achievements-limited-section').style.display=limited?'block':'none';
+    document.getElementById('achievements-regular-tab').setAttribute('aria-pressed',String(!limited));
+    document.getElementById('achievements-limited-tab').setAttribute('aria-pressed',String(limited));
+  };
+
   function renderPage() {
     const cards = Array.from(list.children);
     const pages = Math.max(1, Math.ceil(cards.length / 5));
@@ -10884,6 +11236,11 @@
   window.openModal = function (id) {
     if (id === 'modal-achievements') {
       page = 0;
+      window.switchAchievementsSection('regular');
+      const limitedCard=document.getElementById('ach-not-a-common-one');
+      const limitedStatus=document.getElementById('ach-not-a-common-one-status');
+      limitedCard.style.opacity='.5';limitedCard.style.borderColor='#cbd5e1';
+      limitedStatus.textContent='Locked';limitedStatus.style.color='#e74c3c';
       list.querySelectorAll(':scope > div').forEach(card => {
         card.style.opacity = '.5'; card.style.borderColor = '#cbd5e1';
         const status = card.querySelector('[id$="-status"], [id^="status-"]');
