@@ -1685,14 +1685,20 @@
       </nav>
       </div>
       <section id="achievements-limited-section" style="display:none;">
-        <h3>Limited</h3>
-        <details open>
-          <summary style="cursor:pointer;font-weight:bold;margin-bottom:10px;">Thanksgiving 2026</summary>
-          <div id="ach-not-a-common-one" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:.5;">
-            <div><h4 style="margin:0 0 3px;font-size:1rem;color:#1e3a8a;">Not a common one</h4><p style="margin:0 0 3px;font-size:.85rem;color:#1f2937;font-weight:bold;">Didn't know fishes ate that.</p><span style="font-size:.75rem;color:#64748b;">Give a well cooked turkey to a fish.</span></div>
-            <div id="ach-not-a-common-one-status" style="margin-left:auto;font-weight:bold;color:#e74c3c;font-size:.85rem;">Locked</div>
+        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 style="margin:0;">Limited</h3>
+          <select id="achievements-limited-category" onchange="switchLimitedAchievementCategory(this.value)" style="padding:8px;font-weight:bold;max-width:65%;">
+            <option value="thanksgiving-2026">Thanksgiving 2026</option>
+          </select>
+        </div>
+        <div id="achievements-limited-categories">
+          <div data-limited-achievement-category="thanksgiving-2026">
+            <div id="ach-not-a-common-one" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;opacity:.5;">
+              <div><h4 style="margin:0 0 3px;font-size:1rem;color:#1e3a8a;">Not a common one</h4><p style="margin:0 0 3px;font-size:.85rem;color:#1f2937;font-weight:bold;">Didn't know fishes ate that.</p><span style="font-size:.75rem;color:#64748b;">Give a well cooked turkey to a fish.</span></div>
+              <div id="ach-not-a-common-one-status" style="margin-left:auto;font-weight:bold;color:#e74c3c;font-size:.85rem;">Locked</div>
+            </div>
           </div>
-        </details>
+        </div>
       </section>
     </div>
   </div>
@@ -1831,6 +1837,7 @@
         </div>
       </div>
       <button type="button" class="modal-action-btn" style="background:#27ae60;margin-bottom:15px" onclick="adminGiveNamedItem('food')">Give Fish Food or Turkey</button>
+      <button type="button" class="modal-action-btn" style="background:#d97706;margin-bottom:15px" onclick="adminGiveNamedItem('turkey')">Give Test Turkey</button>
 
       <hr style="border:0; border-top:1px solid #cbd5e1; margin:15px 0;">
       <h3>User Cosmetics (Give / Remove)</h3>
@@ -6836,11 +6843,11 @@
       <div id="modal-grill-station" class="rebuild-modal"><div class="rebuild-card">
         <button class="rebuild-btn red" style="float:right" onclick="closeGrillStation()">Close</button><h2>Grill Station</h2>
         <div id="grill-fish-stage" style="background:#f8fafc;border:1px solid #cbd5e1"><img src="${IMG.grillTop}" alt="Grill top" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none"><img id="grill-fish-image" class="grill-fish" style="display:none" ondblclick="flipGrillFish()"></div>
-        <p id="grill-status" style="font-size:.9rem;color:#475569">Add a fish to begin. Drag anywhere on the grill (left/center = hot, far right = rest), or press Flip Fish.</p>
+        <p id="grill-status" style="font-size:.9rem;color:#475569">Add a fish or turkey to begin.</p>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
-          <button class="rebuild-btn" onclick="openGrillFishPicker()">Add Fish or Turkey</button>
+          <button class="rebuild-btn" onclick="openGrillFishPicker()">Add</button>
           <button id="buy-event-turkey" class="rebuild-btn" style="display:none" onclick="buyTurkey()">Buy a turkey for 1000</button>
-          <button id="btn-flip-grill-fish" class="rebuild-btn" style="background:#d97706" onclick="flipGrillFish()">Flip Fish / Turkey</button>
+          <button id="btn-flip-grill-fish" class="rebuild-btn" style="background:#d97706" onclick="flipGrillFish()">Flip</button>
           <button class="rebuild-btn alt" onclick="finishGrilling()">Finish Cooking</button>
         </div>
         <div id="grill-fish-picker" style="display:none;margin-top:10px"><h3>Select a fish or turkey</h3><div id="grill-fish-options" class="rebuild-grid"></div></div>
@@ -7079,15 +7086,19 @@
       const snap = await tx.get(ref);
       if (!snap.exists) return;
       const data = snap.data() || {};
-      const updates = {};
+      // This per-player marker makes this player's cutoff cleanup idempotent.
+      if (data.turkeyEventCleanup2026 === true) return;
+      const updates = { turkeyEventCleanup2026: true };
       // At the event cutoff, convert every turkey that is Well Cooked on BOTH sides
       // into usable fish food. Every other raw/in-progress/overcooked/burnt turkey is deleted.
       const turkeyInventory = Array.isArray(data.turkeys) ? data.turkeys : [];
+      const testTurkeys = turkeyInventory.filter(turkey => turkey && turkey.testOnly === true);
       let wellCookedToKeep = turkeyInventory.reduce((count, turkey) => {
+        if (turkey && turkey.testOnly === true) return count;
         const sides = turkeySides(turkey || {});
         return count + (turkeyIsWellCooked(sides.side1, sides.side2) ? 1 : 0);
       }, 0);
-      if (turkeyInventory.length) updates.turkeys = [];
+      if (turkeyInventory.length) updates.turkeys = testTurkeys;
 
       const saved = data.grillState;
       if (saved && saved.kind === 'turkey') {
@@ -7142,7 +7153,6 @@
   }
 
   async function addTurkeyToGrill(id) {
-    if (Date.now() >= TURKEY_END) { showToast('The turkey event has ended.'); return; }
     if (grillState) { showToast('Finish the current item first.'); return; }
     try {
       const ref = playerRef();
@@ -7150,15 +7160,17 @@
         const snap = await tx.get(ref);
         if (!snap.exists) throw Error('Player profile not found.');
         const data = snap.data() || {};
-        if (Date.now() >= TURKEY_END) throw Error('The turkey event has ended.');
         if (data.grillState) throw Error('The Grill is already occupied.');
         const turkeys = [...(data.turkeys || [])];
         const index = turkeys.findIndex(turkey => turkey.id === id);
         if (index < 0) throw Error('Turkey is no longer available.');
-        const sides = turkeySides(turkeys[index]);
+        const selectedTurkey = turkeys[index];
+        const isTestTurkey = selectedTurkey.testOnly === true;
+        if (!isTestTurkey && Date.now() >= TURKEY_END) throw Error('The turkey event has ended.');
+        const sides = turkeySides(selectedTurkey);
         turkeys.splice(index, 1);
         const updates = { turkeys };
-        updates.grillState = { kind: 'turkey', fish: { id, name: 'Turkey' }, ...sides, activeSide: 1, zone: 'hot', posX: 35, posY: 38, updatedAt: Date.now() };
+        updates.grillState = { kind: 'turkey', testOnly: isTestTurkey, fish: { id, name: 'Turkey' }, ...sides, activeSide: 1, zone: 'hot', posX: 35, posY: 38, updatedAt: Date.now() };
         tx.update(ref, updates);
       });
       grillState = (await ref.get()).data().grillState;
@@ -7201,7 +7213,7 @@
     img.style.filter=grillState.kind==='turkey'?'none':getCookedFilter(activePct);
     img.style.transform=grillState.activeSide===2?'scaleX(-1) scaleY(-1)':'scaleX(1) scaleY(1)';
     status.textContent=grillState.kind==='turkey'
-      ? `Turkey — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: Side ${grillState.activeSide} (${grillState.zone==='rest'?'Resting':'On Fire'}). Both sides must be 46%–60%.`
+      ? `Turkey — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: Side ${grillState.activeSide} (${grillState.zone==='rest'?'Resting':'On Fire'}).`
       : `${grillState.fish.name} — Side 1: ${grillState.side1}% (${stage(grillState.side1)}), Side 2: ${grillState.side2}% (${stage(grillState.side2)}). Cooking: ${grillState.activeSide===1?'Side 1':'Side 2'} (${grillState.zone==='rest'?'Resting':'On Fire'}).`;
   }
   async function openGrillFishPicker(){
@@ -7225,14 +7237,14 @@
       const badge=ck?`<span style="display:block;font-size:0.7rem;color:#b45309;">${esc(s1)} ${ck.side1}% / ${esc(s2)} ${ck.side2}%</span>`:'<span style="display:block;font-size:0.7rem;color:#64748b;">Raw (0%)</span>';
       return `<div class="rebuild-item"><img src="${m.img}" style="filter:${getCookedFilter(avgPct)}"><strong>${esc(f.name)}</strong>${badge}<button class="rebuild-btn" onclick="addFishToGrill('${esc(f.id||'')}','${esc(f.name)}','${esc(f.timestamp||'')}',${i})">Select</button></div>`;
     }).join(''):'<p>No eligible fish. Legacy, Secret and limited fish are protected.</p>';
-    if (Date.now() < TURKEY_END) {
-      c.innerHTML += (d.turkeys || []).map(turkey => {
-        const sides=turkeySides(turkey), first=stage(sides.side1), second=stage(sides.side2);
-        const label=first===second?`${first} Turkey`:'Turkey';
-        return `<div class="rebuild-item"><img src="${TURKEY_IMAGES[stage(Math.max(sides.side1,sides.side2))]}" alt="${esc(label)}"><strong>${esc(label)}</strong><p>Side 1: ${sides.side1}% (${first}) / Side 2: ${sides.side2}% (${second})</p><button class="rebuild-btn" data-turkey-id="${esc(turkey.id)}">Select</button></div>`;
-      }).join('');
-      c.querySelectorAll('[data-turkey-id]').forEach(button=>button.addEventListener('click',()=>addTurkeyToGrill(button.dataset.turkeyId)));
-    }
+    const grillTurkeys = (d.turkeys || []).filter(turkey => turkey && (turkey.testOnly === true || Date.now() < TURKEY_END));
+    c.innerHTML += grillTurkeys.map(turkey => {
+      const sides=turkeySides(turkey), first=stage(sides.side1), second=stage(sides.side2);
+      const label=first===second?`${first} Turkey`:'Turkey';
+      const testTag=turkey.testOnly===true?' <small style="color:#d97706">(TEST)</small>':'';
+      return `<div class="rebuild-item"><img src="${TURKEY_IMAGES[stage(Math.max(sides.side1,sides.side2))]}" alt="${esc(label)}"><strong>${esc(label)}${testTag}</strong><p>Side 1: ${sides.side1}% (${first}) / Side 2: ${sides.side2}% (${second})</p><button class="rebuild-btn" data-turkey-id="${esc(turkey.id)}">Select</button></div>`;
+    }).join('');
+    c.querySelectorAll('[data-turkey-id]').forEach(button=>button.addEventListener('click',()=>addTurkeyToGrill(button.dataset.turkeyId)));
     document.getElementById('grill-fish-picker').style.display='block';
   }
   async function addFishToGrill(fishId,fishName,fishTimestamp,fallbackIndex){
@@ -7241,17 +7253,17 @@
       grillState=(await ref.get()).data().grillState;document.getElementById('grill-fish-picker').style.display='none';renderGrillState();playGameSound('cook');loadBackpackData();
     }catch(e){showToast('Could not add fish: '+e.message);}
   }
-  function startGrillTicker(){if(grillTimer)clearInterval(grillTimer);grillTimer=setInterval(()=>{if(!grillState||grillState.zone!=='hot'||(grillState.kind==='turkey'&&Date.now()>=TURKEY_END))return;const key=grillState.activeSide===1?'side1':'side2';if(grillState[key]>=100)return;grillState[key]=Math.min(100,grillState[key]+1);renderGrillState();},1000);if(grillSaveTimer)clearInterval(grillSaveTimer);grillSaveTimer=setInterval(saveGrillState,5000);}
+  function startGrillTicker(){if(grillTimer)clearInterval(grillTimer);grillTimer=setInterval(()=>{if(!grillState||grillState.zone!=='hot'||(grillState.kind==='turkey'&&!grillState.testOnly&&Date.now()>=TURKEY_END))return;const key=grillState.activeSide===1?'side1':'side2';if(grillState[key]>=100)return;grillState[key]=Math.min(100,grillState[key]+1);renderGrillState();},1000);if(grillSaveTimer)clearInterval(grillSaveTimer);grillSaveTimer=setInterval(saveGrillState,5000);}
   async function saveGrillState(){
     if(!auth.currentUser||auth.currentUser.uid!==grillOwnerUid||!grillState)return;
     try {
       if(grillState.kind==='turkey') {
-        if(Date.now()>=TURKEY_END){await cleanupTurkeyInventory();return;}
+        if(Date.now()>=TURKEY_END&&!grillState.testOnly){await cleanupTurkeyInventory();return;}
         const ref=playerRef(), current={...grillState};
         const sides=await db.runTransaction(async tx=>{
           const snap=await tx.get(ref);
           const saved=snap.exists?(snap.data()||{}).grillState:null;
-          if(!saved||saved.kind!=='turkey'||saved.fish.id!==current.fish.id||Date.now()>=TURKEY_END)return null;
+          if(!saved||saved.kind!=='turkey'||saved.fish.id!==current.fish.id||(Date.now()>=TURKEY_END&&!saved.testOnly))return null;
           current.side1=Math.max(Number(saved.side1)||0,Number(current.side1)||0);
           current.side2=Math.max(Number(saved.side2)||0,Number(current.side2)||0);
           tx.update(ref,{grillState:current});
@@ -7301,8 +7313,8 @@
           updates.fishTools=foods;
           updates.fishFoodCount=Object.values(foods).reduce((sum,value)=>sum+(Number(value)||0),0);
           result='Well Cooked Turkey is ready as fish food!';
-        } else if(Date.now()<TURKEY_END) {
-          updates.turkeys=[...(data.turkeys||[]),{id:current.fish.id,...sides}];
+        } else if(Date.now()<TURKEY_END || current.testOnly === true || saved.testOnly === true) {
+          updates.turkeys=[...(data.turkeys||[]),{id:current.fish.id,...sides,...((current.testOnly===true||saved.testOnly===true)?{testOnly:true}:{})}];
           result='Turkey returned to your Fish Foods inventory.';
         } else result='The turkey event ended and the turkey was not Well Cooked.';
         tx.update(ref,updates);
@@ -7397,11 +7409,7 @@
         const uses=Number(counts[food.name])||0;
         return `<div class="rebuild-item"><img src="${esc(food.img)}" alt="${esc(food.name)}"><strong>${esc(food.name)}</strong><p>${esc(food.desc)}</p><p>${uses} use${uses===1?'':'s'} left · +${food.happiness} happiness per use</p></div>`;
       }).join('');
-      if(Date.now()<TURKEY_END)html+=(data.turkeys||[]).map(turkey=>{
-        const sides=turkeySides(turkey),first=stage(sides.side1),second=stage(sides.side2);
-        const label=first===second?`${first} Turkey`:'Turkey';
-        return `<div class="rebuild-item"><img src="${TURKEY_IMAGES[stage(Math.max(sides.side1,sides.side2))]}" alt="${esc(label)}"><strong>${esc(label)}</strong><p>Side 1: ${sides.side1}% (${first}) / Side 2: ${sides.side2}% (${second}). Cook it on the Grill.</p></div>`;
-      }).join('');
+      // Uncooked/event turkeys are intentionally hidden from inventories; they appear only in Grill > Add.
       document.getElementById('fish-foods-inventory-list').innerHTML=html||'<p>You do not own any fish food yet.</p>';
       const modal=document.getElementById('modal-fish-foods-inventory');
       modal.style.display='flex';
@@ -10695,7 +10703,7 @@
     const wrap = $('tf-food-options');
     const empty = $('tf-food-empty');
     if (!wrap) return;
-    const entries = Object.keys(AQ.foodCounts).filter(name => num(AQ.foodCounts[name]) > 0);
+    const entries = Object.keys(AQ.foodCounts).filter(name => num(AQ.foodCounts[name]) > 0 && (!/turkey/i.test(name) || name === 'Well Cooked Turkey'));
     wrap.innerHTML = entries.map(name => {
       const count = num(AQ.foodCounts[name]);
       return `<button type="button" class="tf-food-option" data-food="${esc(name)}">
@@ -10901,12 +10909,33 @@
 
   const originalAdminGiveNamedItem = window.adminGiveNamedItem;
   window.adminGiveNamedItem = async function (kind) {
-    if (kind !== 'food') {
+    if (kind !== 'food' && kind !== 'turkey') {
       return typeof originalAdminGiveNamedItem === 'function'
         ? originalAdminGiveNamedItem.apply(this, arguments)
         : undefined;
     }
     try {
+      if (kind === 'turkey') {
+        if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) throw new Error('Admin only.');
+        const username = ($('adminTargetUsername') && $('adminTargetUsername').value.trim()) || '';
+        const quantity = Number(($('adminFoodQty') && $('adminFoodQty').value) || '1');
+        if (!username) throw new Error('Select a target username first.');
+        if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100) throw new Error('Enter a whole number between 1 and 100.');
+        const uid = await getUidByUsername(username);
+        if (!uid) throw new Error('Player not found.');
+        const ref = db.collection('jugadores').doc(uid);
+        const testTurkeys = Array.from({length:quantity},()=>({id:db.collection('jugadores').doc().id,side1:0,side2:0,testOnly:true}));
+        await db.runTransaction(async tx=>{
+          const snap=await tx.get(ref);
+          if(!snap.exists)throw new Error('Player profile not found.');
+          const data=snap.data()||{};
+          tx.update(ref,{turkeys:[...(data.turkeys||[]),...testTurkeys]});
+        });
+        showToast(`Gave ${quantity} Raw Test Turkey${quantity===1?'':'s'} to ${username}.`);
+        if(window.playGameSound)playGameSound('buy');
+        if(typeof loadTargetUserInventoryForAdmin==='function')loadTargetUserInventoryForAdmin();
+        return;
+      }
       if (!auth.currentUser || auth.currentUser.uid !== ADMIN_UID) throw new Error('Admin only.');
       const username = ($('adminTargetUsername') && $('adminTargetUsername').value.trim()) || '';
       const typedName = ($('adminFoodName') && $('adminFoodName').value.trim()) || '';
@@ -11213,6 +11242,19 @@
     document.getElementById('achievements-limited-tab').setAttribute('aria-pressed',String(limited));
   };
 
+  window.switchLimitedAchievementCategory = function(category) {
+    const sections = document.querySelectorAll('#achievements-limited-categories [data-limited-achievement-category]');
+    let matched = false;
+    sections.forEach(section => {
+      const active = section.getAttribute('data-limited-achievement-category') === category;
+      section.style.display = active ? 'block' : 'none';
+      if (active) matched = true;
+    });
+    const selector = document.getElementById('achievements-limited-category');
+    if (selector && matched) selector.value = category;
+    else if (selector && selector.options.length) selector.value = selector.options[0].value;
+  };
+
   function renderPage() {
     const cards = Array.from(list.children);
     const pages = Math.max(1, Math.ceil(cards.length / 5));
@@ -11237,6 +11279,7 @@
     if (id === 'modal-achievements') {
       page = 0;
       window.switchAchievementsSection('regular');
+      window.switchLimitedAchievementCategory('thanksgiving-2026');
       const limitedCard=document.getElementById('ach-not-a-common-one');
       const limitedStatus=document.getElementById('ach-not-a-common-one-status');
       limitedCard.style.opacity='.5';limitedCard.style.borderColor='#cbd5e1';
