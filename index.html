@@ -9154,6 +9154,68 @@
     .tank-viewport .aquarium-parakeet { width:clamp(28px,36%,40px) !important; }
     .tf-food-option img { width:48px; height:48px; }
   }
+  /* Mobile-only layout fixes: music drawer, account name, and admin shortcut. */
+  @media (max-width: 768px) {
+    #tf-music-panel {
+      left: 12px !important;
+      right: 12px !important;
+      top: 52px !important;
+      width: auto !important;
+      max-width: none !important;
+      max-height: calc(100dvh - 68px) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      transform: none !important;
+      padding: 12px !important;
+      border-radius: 14px !important;
+    }
+    #tf-music-panel *, #tf-music-panel *::before, #tf-music-panel *::after {
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .tf-music-head { align-items: flex-start; flex-wrap: wrap; }
+    .tf-music-head > div { flex: 1 1 150px; }
+    .tf-music-track { width: 100%; }
+    .tf-music-track-copy { flex: 1 1 auto; overflow-wrap: anywhere; }
+    .tf-music-track-desc { overflow-wrap: anywhere; }
+    .tf-music-pagination { flex-wrap: wrap; }
+    .tf-music-pagination button { flex: 0 1 auto; }
+    #tf-music-off { white-space: normal; }
+
+    #account-container .user-profile-badge,
+    .user-profile-badge {
+      width: max-content !important;
+      max-width: min(230px, calc(100vw - 24px)) !important;
+      min-width: 0 !important;
+      display: inline-flex !important;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 9px !important;
+    }
+    #user-display-name {
+      display: block !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      overflow: visible !important;
+      text-overflow: clip !important;
+      white-space: normal !important;
+      overflow-wrap: anywhere !important;
+      word-break: break-word !important;
+      line-height: 1.2;
+    }
+
+    .admin-trigger-btn {
+      top: 158px !important;
+      right: 10px !important;
+      bottom: auto !important;
+      left: auto !important;
+      width: 42px !important;
+      height: 42px !important;
+      z-index: 120 !important;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: .01ms !important;
