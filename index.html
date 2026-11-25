@@ -3,7 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
+  <link rel="canonical" href="https://awakristal.github.io/the-fishing-game/">
+  <script>
+    // This game uses a single-page layout, not hash-based routes. Keep the
+    // homepage URL clean if an old link or browser state adds a bare #/.
+    (function () {
+      function removeEmptyHashRoute() {
+        if (window.location.hash === '#/') {
+          window.history.replaceState(
+            window.history.state,
+            '',
+            window.location.pathname + window.location.search
+          );
+        }
+      }
+      removeEmptyHashRoute();
+      window.addEventListener('hashchange', removeEmptyHashRoute);
+    })();
+  </script>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -814,6 +832,34 @@
       #game-screen { background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #ffffff; }
     }
   
+
+    @media (max-width: 480px) {
+      body { min-height: 100dvh; overflow-x: hidden; overflow-y: auto; }
+      header { position: absolute; padding-top: max(8px, env(safe-area-inset-top)); }
+      .main-container {
+        min-height: 100dvh; height: auto; justify-content: center;
+        padding: max(112px, 15dvh) 74px max(190px, 24dvh);
+        gap: 14px;
+      }
+      .fish-logo-img { width: min(100%, 230px); max-width: 230px; }
+      .center-menu { grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; gap: 8px 4px; }
+      .center-menu .img-btn { min-width: 0; min-height: 54px; }
+      .center-menu .img-btn img { width: min(100%, 68px); }
+      .corner-bottom-left, .corner-bottom-right {
+        bottom: max(8px, env(safe-area-inset-bottom));
+        gap: 5px; z-index: 110;
+      }
+      .corner-bottom-left { left: 8px; max-width: 44vw; }
+      .corner-bottom-right { right: 8px; max-width: 44vw; }
+      .corner-bottom-left > div:nth-child(2) { max-width: 100%; }
+      .user-profile-badge { max-width: 42vw; }
+      .user-profile-badge span { max-width: 25vw; }
+      #btn-friends, #btn-logout { max-width: 42vw; min-height: 38px; }
+      .modal-overlay { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)); }
+      .modal-card { width: 100%; max-height: 86dvh; overflow-y: auto; }
+      #toast-container { right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); max-width: calc(100vw - 20px); }
+    }
+
     #leaderboard-list .leaderboard-row{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;color:#1e293b}
     #leaderboard-list .leaderboard-rank{font-weight:900;color:#1e3a8a;min-width:30px}
     #leaderboard-list .leaderboard-value{margin-left:auto;font-weight:800;color:#1e3a8a;text-align:right}
@@ -825,7 +871,7 @@
   <header>
     <div class="header-left">
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <div class="version-tag">v.1.0.2.6 BETA</div>
+        <div class="version-tag">v.1.0.2.6</div>
         <button type="button" class="img-btn" onclick="openMouseHole()" title="Mouse Hole" aria-label="Open the mouse hole" style="width:42px;height:42px;">
           <img src="https://i.postimg.cc/DzmLzdzR/hole.png" alt="Mouse Hole" style="width:42px;height:42px;object-fit:contain;">
         </button>
@@ -837,7 +883,7 @@
         <img src="https://i.postimg.cc/NjwRPPmr/tutorial.png" alt="Tutorial">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -6739,13 +6785,30 @@
           adminBtn.style.display = 'none';
         }
       } else {
-        document.getElementById('account-container').style.display = 'flex';
-        document.getElementById('btn-logout').style.display = 'none';
-        friendsBtn.style.display = 'none';
-        document.getElementById('user-badge').style.display = 'none';
+        // Fully reset signed-in UI so a stale profile cannot remain visible on mobile.
+        document.querySelectorAll('.modal-overlay, .rebuild-modal, .mouse-overlay').forEach(el => {
+          if (el.id !== 'modal-ban-notice' && el.id !== 'modal-warning-notice') el.style.display = 'none';
+        });
+        const account = document.getElementById('account-container');
+        const logoutButton = document.getElementById('btn-logout');
+        const badge = document.getElementById('user-badge');
+        if (account) account.style.display = 'flex';
+        if (logoutButton) logoutButton.style.display = 'none';
+        if (friendsBtn) friendsBtn.style.display = 'none';
+        if (badge) badge.style.display = 'none';
         if (backpackInline) backpackInline.style.display = 'none';
-        adminBtn.style.display = 'none';
+        if (adminBtn) adminBtn.style.display = 'none';
+        const name = document.getElementById('user-display-name');
+        const avatar = document.getElementById('user-avatar');
+        if (name) name.textContent = 'Username';
+        if (avatar) avatar.src = 'https://via.placeholder.com/40';
+        const gameScreen = document.getElementById('game-screen');
+        const mainMenu = document.getElementById('main-menu-container');
+        if (gameScreen) gameScreen.style.display = 'none';
+        if (mainMenu) mainMenu.style.display = 'flex';
         if (dailyTimerInterval) clearInterval(dailyTimerInterval);
+        if (typeof grillTimer !== 'undefined' && grillTimer) clearInterval(grillTimer);
+        if (typeof grillSaveTimer !== 'undefined' && grillSaveTimer) clearInterval(grillSaveTimer);
 
       }
       
@@ -6762,9 +6825,22 @@
       auth.signOut();
     }
 
-    function logout() {
-      auth.signOut();
-      showToast("Logged out successfully.");
+    async function logout() {
+      try {
+        // Clear transient UI immediately; the auth listener repeats this after Firebase confirms sign-out.
+        document.querySelectorAll('.modal-overlay, .rebuild-modal, .mouse-overlay').forEach(el => {
+          el.style.display = 'none';
+        });
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen) gameScreen.style.display = 'none';
+        const mainMenu = document.getElementById('main-menu-container');
+        if (mainMenu) mainMenu.style.display = 'flex';
+        await auth.signOut();
+        showToast("Logged out successfully.");
+      } catch (err) {
+        console.error('Logout failed:', err);
+        showToast('Could not log out. Please try again.');
+      }
     }
   </script>
 
@@ -6846,7 +6922,7 @@
         <p id="grill-status" style="font-size:.9rem;color:#475569">Add a fish or turkey to begin.</p>
         <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
           <button id="btn-open-grill-picker" class="rebuild-btn" onclick="openGrillFishPicker()">Add</button>
-          <button id="buy-event-turkey" class="rebuild-btn" style="display:none" onclick="buyTurkey()">Buy a turkey for 1000</button>
+          <button id="buy-event-turkey" class="rebuild-btn" style="display:none" onclick="buyTurkey()">Buy Turkey for 250</button>
           <button id="btn-flip-grill-fish" class="rebuild-btn" style="background:#d97706" onclick="flipGrillFish()">Flip</button>
           <button class="rebuild-btn alt" onclick="finishGrilling()">Finish Cooking</button>
         </div>
@@ -7092,8 +7168,7 @@
   async function cleanupTurkeyInventory() {
     if (Date.now() < TURKEY_END || !auth.currentUser || !auth.currentUser.emailVerified || accountSetupInProgress) return;
     const uid = auth.currentUser.uid;
-    const active = grillOwnerUid === uid && grillState && grillState.kind === 'turkey' ? { ...grillState } : null;
-    const ref = db.collection('jugadores').doc(uid);
+      const ref = db.collection('jugadores').doc(uid);
     await db.runTransaction(async tx => {
       const snap = await tx.get(ref);
       if (!snap.exists) return;
@@ -7101,34 +7176,15 @@
       // This per-player marker makes this player's cutoff cleanup idempotent.
       if (data.turkeyEventCleanup2026 === true) return;
       const updates = { turkeyEventCleanup2026: true };
-      // At the event cutoff, convert every turkey that is Well Cooked on BOTH sides
-      // into usable fish food. Every other raw/in-progress/overcooked/burnt turkey is deleted.
+      // Turkeys are grill-only items, never fish food. At the event cutoff,
+      // remove event turkeys and preserve only admin test turkeys.
       const turkeyInventory = Array.isArray(data.turkeys) ? data.turkeys : [];
       const testTurkeys = turkeyInventory.filter(turkey => turkey && turkey.testOnly === true);
-      let wellCookedToKeep = turkeyInventory.reduce((count, turkey) => {
-        if (turkey && turkey.testOnly === true) return count;
-        const sides = turkeySides(turkey || {});
-        return count + (turkeyIsWellCooked(sides.side1, sides.side2) ? 1 : 0);
-      }, 0);
       if (turkeyInventory.length) updates.turkeys = testTurkeys;
 
+      // A turkey still on the grill is removed at the cutoff as well.
       const saved = data.grillState;
-      if (saved && saved.kind === 'turkey') {
-        const sides = turkeySides(saved);
-        if (active && active.fish && saved.fish && active.fish.id === saved.fish.id) {
-          sides.side1 = Math.max(sides.side1, Number(active.side1) || 0);
-          sides.side2 = Math.max(sides.side2, Number(active.side2) || 0);
-        }
-        if (turkeyIsWellCooked(sides.side1, sides.side2)) wellCookedToKeep += 1;
-        updates.grillState = null;
-      }
-
-      if (wellCookedToKeep > 0) {
-        const foods = window.getFishFoodCounts(data);
-        foods['Well Cooked Turkey'] = (Number(foods['Well Cooked Turkey']) || 0) + wellCookedToKeep;
-        updates.fishTools = foods;
-        updates.fishFoodCount = Object.values(foods).reduce((sum, value) => sum + (Number(value) || 0), 0);
-      }
+      if (saved && saved.kind === 'turkey') updates.grillState = null;
       if (Object.keys(updates).length) tx.update(ref, updates);
     });
     if (auth.currentUser && auth.currentUser.uid === uid && grillOwnerUid === uid && grillState && grillState.kind === 'turkey') {
@@ -7147,17 +7203,14 @@
         const data = snap.data() || {};
         if (!turkeyEventActive()) throw Error('The turkey event has ended.');
         if (!data.grillOwned) throw Error('Buy a Grill first.');
-        if (data.grillState) throw Error('Finish the current item before buying a turkey.');
-        if ((Number(data.coins) || 0) < 1000) throw Error('Not enough Coins. You need 1000.');
-        const state={kind:'turkey',fish:{id,name:'Turkey'},side1:0,side2:0,activeSide:1,zone:'hot',posX:35,posY:38,updatedAt:Date.now()};
-        tx.update(ref, { coins: Number(data.coins) - 1000, grillState: state });
-        return state;
+        if ((Number(data.coins) || 0) < 250) throw Error('Not enough Coins. You need 250.');
+        // Purchase adds a raw turkey to Fish Foods; it must never occupy the grill automatically.
+        const turkeys = Array.isArray(data.turkeys) ? [...data.turkeys] : [];
+        turkeys.push({ id, side1: 0, side2: 0 });
+        tx.update(ref, { coins: Number(data.coins) - 250, turkeys });
+        return { id };
       });
-      grillOwnerUid=auth.currentUser.uid;
-      grillState=reserved;
-      setGrillPickerOpen(false);
-      renderGrillState();
-      showToast('Bought 1 Raw Turkey! It is on the Grill.');
+      showToast('Bought 1 Raw Turkey for 250 Coins! Find it in Fish Foods.');
       playGameSound('buy');
       updateGameHUD();
       loadBackpackData();
@@ -7334,16 +7387,12 @@
         if(!saved||saved.kind!=='turkey'||saved.fish.id!==current.fish.id)throw Error('Turkey is no longer on the Grill.');
         const sides={side1:Math.max(Number(current.side1)||0,Number(saved.side1)||0),side2:Math.max(Number(current.side2)||0,Number(saved.side2)||0)};
         const updates={grillState:null};
-        if(turkeyIsWellCooked(sides.side1,sides.side2)) {
-          const foods=window.getFishFoodCounts(data);
-          foods['Well Cooked Turkey']=(Number(foods['Well Cooked Turkey'])||0)+1;
-          updates.fishTools=foods;
-          updates.fishFoodCount=Object.values(foods).reduce((sum,value)=>sum+(Number(value)||0),0);
-          result='Well Cooked Turkey is ready as fish food!';
-        } else if(Date.now()<TURKEY_END || current.testOnly === true || saved.testOnly === true) {
+        if(Date.now()<TURKEY_END || current.testOnly === true || saved.testOnly === true) {
+          // Finished turkey stays in the grill-only turkey list. It is not edible
+          // as fish food and can only be selected again from Grill > Add.
           updates.turkeys=[...(data.turkeys||[]),{id:current.fish.id,...sides,...((current.testOnly===true||saved.testOnly===true)?{testOnly:true}:{})}];
-          result='Turkey returned to your Fish Foods inventory.';
-        } else result='The turkey event ended and the turkey was not Well Cooked.';
+          result='Turkey returned to Grill > Add.';
+        } else result='The turkey event ended and the turkey was removed.';
         tx.update(ref,updates);
       });
       grillState=null;renderGrillState();showToast(result);playGameSound('ding');loadBackpackData();
@@ -9131,29 +9180,6 @@
     55% { translate:0 -29px; }
     100% { translate:0 0; }
   }
-  @media (max-width: 768px) {
-    /* Keep the PC menu's balanced composition instead of forcing a narrow 4-column grid. */
-    .main-container { min-height:100dvh; padding:88px 12px 112px; gap:clamp(8px,2.5dvh,18px); justify-content:center; }
-    .fish-logo-img { width:min(72vw,260px); max-width:260px; }
-    .center-menu { display:flex; width:auto; max-width:100%; flex-wrap:wrap; gap:clamp(5px,2vw,12px); justify-content:center; margin:0 0 8px; }
-    .center-menu .img-btn { min-height:0; }
-    .center-menu .img-btn img { width:clamp(54px,16vw,78px); }
-    .rules-header-btn img { width:clamp(48px,15vw,68px) !important; }
-    .corner-bottom-left, .corner-bottom-right { gap:5px; }
-    .user-profile-badge { max-width:120px; }
-    #btn-friends, #btn-logout { max-width:none; padding:6px 10px !important; font-size:.75rem !important; }
-    #modal-market .rebuild-item { width:100%; min-width:0; display:flex; flex-wrap:wrap; align-items:center; }
-    #modal-market .rebuild-item > * { min-width:0; }
-    #modal-market .rebuild-item > div:nth-child(2) { flex:1 1 170px; width:calc(100% - 60px); min-width:150px; }
-    #modal-market .rebuild-item strong, #modal-market .rebuild-item span, #modal-market .rebuild-item p { word-break:normal; overflow-wrap:break-word; }
-    #tf-music-toggle { top:10px; }
-    #tf-music-panel { top:52px; }
-    .tank-viewport img[class*="swimming-fish-"] { width:clamp(20px,17%,34px) !important; max-height:34% !important; }
-    .tank-viewport .aquarium-palm { width:clamp(34px,38%,48px) !important; left:calc(17% - 3px) !important; bottom:calc(28% - 10px) !important; }
-    .tank-viewport .aquarium-sandcastle, .tank-viewport .aquarium-verity { width:clamp(24px,30%,34px) !important; height:auto !important; }
-    .tank-viewport .aquarium-parakeet { width:clamp(28px,36%,40px) !important; }
-    .tf-food-option img { width:48px; height:48px; }
-  }
   /* Mobile-only layout fixes: music drawer, account name, and admin shortcut. */
   @media (max-width: 768px) {
     #tf-music-panel {
@@ -9254,14 +9280,6 @@
       usesPerPack: 1,
       happiness: 50,
       desc: 'A cheesy treat from Sir. Squeaksalot that makes fish extra happy.'
-    },
-    {
-      id: 'turkey',
-      name: 'Well Cooked Turkey',
-      img: 'https://i.postimg.cc/7Y1WdwmS/turkey-cooked.png',
-      usesPerPack: 1,
-      happiness: 50,
-      desc: 'A well cooked turkey that restores 50% happiness.'
     },
     {
       id: 'algae',
@@ -10406,7 +10424,7 @@
   function spawnFallingFood(viewport, image, opts) {
     opts = opts || {};
     const bounds = feedingBounds(viewport, image);
-    const singlePortion = opts.foodName === 'Tiny Cheese' || opts.foodName === 'Well Cooked Turkey';
+    const singlePortion = opts.foodName === 'Tiny Cheese';
     const portion = {
       img: opts.target ? image : null,
       vp: viewport,
@@ -10552,7 +10570,6 @@
       const dotIndex = portion.dots.indexOf(dot);
       if (dotIndex >= 0) portion.dots[dotIndex] = null;
       portion.remaining = portion.dots.filter(item => item && item.isConnected && !item.__expired).length;
-      if (portion.foodName === 'Well Cooked Turkey') unlockTurkeyAchievement();
 
       const current = currentHappiness(portion.key, portion.species);
       const entry = AQ.happiness[portion.key] || { v: current, t: nowMs(), p: nowMs() };
@@ -10592,8 +10609,7 @@
       const happiness = currentHappiness(portion.key, portion.species);
       const canEat = Math.max(0, Math.min(alive.length, Math.ceil((100 - happiness) / portion.happinessPerDot)));
       if (canEat > 0) {
-        if (portion.foodName === 'Well Cooked Turkey') unlockTurkeyAchievement();
-        happinessRevision++;
+          happinessRevision++;
         const entry = AQ.happiness[portion.key] || { v: happiness, t: nowMs(), p: nowMs() };
         AQ.happiness[portion.key] = {
           v: clamp(happiness + canEat * portion.happinessPerDot, 0, 100),
@@ -10792,7 +10808,7 @@
     const wrap = $('tf-food-options');
     const empty = $('tf-food-empty');
     if (!wrap) return;
-    const entries = Object.keys(AQ.foodCounts).filter(name => num(AQ.foodCounts[name]) > 0 && (!/turkey/i.test(name) || name === 'Well Cooked Turkey'));
+    const entries = Object.keys(AQ.foodCounts).filter(name => num(AQ.foodCounts[name]) > 0 && !/turkey/i.test(name));
     wrap.innerHTML = entries.map(name => {
       const count = num(AQ.foodCounts[name]);
       return `<button type="button" class="tf-food-option" data-food="${esc(name)}">
@@ -11048,7 +11064,7 @@
         if (!snap.exists) throw new Error('Player profile not found.');
         const data = snap.data() || {};
         if (turkeyName) {
-          if (Date.now() >= Date.UTC(2026, 10, 27, 6)) throw new Error('Only Well Cooked Turkey can be given after the event.');
+          if (Date.now() >= Date.UTC(2026, 10, 27, 6)) throw new Error('The turkey event has ended. Turkeys are grill-only items.');
           tx.update(ref, { turkeys: [...(data.turkeys || []), ...turkeys] });
         } else {
           const tools = foodCountsFromDoc(data);
