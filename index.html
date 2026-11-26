@@ -808,14 +808,19 @@
       .user-profile-badge img { width: 30px; height: 30px; }
       .user-profile-badge span { overflow: hidden; text-overflow: ellipsis; }
       .backpack-badge-inline { width: 32px; }
-      /* Keep account actions visually consistent with desktop on phones. */
+      /* Account actions: same compact styling as desktop, not stretched/tall. */
       #btn-friends, #btn-logout {
-        width: auto !important;
-        max-width: none;
-        min-height: 38px;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: max-content !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
         padding: 6px 12px !important;
         font-size: .85rem !important;
-        line-height: 1.2;
+        line-height: 1.2 !important;
         white-space: nowrap;
         flex: 0 0 auto;
       }
@@ -846,13 +851,17 @@
       .corner-bottom-left > div:nth-child(2) { max-width: 100%; }
       .user-profile-badge { max-width: 42vw; }
       .user-profile-badge span { max-width: 25vw; }
+      /* Do not enlarge or squeeze Friends / Log out on narrow screens. */
       #btn-friends, #btn-logout {
-        max-width: calc(44vw - 8px);
-        min-height: 38px;
+        width: max-content !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
         padding: 6px 12px !important;
         font-size: .85rem !important;
+        line-height: 1.2 !important;
       }
-      .corner-bottom-left > div:nth-child(3) { display: flex; align-items: center; gap: 6px; }
       #btn-friends { background: #8e44ad !important; }
       #btn-logout { background: #1e3a8a !important; }
       .modal-overlay { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)); }
@@ -6657,7 +6666,8 @@
       const friendsBtn = document.getElementById('btn-friends');
       const backpackInline = document.getElementById('backpack-badge-inline');
 
-      if (accountSetupInProgress) return;
+      // Always process signed-out state. A stale setup flag must not leave profile UI visible.
+      if (accountSetupInProgress && user) return;
       if (user) {
         try {
           await user.reload();
@@ -6804,8 +6814,8 @@
         if (adminBtn) adminBtn.style.display = 'none';
         const name = document.getElementById('user-display-name');
         const avatar = document.getElementById('user-avatar');
-        if (name) name.textContent = 'Username';
-        if (avatar) avatar.src = 'https://via.placeholder.com/40';
+        if (name) name.textContent = '';
+        if (avatar) avatar.removeAttribute('src');
         const gameScreen = document.getElementById('game-screen');
         const mainMenu = document.getElementById('main-menu-container');
         if (gameScreen) gameScreen.style.display = 'none';
@@ -6840,22 +6850,25 @@
         const mainMenu = document.getElementById('main-menu-container');
         if (mainMenu) mainMenu.style.display = 'flex';
 
-        // Clear profile UI immediately so no stale username/avatar flashes after logout.
+        // Immediately reset account controls before Firebase finishes signOut().
         const badge = document.getElementById('user-badge');
-        const name = document.getElementById('user-display-name');
+        const displayName = document.getElementById('user-display-name');
         const avatar = document.getElementById('user-avatar');
-        const account = document.getElementById('account-container');
-        const friends = document.getElementById('btn-friends');
+        const accountButton = document.getElementById('account-container');
+        const friendsButton = document.getElementById('btn-friends');
         const logoutButton = document.getElementById('btn-logout');
-        const backpackInline = document.getElementById('backpack-badge-inline');
+        const backpack = document.getElementById('backpack-badge-inline');
         const adminButton = document.getElementById('adminBtn');
-        if (badge) { badge.style.display = 'none'; badge.setAttribute('aria-hidden', 'true'); }
-        if (name) name.textContent = '';
+        if (badge) {
+          badge.style.display = 'none';
+          badge.setAttribute('aria-hidden', 'true');
+        }
+        if (displayName) displayName.textContent = '';
         if (avatar) avatar.removeAttribute('src');
-        if (account) account.style.display = 'flex';
-        if (friends) friends.style.display = 'none';
+        if (accountButton) accountButton.style.display = 'flex';
+        if (friendsButton) friendsButton.style.display = 'none';
         if (logoutButton) logoutButton.style.display = 'none';
-        if (backpackInline) backpackInline.style.display = 'none';
+        if (backpack) backpack.style.display = 'none';
         if (adminButton) adminButton.style.display = 'none';
 
         await auth.signOut();
