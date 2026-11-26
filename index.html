@@ -325,8 +325,14 @@
       background-position: center;
       background-repeat: no-repeat;
       background-color: #ffffff;
-      z-index: 100;
+      z-index: 130;
     }
+
+    body.is-playing header,
+    body.is-playing #main-menu-container,
+    body.is-playing .corner-bottom-left,
+    body.is-playing .corner-bottom-right,
+    body.is-playing .admin-trigger-btn { display: none !important; }
 
     .backpack-on-map {
       position: absolute;
@@ -410,6 +416,7 @@
       .hud-box { padding:5px 8px; font-size:.8rem; }
       .exit-game-btn { top:10px; right:10px; min-height:44px; }
       .cast-line-btn { bottom:max(20px, env(safe-area-inset-bottom)); }
+      body.is-playing #toast-container { bottom:calc(max(20px, env(safe-area-inset-bottom)) + 62px); pointer-events:none; }
       .minigame-container { width:min(280px, 90vw); padding:14px; }
       .track-bar { height:min(260px, 42vh); }
     }
@@ -4860,6 +4867,7 @@
         openModal('modal-account');
         return;
       }
+      document.body.classList.add('is-playing');
       document.getElementById('game-screen').style.display = 'block';
       playGameSound('enter');
       updateGameHUD();
@@ -4875,6 +4883,7 @@
       castBtn.disabled = false;
       castBtn.innerText = 'Cast Line!';
       document.getElementById('game-screen').style.display = 'none';
+      document.body.classList.remove('is-playing');
       showToast("Returned to main menu.");
     }
 
@@ -6793,6 +6802,7 @@
         const gameScreen = document.getElementById('game-screen');
         const mainMenu = document.getElementById('main-menu-container');
         if (gameScreen) gameScreen.style.display = 'none';
+        document.body.classList.remove('is-playing');
         if (mainMenu) mainMenu.style.display = 'flex';
         if (dailyTimerInterval) clearInterval(dailyTimerInterval);
         if (typeof grillTimer !== 'undefined' && grillTimer) clearInterval(grillTimer);
@@ -6821,6 +6831,7 @@
         });
         const gameScreen = document.getElementById('game-screen');
         if (gameScreen) gameScreen.style.display = 'none';
+        document.body.classList.remove('is-playing');
         const mainMenu = document.getElementById('main-menu-container');
         if (mainMenu) mainMenu.style.display = 'flex';
         await auth.signOut();
@@ -8940,6 +8951,8 @@
   .modal-overlay .modal-card { animation: tfCardIn .3s cubic-bezier(.2, .9, .25, 1.12) both; }
   .rebuild-modal { animation: tfOverlayIn .2s ease-out both; }
   .rebuild-card { animation: tfCardIn .3s cubic-bezier(.2, .9, .25, 1.12) both; }
+  .mouse-overlay { animation: tfOverlayIn .2s ease-out both; }
+  .mouse-overlay .mouse-panel { animation: tfCardIn .3s cubic-bezier(.2, .9, .25, 1.12) both; }
   #clippy-dialog-overlay, #clippy-workshop-modal, #tank-choice-modal { animation: tfOverlayIn .2s ease-out both; }
   #clippy-dialog-overlay .clippy-panel,
   #clippy-workshop-modal .clippy-panel,
