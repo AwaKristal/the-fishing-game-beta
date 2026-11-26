@@ -6854,6 +6854,11 @@
     'Burnt': 'https://i.postimg.cc/c47b20XR/turkey-burnt.png'
   };
   const turkeyEventActive = () => Date.now() >= TURKEY_START && Date.now() < TURKEY_END;
+  window.isWellCookedTurkey = turkey => {
+    if (!turkey || (turkey.testOnly !== true && Date.now() >= TURKEY_END)) return false;
+    const sides = turkeySides(turkey);
+    return turkeyIsWellCooked(sides.side1, sides.side2);
+  };
   const safeInt = (v, min=1) => { const n = Number(v); return Number.isSafeInteger(n) && n >= min ? n : null; };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let grillTimer = null, grillSaveTimer = null, grillState = null, grillHot = true;
@@ -6892,11 +6897,13 @@
       @keyframes creatureJelly{0%,100%{transform:translateY(7px) scaleY(.94)}50%{transform:translateY(-9px) scaleY(1.06)}}
       @keyframes creatureTurtle{0%{transform:translate(-12px,3px) scaleX(1)}50%{transform:translate(12px,-3px) scaleX(1)}51%{transform:translate(12px,-3px) scaleX(-1)}100%{transform:translate(-12px,3px) scaleX(-1)}}
       @keyframes creatureOctopus{0%,100%{transform:translateY(5px) rotate(-3deg)}50%{transform:translateY(-6px) rotate(3deg)}}
-      #grill-fish-stage{position:relative;min-height:250px;background-size:100% 100%;background-position:center;background-repeat:no-repeat;border-radius:10px;overflow:hidden;touch-action:none}
+      #modal-grill-station .rebuild-card{width:min(680px,96vw)}
+      #grill-fish-stage{position:relative;min-height:285px;background-size:100% 100%;background-position:center;background-repeat:no-repeat;border-radius:10px;overflow:hidden;touch-action:none}
+      #btn-open-grill-picker:disabled{opacity:.55;cursor:not-allowed}
       #grill-fish-stage .grill-fish{position:absolute;width:100px;height:75px;object-fit:contain;left:35%;top:38%;cursor:grab;touch-action:none;user-select:none}
       @media (max-width:768px){.aquarium-sandcastle{bottom:calc(28% - 5px)!important;}}\n      .aquarium-sandcastle{position:absolute;z-index:2;width:34px;height:34px;object-fit:contain;object-position:center bottom;left:42%;bottom:28%;transform:translateY(0);pointer-events:none}
       #modal-aquarium .swimming-fish-0,#modal-aquarium .swimming-fish-1,#modal-aquarium .swimming-fish-2,#modal-aquarium .swimming-fish-3,#modal-aquarium .swimming-fish-4,#modal-aquarium .swimming-fish-5,#modal-aquarium .swimming-fish-6,#modal-aquarium .swimming-fish-7{z-index:3 !important}
-      @media(max-width:480px){.rebuild-card{padding:12px}#grill-fish-stage{min-height:205px}}
+      @media(max-width:480px){.rebuild-card{padding:12px}#grill-fish-stage{min-height:clamp(205px,calc(100dvh - 370px),230px)}}
     `; document.head.appendChild(st);
   }
 
@@ -7164,8 +7171,6 @@
       // This per-player marker makes this player's cutoff cleanup idempotent.
       if (data.turkeyEventCleanup2026 === true) return;
       const updates = { turkeyEventCleanup2026: true };
-      // Turkeys are grill-only items, never fish food. At the event cutoff,
-      // remove event turkeys and preserve only admin test turkeys.
       const turkeyInventory = Array.isArray(data.turkeys) ? data.turkeys : [];
       const testTurkeys = turkeyInventory.filter(turkey => turkey && turkey.testOnly === true);
       if (turkeyInventory.length) updates.turkeys = testTurkeys;
@@ -7227,7 +7232,7 @@
         tx.update(ref, updates);
       });
       grillState = (await ref.get()).data().grillState;
-      document.getElementById('grill-fish-picker').style.display = 'none';
+      setGrillPickerOpen(false);
       renderGrillState();
       playGameSound('cook');
     } catch (err) { showToast('Could not add turkey: ' + err.message); }
@@ -7237,7 +7242,7 @@
     try {
       await cleanupTurkeyInventory();
       const d=(await playerRef().get()).data()||{};if(!d.grillOwned)throw Error('Buy the Grill in the Shop first (2500 Coins).');
-      grillOwnerUid=auth.currentUser.uid;grillState=d.grillState||null;updateTurkeyButton();renderGrillState();document.getElementById('modal-grill-station').style.display='flex';startGrillTicker();
+      grillOwnerUid=auth.currentUser.uid;grillState=d.grillState||null;updateTurkeyButton();setGrillPickerOpen(false);renderGrillState();document.getElementById('modal-grill-station').style.display='flex';startGrillTicker();
     }catch(e){showToast(e.message);}
   }
   window.buyTurkey=buyTurkey;window.addTurkeyToGrill=addTurkeyToGrill;
@@ -7251,6 +7256,8 @@
   }
   function renderGrillState(){
     const img=document.getElementById('grill-fish-image'),status=document.getElementById('grill-status');
+    document.getElementById('btn-open-grill-picker').disabled=!!grillState;
+    if(grillState)setGrillPickerOpen(false);
     if(!grillState){img.style.display='none';img.style.filter='none';img.style.transform='scaleX(1)';status.textContent='Add a fish or turkey to begin. Food cooks at 1% per second on the grill.';return;}
     const f=ALLOWED_FISH_TYPES.find(x=>x.name===grillState.fish.name);
     const activePct=grillState.activeSide===1?grillState.side1:grillState.side2;
@@ -7276,6 +7283,7 @@
     if(button)button.textContent=open?'Cancel':'Add';
   }
   async function openGrillFishPicker(){
+    if(grillState)return;
     const picker=document.getElementById('grill-fish-picker');
     if(picker&&picker.style.display!=='none'&&picker.style.display!==''){
       setGrillPickerOpen(false);
@@ -7313,7 +7321,7 @@
       ? '<p style="grid-column:1/-1;text-align:center;margin:12px 0;color:#64748b;">No eligible fish. Legacy, Secret and limited fish are protected.</p>'
       : '');
     c.querySelectorAll('[data-turkey-id]').forEach(button=>button.addEventListener('click',()=>addTurkeyToGrill(button.dataset.turkeyId)));
-    setGrillPickerOpen(true);
+    if(!grillState && document.getElementById('modal-grill-station').style.display==='flex')setGrillPickerOpen(true);
   }
   async function addFishToGrill(fishId,fishName,fishTimestamp,fallbackIndex){
     if(grillState){showToast('Finish or remove the current fish first.');return;}
@@ -7376,14 +7384,12 @@
         const sides={side1:Math.max(Number(current.side1)||0,Number(saved.side1)||0),side2:Math.max(Number(current.side2)||0,Number(saved.side2)||0)};
         const updates={grillState:null};
         if(Date.now()<TURKEY_END || current.testOnly === true || saved.testOnly === true) {
-          // Finished turkey stays in the grill-only turkey list. It is not edible
-          // as fish food and can only be selected again from Grill > Add.
           updates.turkeys=[...(data.turkeys||[]),{id:current.fish.id,...sides,...((current.testOnly===true||saved.testOnly===true)?{testOnly:true}:{})}];
-          result='Turkey returned to Grill > Add.';
+          result=turkeyIsWellCooked(sides.side1,sides.side2)?'Well Cooked Turkey is ready to feed your fish.':'Turkey returned to Grill > Add.';
         } else result='The turkey event ended and the turkey was removed.';
         tx.update(ref,updates);
       });
-      grillState=null;renderGrillState();showToast(result);playGameSound('ding');loadBackpackData();
+      grillState=null;setGrillPickerOpen(false);renderGrillState();showToast(result);playGameSound('ding');loadBackpackData();
     } catch(err) {showToast('Could not finish cooking: '+err.message);}
   }
   async function finishGrilling(){if(!grillState)return;if(grillState.kind==='turkey')return finishTurkey();try{
@@ -7399,12 +7405,12 @@
       if(earnsDing&&!achievements.dingReady){achievements.dingReady=true;dingWasNew=true;}
       tx.update(ref,{fishes:[...(d.fishes||[]),done],grillState:null,achievements});
     });
-    grillState=null;renderGrillState();await awardPlayerXP(8,'cook');showToast('Cooked fish returned to your Backpack.');playGameSound('ding');
+    grillState=null;setGrillPickerOpen(false);renderGrillState();await awardPlayerXP(8,'cook');showToast('Cooked fish returned to your Backpack.');playGameSound('ding');
     if(cookWasNew)window.showAchievementUnlocked('Call me master master','One, two FLIP!','Cook a fish.');
     if(dingWasNew)window.showAchievementUnlocked('Ding, its ready!','Tastes better than before.','Burn a fish in the grill.');
     loadBackpackData();
   }catch(e){showToast('Could not finish cooking: '+e.message);}}
-  async function closeGrillStation(){await saveGrillState();if(grillTimer)clearInterval(grillTimer);if(grillSaveTimer)clearInterval(grillSaveTimer);grillTimer=grillSaveTimer=null;closeRebuildModal('modal-grill-station');}
+  async function closeGrillStation(){setGrillPickerOpen(false);await saveGrillState();if(grillTimer)clearInterval(grillTimer);if(grillSaveTimer)clearInterval(grillSaveTimer);grillTimer=grillSaveTimer=null;closeRebuildModal('modal-grill-station');}
   window.openGrillStation=openGrillStation;window.openGrillFishPicker=openGrillFishPicker;window.setGrillPickerOpen=setGrillPickerOpen;window.addFishToGrill=addFishToGrill;window.toggleGrillZone=toggleGrillZone;window.flipGrillFish=flipGrillFish;window.finishGrilling=finishGrilling;window.closeGrillStation=closeGrillStation;
   auth.onAuthStateChanged(() => { turkeyExpiryHandled=false; turkeyExpiryAttempt=0; });
   setInterval(() => {
@@ -7468,12 +7474,11 @@
       await cleanupTurkeyInventory();
       const snapshot=await playerRef().get();
       if(!snapshot.exists)throw Error('Player profile not found.');
-      const data=snapshot.data()||{}, counts=window.getFishFoodCounts(data);
+      const data=snapshot.data()||{}, counts=window.getAvailableFishFoodCounts(data);
       let html=window.FISH_FOOD_TYPES.filter(food=>(Number(counts[food.name])||0)>0).map(food=>{
         const uses=Number(counts[food.name])||0;
         return `<div class="rebuild-item"><img src="${esc(food.img)}" alt="${esc(food.name)}"><strong>${esc(food.name)}</strong><p>${esc(food.desc)}</p><p>${uses} use${uses===1?'':'s'} left · +${food.happiness} happiness per use</p></div>`;
       }).join('');
-      // Uncooked/event turkeys are intentionally hidden from inventories; they appear only in Grill > Add.
       document.getElementById('fish-foods-inventory-list').innerHTML=html||'<p>You do not own any fish food yet.</p>';
       const modal=document.getElementById('modal-fish-foods-inventory');
       modal.style.display='flex';
@@ -7676,6 +7681,7 @@
         const counts=kind==='food'?window.getFishFoodCounts(d):null;
         const definitions=kind==='food'?window.FISH_FOOD_TYPES:window.TANK_TYPES;
         definitions.forEach(def=>{
+          if(kind==='food' && def.name==='Well Cooked Turkey')return;
           const count=kind==='food'?(Number(counts[def.name])||0):getTankCount(d,def);
           const already=offerBundle.filter(b=>b.kind===kind&&b.name===def.name).reduce((sum,b)=>sum+b.quantity,0);
           const available=Math.max(0,count-already);
@@ -7815,6 +7821,7 @@
             }
             resolvedBundle.push({kind:'bait',name:item.name,label:item.label,quantity:item.quantity});
           } else if(item.kind==='food'){
+            if(item.name==='Well Cooked Turkey')throw Error('Well Cooked Turkey cannot be offered.');
             if(!window.FISH_FOOD_TYPES.some(f=>f.name===item.name)||(foods[item.name]||0)<item.quantity)throw Error(`Not enough ${item.name} in your inventory.`);
             foods[item.name]-=item.quantity;
             resolvedBundle.push({kind:'food',name:item.name,label:item.label,quantity:item.quantity});
@@ -9277,6 +9284,14 @@
       usesPerPack: 3,
       happiness: 35,
       desc: 'A fresh aquatic snack that brings a generous boost of happiness to any fish.'
+    },
+    {
+      id: 'well-cooked-turkey',
+      name: 'Well Cooked Turkey',
+      img: 'https://i.postimg.cc/7Y1WdwmS/turkey-cooked.png',
+      usesPerPack: 1,
+      happiness: 50,
+      desc: 'A well cooked turkey that makes a fish extra happy.'
     }
   ];
   window.FISH_FOOD_TYPES = FISH_FOOD_TYPES;
@@ -9924,6 +9939,12 @@
     return counts;
   }
   window.getFishFoodCounts = foodCountsFromDoc;
+  function availableFishFoodCounts(data) {
+    const counts = foodCountsFromDoc(data);
+    counts['Well Cooked Turkey'] += ((data && data.turkeys) || []).filter(window.isWellCookedTurkey).length;
+    return counts;
+  }
+  window.getAvailableFishFoodCounts = availableFishFoodCounts;
 
   const AQ = {
     open: false,
@@ -10106,7 +10127,7 @@
     AQ.happiness = nextHappiness;
     AQ.speciesMap = speciesMap;
     AQ.occupancy = { ...(data.aquariumOccupancyMap || {}) };
-    AQ.foodCounts = foodCountsFromDoc(data);
+    AQ.foodCounts = availableFishFoodCounts(data);
     updateSlotLabels();
     refreshFeedBarUI();
   }
@@ -10273,21 +10294,36 @@
   async function consumeFood(name, amount) {
     const uid = AQ.uid;
     try {
-      const tools = await db.runTransaction(async tx => {
+      const result = await db.runTransaction(async tx => {
         const ref = db.collection('jugadores').doc(uid);
         const snap = await tx.get(ref);
         if (!snap.exists) throw new Error('Player profile not found.');
-        const counts = foodCountsFromDoc(snap.data());
-        if (num(counts[name]) < amount) throw new Error(`You are out of ${name}.`);
-        counts[name] -= amount;
-        tx.update(ref, { fishTools: counts, fishFoodCount: totalFood(counts) });
-        return counts;
+        const data = snap.data() || {};
+        const counts = foodCountsFromDoc(data);
+        const turkeys = [...(data.turkeys || [])];
+        if (name === 'Well Cooked Turkey') {
+          let remaining = amount - Math.min(num(counts[name]), amount);
+          counts[name] -= amount - remaining;
+          for (let i = 0; i < turkeys.length && remaining > 0;) {
+            if (window.isWellCookedTurkey(turkeys[i])) { turkeys.splice(i, 1); remaining--; }
+            else i++;
+          }
+          if (remaining > 0) throw new Error(`You are out of ${name}.`);
+        } else {
+          if (num(counts[name]) < amount) throw new Error(`You are out of ${name}.`);
+          counts[name] -= amount;
+        }
+        const updates = { fishTools: counts, fishFoodCount: totalFood(counts) };
+        if (name === 'Well Cooked Turkey') updates.turkeys = turkeys;
+        tx.update(ref, updates);
+        return { counts, turkeys, available: availableFishFoodCounts({ ...data, fishTools: counts, turkeys }) };
       });
       if (AQ.uid === uid) {
-        AQ.foodCounts = tools;
+        AQ.foodCounts = result.available;
         if (AQ.doc) {
-          AQ.doc.fishTools = tools;
-          AQ.doc.fishFoodCount = totalFood(tools);
+          AQ.doc.fishTools = result.counts;
+          AQ.doc.fishFoodCount = totalFood(result.counts);
+          AQ.doc.turkeys = result.turkeys;
         }
       }
       return true;
@@ -10411,7 +10447,7 @@
   function spawnFallingFood(viewport, image, opts) {
     opts = opts || {};
     const bounds = feedingBounds(viewport, image);
-    const singlePortion = opts.foodName === 'Tiny Cheese';
+    const singlePortion = opts.foodName === 'Tiny Cheese' || opts.foodName === 'Well Cooked Turkey';
     const portion = {
       img: opts.target ? image : null,
       vp: viewport,
@@ -10566,6 +10602,7 @@
         t: nowMs(),
         p: num(entry.p) || nowMs()
       };
+      if (portion.foodName === 'Well Cooked Turkey') unlockTurkeyAchievement();
       updateSlotLabels();
 
       if (AQ.happiness[portion.key].v >= 99.5 && portion.remaining > 0) {
@@ -10603,6 +10640,7 @@
           t: nowMs(),
           p: num(entry.p) || nowMs()
         };
+        if (portion.foodName === 'Well Cooked Turkey') unlockTurkeyAchievement();
       }
       try { portion.container.remove(); } catch (err) { /* ignore */ }
     });
@@ -10795,7 +10833,7 @@
     const wrap = $('tf-food-options');
     const empty = $('tf-food-empty');
     if (!wrap) return;
-    const entries = Object.keys(AQ.foodCounts).filter(name => num(AQ.foodCounts[name]) > 0 && !/turkey/i.test(name));
+    const entries = Object.keys(AQ.foodCounts).filter(name => num(AQ.foodCounts[name]) > 0 && (name === 'Well Cooked Turkey' || !/turkey/i.test(name)));
     wrap.innerHTML = entries.map(name => {
       const count = num(AQ.foodCounts[name]);
       return `<button type="button" class="tf-food-option" data-food="${esc(name)}">
