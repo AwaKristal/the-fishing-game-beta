@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>The Fishing Game BETA</title>
+  <title>The Fishing Game</title>
   <link rel="icon" type="image/png" href="https://i.postimg.cc/rsFhhvFP/icon.png">
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -808,22 +808,7 @@
       .user-profile-badge img { width: 30px; height: 30px; }
       .user-profile-badge span { overflow: hidden; text-overflow: ellipsis; }
       .backpack-badge-inline { width: 32px; }
-      /* Account actions: same compact styling as desktop, not stretched/tall. */
-      #btn-friends, #btn-logout {
-        display: inline-flex !important;
-        align-items: center;
-        justify-content: center;
-        width: max-content !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
-        padding: 6px 12px !important;
-        font-size: .85rem !important;
-        line-height: 1.2 !important;
-        white-space: nowrap;
-        flex: 0 0 auto;
-      }
+      #btn-friends, #btn-logout { max-width: 60px; padding: 6px !important; font-size: .7rem !important; }
       .modal-card { padding: 14px; max-height: 88vh; }
       .backpack-on-map { bottom: 125px; right: 15px; width: 48px; }
       #game-screen { background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #ffffff; }
@@ -851,19 +836,7 @@
       .corner-bottom-left > div:nth-child(2) { max-width: 100%; }
       .user-profile-badge { max-width: 42vw; }
       .user-profile-badge span { max-width: 25vw; }
-      /* Do not enlarge or squeeze Friends / Log out on narrow screens. */
-      #btn-friends, #btn-logout {
-        width: max-content !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        min-height: 0 !important;
-        height: auto !important;
-        padding: 6px 12px !important;
-        font-size: .85rem !important;
-        line-height: 1.2 !important;
-      }
-      #btn-friends { background: #8e44ad !important; }
-      #btn-logout { background: #1e3a8a !important; }
+      #btn-friends, #btn-logout { max-width: 42vw; min-height: 38px; }
       .modal-overlay { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)); }
       .modal-card { width: 100%; max-height: 86dvh; overflow-y: auto; }
       #toast-container { right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); max-width: calc(100vw - 20px); }
@@ -880,7 +853,7 @@
   <header>
     <div class="header-left">
       <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-        <div class="version-tag">v.1.0.2.6 BETA</div>
+        <div class="version-tag">v.1.0.2.6</div>
         <button type="button" class="img-btn" onclick="openMouseHole()" title="Mouse Hole" aria-label="Open the mouse hole" style="width:42px;height:42px;">
           <img src="https://i.postimg.cc/DzmLzdzR/hole.png" alt="Mouse Hole" style="width:42px;height:42px;object-fit:contain;">
         </button>
@@ -892,7 +865,7 @@
         <img src="https://i.postimg.cc/NjwRPPmr/tutorial.png" alt="Tutorial">
       </button>
     </div>
-    <a href="https://github.com/AwaKristal/the-fishing-game-beta/releases/tag/file" target="_blank" class="download-app-btn">
+    <a href="https://github.com/AwaKristal/the-fishing-game/releases/tag/file" target="_blank" class="download-app-btn">
       <img src="https://i.postimg.cc/tgytXzq8/download.png" alt="Download">
     </a>
   </header>
@@ -6666,8 +6639,7 @@
       const friendsBtn = document.getElementById('btn-friends');
       const backpackInline = document.getElementById('backpack-badge-inline');
 
-      // Always process signed-out state. A stale setup flag must not leave profile UI visible.
-      if (accountSetupInProgress && user) return;
+      if (accountSetupInProgress) return;
       if (user) {
         try {
           await user.reload();
@@ -6772,7 +6744,6 @@
           document.getElementById('btn-logout').style.display = 'inline-flex';
           friendsBtn.style.display = 'inline-flex';
           document.getElementById('user-badge').style.display = 'flex';
-          document.getElementById('user-badge').setAttribute('aria-hidden', 'false');
           if (backpackInline) backpackInline.style.display = 'inline-block';
           document.getElementById('user-display-name').innerText = data.username || "Player";
           if (data.photoURL) {
@@ -6806,16 +6777,13 @@
         if (account) account.style.display = 'flex';
         if (logoutButton) logoutButton.style.display = 'none';
         if (friendsBtn) friendsBtn.style.display = 'none';
-        if (badge) {
-          badge.style.display = 'none';
-          badge.setAttribute('aria-hidden', 'true');
-        }
+        if (badge) badge.style.display = 'none';
         if (backpackInline) backpackInline.style.display = 'none';
         if (adminBtn) adminBtn.style.display = 'none';
         const name = document.getElementById('user-display-name');
         const avatar = document.getElementById('user-avatar');
-        if (name) name.textContent = '';
-        if (avatar) avatar.removeAttribute('src');
+        if (name) name.textContent = 'Username';
+        if (avatar) avatar.src = 'https://via.placeholder.com/40';
         const gameScreen = document.getElementById('game-screen');
         const mainMenu = document.getElementById('main-menu-container');
         if (gameScreen) gameScreen.style.display = 'none';
@@ -6850,25 +6818,23 @@
         const mainMenu = document.getElementById('main-menu-container');
         if (mainMenu) mainMenu.style.display = 'flex';
 
-        // Immediately reset account controls before Firebase finishes signOut().
-        const badge = document.getElementById('user-badge');
-        const displayName = document.getElementById('user-display-name');
-        const avatar = document.getElementById('user-avatar');
-        const accountButton = document.getElementById('account-container');
+        // Reset all signed-in menu identity immediately; the auth listener
+        // performs the same reset again after Firebase confirms sign-out.
+        const account = document.getElementById('account-container');
         const friendsButton = document.getElementById('btn-friends');
         const logoutButton = document.getElementById('btn-logout');
-        const backpack = document.getElementById('backpack-badge-inline');
+        const profileBadge = document.getElementById('user-badge');
+        const backpackBadge = document.getElementById('backpack-badge-inline');
+        const displayName = document.getElementById('user-display-name');
+        const avatar = document.getElementById('user-avatar');
         const adminButton = document.getElementById('adminBtn');
-        if (badge) {
-          badge.style.display = 'none';
-          badge.setAttribute('aria-hidden', 'true');
-        }
-        if (displayName) displayName.textContent = '';
-        if (avatar) avatar.removeAttribute('src');
-        if (accountButton) accountButton.style.display = 'flex';
+        if (account) account.style.display = 'flex';
         if (friendsButton) friendsButton.style.display = 'none';
         if (logoutButton) logoutButton.style.display = 'none';
-        if (backpack) backpack.style.display = 'none';
+        if (profileBadge) profileBadge.style.display = 'none';
+        if (backpackBadge) backpackBadge.style.display = 'none';
+        if (displayName) displayName.textContent = 'Username';
+        if (avatar) avatar.src = 'https://via.placeholder.com/40';
         if (adminButton) adminButton.style.display = 'none';
 
         await auth.signOut();
@@ -11516,5 +11482,50 @@
   }).observe(screen, { attributes:true, attributeFilter:['style'] });
 })();
 </script>
+
+<style id="mobile-menu-account-fixes">
+  /* Keep the main action in the middle, with Cook and Leaderboard in the right column. */
+  @media (max-width: 480px) {
+    .center-menu {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      grid-template-rows: auto auto !important;
+      align-items: center;
+    }
+    .center-menu .img-btn:nth-child(1) { grid-column: 1; grid-row: 1; }
+    .center-menu .img-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
+    .center-menu .img-btn:nth-child(3) { grid-column: 2; grid-row: 1 / span 2; }
+    .center-menu .img-btn:nth-child(4) { grid-column: 3; grid-row: 1; }
+    .center-menu .img-btn:nth-child(5) { grid-column: 3; grid-row: 2; }
+    .center-menu .img-btn { min-width: 0; }
+  }
+
+  /* Friends and Log out should size to their labels, not stretch like modal actions. */
+  #btn-friends,
+  #btn-logout {
+    display: none;
+    width: fit-content !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 32px !important;
+    padding: 5px 10px !important;
+    font-size: .75rem !important;
+    line-height: 1.1 !important;
+    flex: 0 0 auto !important;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 768px) {
+    #btn-friends,
+    #btn-logout {
+      width: fit-content !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      min-height: 30px !important;
+      padding: 5px 8px !important;
+      font-size: .7rem !important;
+    }
+  }
+</style>
+
 </body>
 </html>
