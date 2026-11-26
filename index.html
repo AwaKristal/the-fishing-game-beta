@@ -808,7 +808,17 @@
       .user-profile-badge img { width: 30px; height: 30px; }
       .user-profile-badge span { overflow: hidden; text-overflow: ellipsis; }
       .backpack-badge-inline { width: 32px; }
-      #btn-friends, #btn-logout { max-width: 60px; padding: 6px !important; font-size: .7rem !important; }
+      /* Keep account actions visually consistent with desktop on phones. */
+      #btn-friends, #btn-logout {
+        width: auto !important;
+        max-width: none;
+        min-height: 38px;
+        padding: 6px 12px !important;
+        font-size: .85rem !important;
+        line-height: 1.2;
+        white-space: nowrap;
+        flex: 0 0 auto;
+      }
       .modal-card { padding: 14px; max-height: 88vh; }
       .backpack-on-map { bottom: 125px; right: 15px; width: 48px; }
       #game-screen { background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #ffffff; }
@@ -836,7 +846,15 @@
       .corner-bottom-left > div:nth-child(2) { max-width: 100%; }
       .user-profile-badge { max-width: 42vw; }
       .user-profile-badge span { max-width: 25vw; }
-      #btn-friends, #btn-logout { max-width: 42vw; min-height: 38px; }
+      #btn-friends, #btn-logout {
+        max-width: calc(44vw - 8px);
+        min-height: 38px;
+        padding: 6px 12px !important;
+        font-size: .85rem !important;
+      }
+      .corner-bottom-left > div:nth-child(3) { display: flex; align-items: center; gap: 6px; }
+      #btn-friends { background: #8e44ad !important; }
+      #btn-logout { background: #1e3a8a !important; }
       .modal-overlay { padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)); }
       .modal-card { width: 100%; max-height: 86dvh; overflow-y: auto; }
       #toast-container { right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); max-width: calc(100vw - 20px); }
@@ -6744,6 +6762,7 @@
           document.getElementById('btn-logout').style.display = 'inline-flex';
           friendsBtn.style.display = 'inline-flex';
           document.getElementById('user-badge').style.display = 'flex';
+          document.getElementById('user-badge').setAttribute('aria-hidden', 'false');
           if (backpackInline) backpackInline.style.display = 'inline-block';
           document.getElementById('user-display-name').innerText = data.username || "Player";
           if (data.photoURL) {
@@ -6777,7 +6796,10 @@
         if (account) account.style.display = 'flex';
         if (logoutButton) logoutButton.style.display = 'none';
         if (friendsBtn) friendsBtn.style.display = 'none';
-        if (badge) badge.style.display = 'none';
+        if (badge) {
+          badge.style.display = 'none';
+          badge.setAttribute('aria-hidden', 'true');
+        }
         if (backpackInline) backpackInline.style.display = 'none';
         if (adminBtn) adminBtn.style.display = 'none';
         const name = document.getElementById('user-display-name');
@@ -6817,6 +6839,25 @@
         if (gameScreen) gameScreen.style.display = 'none';
         const mainMenu = document.getElementById('main-menu-container');
         if (mainMenu) mainMenu.style.display = 'flex';
+
+        // Clear profile UI immediately so no stale username/avatar flashes after logout.
+        const badge = document.getElementById('user-badge');
+        const name = document.getElementById('user-display-name');
+        const avatar = document.getElementById('user-avatar');
+        const account = document.getElementById('account-container');
+        const friends = document.getElementById('btn-friends');
+        const logoutButton = document.getElementById('btn-logout');
+        const backpackInline = document.getElementById('backpack-badge-inline');
+        const adminButton = document.getElementById('adminBtn');
+        if (badge) { badge.style.display = 'none'; badge.setAttribute('aria-hidden', 'true'); }
+        if (name) name.textContent = '';
+        if (avatar) avatar.removeAttribute('src');
+        if (account) account.style.display = 'flex';
+        if (friends) friends.style.display = 'none';
+        if (logoutButton) logoutButton.style.display = 'none';
+        if (backpackInline) backpackInline.style.display = 'none';
+        if (adminButton) adminButton.style.display = 'none';
+
         await auth.signOut();
         showToast("Logged out successfully.");
       } catch (err) {
